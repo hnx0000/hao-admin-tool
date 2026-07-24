@@ -1195,12 +1195,12 @@ function resolveCustomerFolderFileUrl(project, group, name, folderPath) {
   if (isHoabiProject) {
     const hoabiWebAssets = {
       productImages: {
-        "20251217 호아비 누끼 001.png": "assets/hoabi-mybox/hoabi-stick-single.png",
-        "20251217 호아비 누끼 003.png": "assets/hoabi-mybox/hoabi-open-box-30p.png",
-        "20251218 호아비 누끼 001.png": "assets/hoabi-mybox/hoabi-package-front.png",
-        "20251218 호아비 누끼 002.png": "assets/hoabi-mybox/hoabi-box-yellow.png",
-        "20251218 호아비 누끼 003.png": "assets/hoabi-mybox/hoabi-box-pink.png",
-        "20251218 호아비 누끼 004.png": "assets/hoabi-mybox/hoabi-shopping-bag.png",
+        "20251217 호아비 누끼 001.png": "assets/hoabi-mybox/hoabi-stick-single-crop.png",
+        "20251217 호아비 누끼 003.png": "assets/hoabi-mybox/hoabi-open-box-30p-crop.png",
+        "20251218 호아비 누끼 001.png": "assets/hoabi-mybox/hoabi-package-front-crop.png",
+        "20251218 호아비 누끼 002.png": "assets/hoabi-mybox/hoabi-box-yellow-crop.png",
+        "20251218 호아비 누끼 003.png": "assets/hoabi-mybox/hoabi-box-pink-crop.png",
+        "20251218 호아비 누끼 004.png": "assets/hoabi-mybox/hoabi-shopping-bag-crop.png",
         "hoabi-lifestyle-package.jfif": "assets/hoabi-product/hoabi-lifestyle-package.jfif",
       },
       brandLogo: {
