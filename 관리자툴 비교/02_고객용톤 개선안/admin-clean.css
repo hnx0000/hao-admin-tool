@@ -1613,6 +1613,18 @@
   }
 }
 
+@media (max-width: 1250px) {
+  .admin-customer-clean .topbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-customer-clean .topbar > .actions {
+    width: 100%;
+    max-width: none;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 760px) {
   .admin-customer-clean #drafts .draft-editor-grid,
   .admin-customer-clean #drafts .image-draft-inspector,
