@@ -52,6 +52,38 @@
     database.close();
   }
 
+  async function saveProjectFileGroup(projectId, group, files) {
+    const database = await openDatabase();
+    await new Promise((resolve, reject) => {
+      const transaction = database.transaction(STORE_NAME, "readwrite");
+      const store = transaction.objectStore(STORE_NAME);
+      const index = store.index("projectId");
+      const cursorRequest = index.openCursor(IDBKeyRange.only(projectId));
+      cursorRequest.onsuccess = () => {
+        const cursor = cursorRequest.result;
+        if (cursor) {
+          if (cursor.value.group === group) cursor.delete();
+          cursor.continue();
+        }
+      };
+      Array.from(files || []).forEach((file, indexNumber) => {
+        store.put({
+          key: `${projectId}:${group}:${indexNumber}`,
+          projectId,
+          group,
+          name: file.name,
+          type: file.type || "application/octet-stream",
+          size: file.size,
+          updatedAt: Date.now(),
+          blob: file,
+        });
+      });
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+    database.close();
+  }
+
   async function listProjectFiles(projectId) {
     const database = await openDatabase();
     const records = await new Promise((resolve, reject) => {
@@ -78,5 +110,5 @@
     database.close();
   }
 
-  window.customerFileStore = { saveProjectFiles, listProjectFiles, deleteProjectFiles };
+  window.customerFileStore = { saveProjectFiles, saveProjectFileGroup, listProjectFiles, deleteProjectFiles };
 })();

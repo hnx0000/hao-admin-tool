@@ -10,7 +10,7 @@
       document.documentElement.classList.add("admin-customer-clean");
       const cleanStyle = document.createElement("link");
       cleanStyle.rel = "stylesheet";
-      cleanStyle.href = "관리자툴 비교/02_고객용톤 개선안/admin-clean.css?v=20260724-15";
+      cleanStyle.href = "관리자툴 비교/02_고객용톤 개선안/admin-clean.css?v=20260724-16";
       document.head.appendChild(cleanStyle);
     }
   </script>
@@ -241,37 +241,18 @@
       <div class="section-head">
         <div>
           <p class="eyebrow">Step 4</p>
-        <h2>A/B 시안 결과</h2>
+        <h2>이미지 시안 · 디자이너 협업</h2>
         </div>
-        <button class="primary small" id="generateDrafts">A/B 시안 생성</button>
+        <button class="primary small" id="generateDrafts">이미지 시안 브리프 만들기</button>
       </div>
       <div class="workflow-guide" id="guide-drafts">
         <strong>이 단계에서 할 일</strong>
-        <p>AI가 추천한 A/B 방향, 긴 상세페이지 초안, 사진 프롬프트를 확인하세요. 필요할 때만 템플릿을 직접 변경합니다.</p>
+        <p>추천 방향을 고르고 이미지 시안을 검토한 뒤, 수정 요청을 디자이너에게 전달합니다. 최종 상세페이지 제작 화면이 아닙니다.</p>
       </div>
       <details class="ai-orchestration-box">
         <summary>AI 품질 검수 결과</summary>
         <div class="result compact-result" id="aiQualityReview">A/B 시안 생성 후 디자인 품질 검수 결과가 표시됩니다.</div>
       </details>
-      <div class="draft-quality-dashboard" id="draftQualityDashboard">
-        <div>
-          <span>디자인 준비도</span>
-          <strong>시안 생성 전</strong>
-          <p>A/B 시안 생성 후 쇼핑몰 상세페이지 기준 통과 항목이 표시됩니다.</p>
-        </div>
-      </div>
-      <div class="draft-focus-guide">
-        <div>
-          <strong>이 화면의 기준</strong>
-          <p>담당자는 고객 자료를 바탕으로 자동 생성된 상세페이지를 섹션별로 확인하고, 필요한 부분만 짧게 수정합니다.</p>
-        </div>
-        <ol>
-          <li>시안 생성</li>
-          <li>섹션 문구/색상 수정</li>
-          <li>사진 슬롯 확인</li>
-          <li>고객 발송</li>
-        </ol>
-      </div>
       <div class="selected-layouts">
         <div>
           <span>A안 추천 방향</span>
@@ -285,15 +266,13 @@
         </div>
       </div>
       <details class="draft-editor" open>
-        <summary>시안 간단 수정</summary>
+        <summary>이미지 시안 생성 조건</summary>
+        <input id="draftTone" type="hidden" value="premium">
         <div class="draft-editor-grid">
-          <label>색상 톤
-            <select id="draftTone">
-              <option value="premium">프리미엄 골드</option>
-              <option value="fresh">산뜻한 그린</option>
-              <option value="clean">깨끗한 화이트</option>
-              <option value="warm">따뜻한 오렌지</option>
-              <option value="dark">고급 다크</option>
+          <label>추천 방향
+            <select id="imageDraftDirection">
+              <option value="A">A안 · 브랜드/감성 중심</option>
+              <option value="B">B안 · 정보/구매 판단 중심</option>
             </select>
           </label>
           <label>사진 배치
@@ -314,149 +293,175 @@
           <label>메인 카피 수정
             <input id="draftMainCopy" placeholder="비워두면 AI 기획 카피를 사용합니다">
           </label>
+          <label class="wide-field">이번 시안에서 확인할 것
+            <textarea id="imageDraftGoal" rows="3" placeholder="예: 패키지가 선물용으로 충분히 고급스럽게 보이는지 확인"></textarea>
+          </label>
         </div>
         <div class="draft-editor-actions">
-          <button class="primary small" id="applyDraftEdits">수정 적용</button>
-          <p>색상, 카피, 사진 배치, 섹션 밀도만 먼저 간단히 조정합니다.</p>
+          <button class="primary small" id="applyDraftEdits">브리프 생성</button>
+          <button class="secondary small" id="copyImagePrompt">생성 프롬프트 복사</button>
+          <p>색상은 고객 자료와 브랜드 자산에서 자동 추출하고, 제품·수치·인증 정보는 임의로 만들지 않습니다.</p>
         </div>
       </details>
-      <div class="draft-workspace customer-preview-mode">
-        <aside class="draft-section-sidebar">
-          <div class="workspace-title">
-            <span>섹션</span>
-            <strong>상세페이지 AI 스튜디오</strong>
-          </div>
-          <div class="choice-toggle stacked" role="group" aria-label="편집 시안 선택">
-            <button class="choice active" data-edit-draft="A">A안 편집</button>
-            <button class="choice" data-edit-draft="B">B안 편집</button>
-          </div>
-          <ol class="studio-section-list" id="studioSectionList">
-            <li>시안 생성 후 섹션이 표시됩니다.</li>
-          </ol>
-        </aside>
-        <main class="draft-preview-stage">
-          <div class="studio-toolbar">
+
+      <div class="image-draft-flow" aria-label="이미지 시안 협업 단계">
+        <span class="done"><b>1</b> 고객 자료 고정</span>
+        <span class="active" id="imageFlowBrief"><b>2</b> 생성 브리프</span>
+        <span id="imageFlowDraft"><b>3</b> 이미지 시안</span>
+        <span id="imageFlowReview"><b>4</b> 내부 검토</span>
+        <span id="imageFlowHandoff"><b>5</b> 디자이너 전달</span>
+      </div>
+
+      <div class="image-draft-studio">
+        <section class="image-draft-canvas">
+          <div class="image-draft-card-head">
             <div>
-              <span id="studioDraftLabel">A안 편집 중</span>
-              <strong id="studioTemplateLabel">프리미엄 건강식품 01</strong>
+              <span class="status-dot" id="imageDraftStatus">초안 준비</span>
+              <strong id="imageDraftTitle">등록된 이미지 시안</strong>
             </div>
-            <div class="studio-toolbar-actions">
-              <button class="secondary small" id="toggleGuideMode">내부 가이드 보기</button>
-              <button class="secondary small" id="openPlanModal">전체 기획 확인</button>
-              <button class="secondary small" id="openColorModal">전체 색상 변경</button>
-              <button class="primary small" id="applySectionEdits">수정 반영</button>
-            </div>
-          </div>
-          <div class="draft-grid">
-            <article class="draft-card" id="draftA">A안 결과가 여기에 표시됩니다.</article>
-            <article class="draft-card" id="draftB">B안 결과가 여기에 표시됩니다.</article>
-          </div>
-        </main>
-        <aside class="draft-edit-panel">
-          <div class="workspace-title">
-            <span>이미지/문구 개별 편집</span>
-            <strong id="activeSectionTitle">섹션을 선택하세요</strong>
-          </div>
-          <div class="section-edit-list single" id="sectionEditList">
-            <div class="empty-draft-guide compact">
-              <strong>시안 생성 후 수정할 섹션이 표시됩니다.</strong>
-              <p>왼쪽 섹션을 선택하면 이곳에서 문구, 색상, 이미지 슬롯을 수정합니다.</p>
+            <div class="image-draft-card-actions">
+              <input id="imageDraftFile" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+              <button class="secondary small" id="registerImageDraft" type="button">이미지 시안 등록</button>
+              <button class="secondary small" id="openImageDraft" type="button">원본 보기</button>
+              <button class="primary small" id="completeImageReview" type="button">내부 검토 완료</button>
             </div>
           </div>
+          <div class="image-draft-viewport" id="imageDraftViewport" data-fit="contain" data-position="center">
+            <img id="imageDraftPreview" alt="이미지 생성 상세페이지 시안" hidden>
+            <div class="image-draft-empty" id="imageDraftEmpty">
+              <strong>이미지 시안 대기</strong>
+              <p>브리프를 만든 뒤 생성된 PNG·JPG 시안을 등록하세요.</p>
+            </div>
+            <div class="image-draft-copy" id="imageDraftCopyOverlay" hidden></div>
+          </div>
+          <div class="image-draft-meta">
+            <span id="imageDraftFileName">파일 미등록</span>
+            <span>원본 픽셀은 코드로 변경하지 않음</span>
+            <span id="imageDraftUpdatedAt">검토 기록 없음</span>
+          </div>
+        </section>
+
+        <aside class="image-draft-inspector">
+          <section class="inspector-block">
+            <div class="mini-section-head">
+              <span>생성 입력</span>
+              <strong>디자이너와 이미지 AI가 함께 보는 브리프</strong>
+            </div>
+            <textarea id="imageDraftBrief" rows="12" placeholder="브리프 생성 버튼을 누르면 고객 자료와 A/B 방향을 바탕으로 자동 작성됩니다."></textarea>
+            <div class="fact-lock-list" id="imageDraftFactLocks">
+              <span>제품명 고정</span>
+              <span>패키지 형태 고정</span>
+              <span>수치·인증 임의 생성 금지</span>
+            </div>
+          </section>
+
+          <section class="inspector-block">
+            <div class="mini-section-head">
+              <span>코드 보정</span>
+              <strong>이미지는 그대로 두고 검토 화면만 조정</strong>
+            </div>
+            <div class="code-adjust-grid">
+              <label>보기 방식
+                <select id="imageDraftFit">
+                  <option value="contain">전체 보기</option>
+                  <option value="cover">화면 채우기</option>
+                </select>
+              </label>
+              <label>기준 위치
+                <select id="imageDraftPosition">
+                  <option value="center">가운데</option>
+                  <option value="top">상단</option>
+                  <option value="bottom">하단</option>
+                </select>
+              </label>
+              <label class="wide-field">확대 <output id="imageDraftZoomValue">100%</output>
+                <input id="imageDraftZoom" type="range" min="70" max="160" value="100">
+              </label>
+              <label class="check-field">
+                <input id="imageDraftShowCopy" type="checkbox">
+                메인 카피 검토용 오버레이 표시
+              </label>
+            </div>
+            <button class="secondary small" id="applyImagePresentation" type="button">검토 화면에 적용</button>
+            <p class="inspector-note">제품 모양·배경·텍스트 픽셀 수정은 이미지 재생성 요청으로 보내고, 코드는 확대·위치·검토 문구만 다룹니다.</p>
+          </section>
         </aside>
       </div>
-      <details class="template-control">
-        <summary>템플릿 직접 변경</summary>
-        <div class="layout-helper">
-          <p>A안 또는 B안 선택 후 템플릿을 클릭하면 선택값에 적용됩니다.</p>
-          <div class="choice-toggle" role="group" aria-label="레이아웃 적용 대상">
-            <button class="choice active" data-choice="A">A안에 적용</button>
-            <button class="choice" data-choice="B">B안에 적용</button>
-          </div>
-        </div>
-        <div class="template-filters">
-          <label>카테고리
-            <select id="templateCategoryFilter">
-              <option value="전체">전체</option>
-              <option value="식품/건강식품">식품/건강식품</option>
-              <option value="뷰티/화장품">뷰티/화장품</option>
-              <option value="생활용품">생활용품</option>
-            </select>
-          </label>
-          <label>목적
-            <select id="templatePurposeFilter">
-              <option value="전체">전체</option>
-              <option value="브랜드">브랜드</option>
-              <option value="스토리">스토리</option>
-              <option value="정보">정보</option>
-              <option value="전환">전환</option>
-              <option value="선물">선물</option>
-            </select>
-          </label>
-          <label>난이도
-            <select id="templateDifficultyFilter">
-              <option value="전체">전체</option>
-              <option value="빠른 제작">빠른 제작</option>
-              <option value="일반">일반</option>
-              <option value="고급">고급</option>
-            </select>
-          </label>
-        </div>
-        <div class="template-library" id="templateLibrary"></div>
-      </details>
-      <details class="section-layout-preview" id="sectionLayoutPreview">
-        <summary>상세페이지 섹션 순서 보기</summary>
-        <div class="section-head compact">
+
+      <section class="revision-desk">
+        <div class="revision-desk-head">
           <div>
-            <p class="eyebrow">상세페이지 항목 레이아웃</p>
-            <h2>선택한 고객 자료로 A/B 섹션 순서를 구성합니다</h2>
+            <span>수정·전달 기록</span>
+            <h3>디자이너에게 바로 전달할 수정 요청</h3>
           </div>
+          <span class="handoff-status" id="imageHandoffStatus">전달 전</span>
         </div>
-        <div class="layout-columns">
-          <article>
-            <h3>A안 항목 구성</h3>
-            <ol id="sectionLayoutA">
-              <li>시안 생성 후 표시됩니다.</li>
-            </ol>
-          </article>
-          <article>
-            <h3>B안 항목 구성</h3>
-            <ol id="sectionLayoutB">
-              <li>시안 생성 후 표시됩니다.</li>
-            </ol>
-          </article>
+        <textarea id="imageRevisionRequest" rows="4" placeholder="예: 제품 패키지는 유지하고 첫 화면의 리치 원물 비중을 줄여주세요. 하단 작은 정보 글자는 이미지에 생성하지 말고 디자이너 조판 영역으로 비워주세요."></textarea>
+        <div class="revision-desk-actions">
+          <button class="primary small" id="addImageRevision" type="button">수정 요청 기록</button>
+          <button class="secondary small" id="copyDesignerHandoff" type="button">디자이너 전달본 복사</button>
+          <button class="secondary small" id="resetImageDraftWorkflow" type="button">검토 상태 초기화</button>
         </div>
-      </details>
-      <details class="photo-concept-box">
-        <summary>내부 촬영/합성 이미지 가이드</summary>
-        <div class="section-head compact">
-          <div>
-            <p class="eyebrow">촬영/합성 기획</p>
-            <h2>상세페이지용 사진 프롬프트 세트</h2>
-          </div>
-        </div>
-        <p class="subcopy">고객 제공 사진을 기준으로 임시 합성하거나, 실제 촬영 시 참고할 수 있는 프롬프트입니다.</p>
-        <ol class="photo-concept-list" id="photoConceptList">
-          <li><strong>01</strong><span>시안 생성 후 표시됩니다.</span></li>
+        <ol class="revision-timeline" id="imageRevisionLog">
+          <li class="empty">아직 기록된 수정 요청이 없습니다.</li>
         </ol>
-        <div class="image-slot-status-panel">
-          <div class="mini-section-head">
-            <p class="eyebrow">이미지 제작 상태</p>
-            <h3>제공 이미지 / 임시 이미지 / 촬영·합성 필요 구간</h3>
-          </div>
-          <div class="image-slot-status-grid" id="imageSlotStatusList">
-            <article class="image-slot-status-card">
-              <div><strong>01</strong><span>시안 생성 후 표시됩니다.</span></div>
-              <b>대기</b>
-              <p>A/B 시안을 생성하면 이미지 슬롯별 제작 상태가 자동 정리됩니다.</p>
-              <small>고객 메일과 PSD 작업 지시서에도 같은 기준이 반영됩니다.</small>
-            </article>
-          </div>
+      </section>
+
+      <div class="legacy-draft-engine" hidden aria-hidden="true">
+        <div class="draft-quality-dashboard" id="draftQualityDashboard"></div>
+        <div class="draft-workspace customer-preview-mode">
+          <aside class="draft-section-sidebar">
+            <div class="choice-toggle stacked">
+              <button class="choice active" data-edit-draft="A">A안 편집</button>
+              <button class="choice" data-edit-draft="B">B안 편집</button>
+            </div>
+            <ol id="studioSectionList"></ol>
+          </aside>
+          <main class="draft-preview-stage">
+            <div class="studio-toolbar">
+              <span id="studioDraftLabel">A안 편집 중</span>
+              <strong id="studioTemplateLabel">프리미엄 건강식품 01</strong>
+              <button id="toggleGuideMode" type="button">가이드</button>
+              <button id="openPlanModal" type="button">기획</button>
+              <button id="applySectionEdits" type="button">반영</button>
+            </div>
+            <div class="draft-grid">
+              <article id="draftA"></article>
+              <article id="draftB"></article>
+            </div>
+          </main>
+          <aside class="draft-edit-panel">
+            <strong id="activeSectionTitle"></strong>
+            <div id="sectionEditList"></div>
+          </aside>
         </div>
-        <details class="grid-prompt-box">
-          <summary>9컷 그리드 통합 프롬프트 보기</summary>
-          <div class="result compact-result" id="photoGridPrompt">시안 생성 후 표시됩니다.</div>
-        </details>
+        <div id="templateLibrary"></div>
+        <select id="templateCategoryFilter"><option value="전체">전체</option></select>
+        <select id="templatePurposeFilter"><option value="전체">전체</option></select>
+        <select id="templateDifficultyFilter"><option value="전체">전체</option></select>
+        <ol id="sectionLayoutA"></ol>
+        <ol id="sectionLayoutB"></ol>
+        <ol id="photoConceptList"></ol>
+        <div id="imageSlotStatusList"></div>
+        <div id="photoGridPrompt"></div>
+      </div>
+
+      <details class="image-production-notes">
+        <summary>섹션별 이미지 제작 메모 보기</summary>
+        <div class="production-note-grid">
+          <article>
+            <strong>AI 이미지로 만들 영역</strong>
+            <p>메인 무드, 원료·사용 장면, 제품이 놓인 환경, 선물 상황처럼 시각 판단이 필요한 장면을 섹션별로 생성합니다.</p>
+          </article>
+          <article>
+            <strong>디자이너가 조판할 영역</strong>
+            <p>제품명, 수치, 원재료, 인증, 표·주의사항, CTA처럼 정확해야 하는 정보는 생성 이미지에 굽지 않고 별도 텍스트로 유지합니다.</p>
+          </article>
+          <article>
+            <strong>재생성이 필요한 경우</strong>
+            <p>제품 외형 왜곡, 로고 오기, 원료 오인, 장면 자체 변경은 코드 수정이 아니라 이미지 재생성 요청으로 기록합니다.</p>
+          </article>
+        </div>
       </details>
       <div class="mail-block">
         <div class="section-head compact">
@@ -500,21 +505,6 @@
                 <li>시안 생성 후 표시됩니다.</li>
               </ol>
             </article>
-          </div>
-        </div>
-      </div>
-      <div class="studio-modal" id="colorModal" hidden>
-        <div class="studio-modal-card compact-modal">
-          <div class="studio-modal-head">
-            <strong>전체 톤 & 무드 색상 변경</strong>
-            <button class="secondary small" data-close-modal="colorModal">닫기</button>
-          </div>
-          <div class="tone-preset-grid">
-            <button data-tone-preset="premium">프리미엄 골드</button>
-            <button data-tone-preset="warm">따뜻한 오렌지</button>
-            <button data-tone-preset="fresh">산뜻한 그린</button>
-            <button data-tone-preset="clean">깨끗한 화이트</button>
-            <button data-tone-preset="dark">고급 다크</button>
           </div>
         </div>
       </div>
@@ -711,8 +701,8 @@
   <script src="data/detail-template-dataset.js"></script>
   <script src="data/company-reference-dataset.js"></script>
   <script src="data/company-reference-auto.js"></script>
-  <script src="customer-file-store.js?v=20260724"></script>
-  <script src="app.js?v=20260724-22"></script>
+  <script src="customer-file-store.js?v=20260724-2"></script>
+  <script src="app.js?v=20260724-23"></script>
   <script>
     if (document.documentElement.classList.contains("admin-customer-clean")) {
       const cleanScript = document.createElement("script");

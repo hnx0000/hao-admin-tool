@@ -18,6 +18,8 @@ const CUSTOMER_PROJECTS_PER_PAGE = 10;
 let currentCustomerAssetRecords = [];
 let customerAssetObjectUrls = [];
 let currentCustomerAssetProject = null;
+let currentImageDraftObjectUrl = "";
+const IMAGE_DRAFT_GROUP = "adminImageDraft";
 const SECTION_VARIANT_LABELS = {
   auto: "자동 디자인",
   "premium-card": "프리미엄 카드형",
@@ -8256,8 +8258,8 @@ function recordImageDesignWorkflow() {
     photoConcepts: workflow.imagePlan || photoConcepts(),
     layoutA: $("#templateA")?.textContent.trim() || "",
     layoutB: $("#templateB")?.textContent.trim() || "",
-    instruction: "현재는 로컬 HTML/CSS 상세페이지 엔진으로 디자인 시안을 생성하고, 추후 GPT Image, Flux, Figma 생성기로 교체 가능한 역할이다.",
-  }, "로컬 디자인 엔진으로 A/B 상세페이지 시안을 생성했습니다.");
+    instruction: "고객 제품 사진과 고정 사실을 참조하여 방향성 검토용 긴 세로 이미지 시안 브리프를 만든다. 작은 한글 정보와 수치 표는 이미지에 굽지 않고 디자이너 조판 영역으로 남긴다.",
+  }, "고객 자료를 고정한 이미지 시안 생성 브리프를 만들었습니다.");
 }
 
 function photoPromptText(concept, index) {
@@ -8395,6 +8397,7 @@ function generateDraftsRules() {
 async function generateDrafts() {
   await prepareInternalAiPlanning();
   generateDraftsRules();
+  createImageDraftBrief();
   const settings = readAiSettings();
   if (settings.mode !== "openai") return;
   try {
@@ -8411,6 +8414,376 @@ async function generateDrafts() {
   } catch (error) {
     updateAiStatus("A/B 시안 AI 보강 실패. 기본 미리보기를 유지합니다.");
   }
+}
+
+function imageDraftStateKey() {
+  return `imageDraftWorkflow:${currentProjectKey()}`;
+}
+
+function imageDraftProjectId() {
+  return currentCustomerAssetProject?.id || readCustomerProject()?.id || currentProjectKey();
+}
+
+function readImageDraftState() {
+  try {
+    return JSON.parse(localStorage.getItem(imageDraftStateKey()) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function saveImageDraftState(patch = {}) {
+  const next = {
+    ...readImageDraftState(),
+    ...patch,
+    updatedAt: new Date().toLocaleString("ko-KR"),
+  };
+  localStorage.setItem(imageDraftStateKey(), JSON.stringify(next));
+  renderImageDraftState(next);
+  return next;
+}
+
+function imageDraftDirectionLabel(direction = value("imageDraftDirection") || "A") {
+  return direction === "B"
+    ? `${$("#templateB")?.textContent.trim() || "B안"} · 정보/구매 판단 중심`
+    : `${$("#templateA")?.textContent.trim() || "A안"} · 브랜드/감성 중심`;
+}
+
+function imageDraftFactSummary() {
+  const p = product();
+  const uploadedNames = currentCustomerAssetRecords
+    .filter((item) => item?.name)
+    .map((item) => item.name)
+    .slice(0, 12);
+  return {
+    product: p.productName,
+    brand: p.clientName,
+    category: p.category,
+    oneLine: p.oneLine,
+    mustInclude: p.mustInclude || "고객 입력 없음",
+    avoid: [...p.avoid, p.banWords].filter(Boolean).join(", ") || "과장 효능, 임의 수치, 임의 인증",
+    references: p.references || "별도 문구 없음",
+    assets: uploadedNames.length ? uploadedNames.join(", ") : "고객 업로드 자료 폴더 기준",
+  };
+}
+
+function buildImageDraftBrief() {
+  const p = product();
+  const facts = imageDraftFactSummary();
+  const direction = value("imageDraftDirection") || "A";
+  const positionLabels = {
+    right: "제품을 오른쪽 중심으로 배치",
+    left: "제품을 왼쪽 중심으로 배치",
+    top: "첫 화면 상단에 제품을 크게 배치",
+    full: "제품 중심의 풀 비주얼",
+  };
+  const densityLabels = {
+    balanced: "핵심 장면과 정보 여백이 균형 잡힌 밀도",
+    rich: "장면 전환이 풍부한 고밀도 구성",
+    simple: "핵심 메시지에 집중한 간결한 구성",
+  };
+  const mainCopy = value("draftMainCopy") || p.oneLine;
+  const goal = value("imageDraftGoal") || "첫 화면의 제품 인지, 고객 자료와의 일치, 디자이너 보정 범위를 확인";
+  const directionFocus = direction === "B"
+    ? "제품 장점과 구매 이유를 빠르게 이해시키는 정보/구매 판단형"
+    : "브랜드 신뢰, 원료 스토리, 선물 가치를 감성적으로 보여주는 브랜드형";
+
+  return `[이미지 시안 생성 브리프]
+프로젝트: ${facts.brand} / ${facts.product}
+선택 방향: ${imageDraftDirectionLabel(direction)}
+검토 목표: ${goal}
+
+[고정 사실 — 절대 바꾸거나 새로 만들지 않음]
+- 제품명: ${facts.product}
+- 고객사/브랜드: ${facts.brand}
+- 카테고리: ${facts.category}
+- 한 줄 설명: ${facts.oneLine}
+- 반드시 포함: ${facts.mustInclude}
+- 금지/주의: ${facts.avoid}
+- 고객 참고: ${facts.references}
+- 기준 파일: ${facts.assets}
+
+[시각 방향]
+- 목적: ${directionFocus}
+- 사진 배치: ${positionLabels[value("draftImagePosition")] || positionLabels.right}
+- 정보 밀도: ${densityLabels[value("draftDensity")] || densityLabels.balanced}
+- 메인 카피 검토문: ${mainCopy}
+- 색상은 별도 프리셋을 고르지 말고 고객 로고·패키지·업로드 이미지에서 추출
+
+[긴 세로형 시안 흐름]
+1. 실제 제품 형태가 한눈에 보이는 첫 화면 + 하나의 핵심 가치
+2. 고객이 왜 관심을 가져야 하는지 보여주는 원료·브랜드 장면
+3. 제품 장점과 사용/섭취 상황을 분리한 시각 장면
+4. 구성·편의·선물 맥락을 확인하는 제품 중심 장면
+5. 정확한 제품 정보와 주의사항을 디자이너가 조판할 수 있는 빈 정보 영역
+
+[생성 규칙]
+- 고객 제공 제품 사진과 패키지 비율, 로고, 라벨 구조를 참조 이미지로 강하게 고정
+- 제품 외형과 로고를 재해석하거나 가상의 맛·원료·구성품을 추가하지 않음
+- 인증, 효능, 수치, 원재료, 후기, 비교 우위는 자료에 없으면 생성하지 않음
+- 작은 한글 문장, 표, 법정 고지는 이미지 안에 생성하지 않고 조판용 안전 영역으로 비워둠
+- 한 장의 완성본처럼 보이되 장면별 경계와 수정 지점이 식별되는 세로형 시안으로 생성
+- 실제 판매용 최종본이 아니라 방향성 검토용 이미지 시안 수준으로 출력`;
+}
+
+function setImageDraftPreview(src, fileName = "") {
+  const preview = $("#imageDraftPreview");
+  const empty = $("#imageDraftEmpty");
+  if (!preview || !empty) return;
+  preview.src = src;
+  preview.hidden = false;
+  empty.hidden = true;
+  preview.dataset.source = src;
+  if ($("#imageDraftFileName")) $("#imageDraftFileName").textContent = fileName || "이미지 시안";
+  $("#imageFlowDraft")?.classList.add("done");
+}
+
+function clearImageDraftPreview() {
+  const preview = $("#imageDraftPreview");
+  const empty = $("#imageDraftEmpty");
+  if (!preview || !empty) return;
+  preview.removeAttribute("src");
+  preview.hidden = true;
+  empty.hidden = false;
+  if ($("#imageDraftFileName")) $("#imageDraftFileName").textContent = "파일 미등록";
+  $("#imageFlowDraft")?.classList.remove("done");
+}
+
+async function loadStoredImageDraft() {
+  const projectId = imageDraftProjectId();
+  if (window.customerFileStore?.listProjectFiles && projectId) {
+    try {
+      const records = await window.customerFileStore.listProjectFiles(projectId);
+      const record = records
+        .filter((item) => item.group === IMAGE_DRAFT_GROUP)
+        .sort((a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0))[0];
+      if (record?.blob) {
+        if (currentImageDraftObjectUrl) URL.revokeObjectURL(currentImageDraftObjectUrl);
+        currentImageDraftObjectUrl = URL.createObjectURL(record.blob);
+        setImageDraftPreview(currentImageDraftObjectUrl, record.name);
+        return true;
+      }
+    } catch {
+      // 정적 예시 시안 또는 현재 세션 미리보기로 계속 진행합니다.
+    }
+  }
+  const productName = value("productName");
+  if (productName.includes("호아비") || productName.includes("리치꿀스틱")) {
+    setImageDraftPreview("assets/generated-concepts/hoabi-image-draft-a-v1.png", "호아비_리치꿀스틱_이미지생성_시안_v1.png");
+    return true;
+  }
+  return false;
+}
+
+function applyImageDraftPresentation(shouldSave = true) {
+  const viewport = $("#imageDraftViewport");
+  const preview = $("#imageDraftPreview");
+  const zoom = Number($("#imageDraftZoom")?.value || 100);
+  const fit = value("imageDraftFit") || "contain";
+  const position = value("imageDraftPosition") || "center";
+  const showCopy = Boolean($("#imageDraftShowCopy")?.checked);
+  const overlay = $("#imageDraftCopyOverlay");
+  if (!viewport || !preview) return;
+  viewport.dataset.fit = fit;
+  viewport.dataset.position = position;
+  preview.style.objectFit = fit;
+  preview.style.objectPosition = position;
+  preview.style.transform = `scale(${zoom / 100})`;
+  if ($("#imageDraftZoomValue")) $("#imageDraftZoomValue").textContent = `${zoom}%`;
+  if (overlay) {
+    overlay.textContent = value("draftMainCopy") || product().oneLine;
+    overlay.hidden = !showCopy;
+  }
+  if (shouldSave) {
+    saveImageDraftState({ fit, position, zoom, showCopy });
+    updateAiStatus("이미지 원본은 유지하고 검토 화면의 보기 방식만 조정했습니다.");
+  }
+}
+
+function renderImageDraftState(state = readImageDraftState()) {
+  if ($("#imageDraftDirection") && state.direction) $("#imageDraftDirection").value = state.direction;
+  if ($("#imageDraftGoal") && state.goal !== undefined) $("#imageDraftGoal").value = state.goal;
+  if ($("#imageDraftBrief") && state.brief !== undefined) $("#imageDraftBrief").value = state.brief;
+  if ($("#imageDraftFit") && state.fit) $("#imageDraftFit").value = state.fit;
+  if ($("#imageDraftPosition") && state.position) $("#imageDraftPosition").value = state.position;
+  if ($("#imageDraftZoom") && state.zoom) $("#imageDraftZoom").value = state.zoom;
+  if ($("#imageDraftShowCopy")) $("#imageDraftShowCopy").checked = Boolean(state.showCopy);
+  if ($("#imageDraftStatus")) {
+    const statusLabels = {
+      brief: "브리프 준비",
+      draft: "이미지 시안 등록",
+      reviewed: "내부 검토 완료",
+      revision: "수정 요청",
+      handoff: "디자이너 전달",
+    };
+    $("#imageDraftStatus").textContent = statusLabels[state.status] || "초안 준비";
+  }
+  if ($("#imageDraftUpdatedAt")) {
+    $("#imageDraftUpdatedAt").textContent = state.updatedAt ? `최근 기록 ${state.updatedAt}` : "검토 기록 없음";
+  }
+  if ($("#imageHandoffStatus")) {
+    $("#imageHandoffStatus").textContent = state.status === "handoff" ? "전달본 복사 완료" : state.status === "reviewed" ? "검토 완료" : state.status === "revision" ? "수정 요청 중" : "전달 전";
+  }
+  const log = $("#imageRevisionLog");
+  const revisions = Array.isArray(state.revisions) ? state.revisions : [];
+  if (log) {
+    log.innerHTML = revisions.length
+      ? revisions.map((item, index) => `
+          <li>
+            <span>${String(revisions.length - index).padStart(2, "0")}</span>
+            <div><strong>${escapeHtml(item.direction || "수정 요청")}</strong><p>${escapeHtml(item.text)}</p><small>${escapeHtml(item.createdAt || "")}</small></div>
+          </li>
+        `).join("")
+      : `<li class="empty">아직 기록된 수정 요청이 없습니다.</li>`;
+  }
+  ["imageFlowBrief", "imageFlowDraft", "imageFlowReview", "imageFlowHandoff"].forEach((id) => $(`#${id}`)?.classList.remove("done", "active"));
+  if (state.brief) $("#imageFlowBrief")?.classList.add("done");
+  else $("#imageFlowBrief")?.classList.add("active");
+  if ($("#imageDraftPreview")?.src) $("#imageFlowDraft")?.classList.add("done");
+  else if (state.brief) $("#imageFlowDraft")?.classList.add("active");
+  if (["reviewed", "revision", "handoff"].includes(state.status)) $("#imageFlowReview")?.classList.add("done");
+  if (state.status === "handoff") $("#imageFlowHandoff")?.classList.add("done");
+  else if (["reviewed", "revision"].includes(state.status)) $("#imageFlowHandoff")?.classList.add("active");
+  applyImageDraftPresentation(false);
+}
+
+async function initializeImageDraftWorkflow() {
+  if (!$("#imageDraftViewport")) return;
+  const state = readImageDraftState();
+  renderImageDraftState(state);
+  const loaded = await loadStoredImageDraft();
+  if (!loaded && !$("#imageDraftPreview")?.src) clearImageDraftPreview();
+  renderImageDraftState(state);
+}
+
+function createImageDraftBrief() {
+  if (!value("productName")) {
+    alert("프로젝트를 먼저 불러와주세요.");
+    return "";
+  }
+  const brief = buildImageDraftBrief();
+  if ($("#imageDraftBrief")) $("#imageDraftBrief").value = brief;
+  const direction = value("imageDraftDirection") || "A";
+  const state = saveImageDraftState({
+    direction,
+    goal: value("imageDraftGoal"),
+    brief,
+    status: readImageDraftState().status === "handoff" ? "handoff" : "brief",
+  });
+  saveAiArtifact("imageDesign", "rules", brief, {
+    output: "image-draft-brief",
+    direction,
+    humanDesignerWorkflow: true,
+  });
+  $("#imageFlowBrief")?.classList.add("done");
+  $("#imageFlowDraft")?.classList.add("active");
+  updateAiStatus("고객 자료를 고정한 이미지 시안 생성 브리프를 만들었습니다.");
+  return state.brief;
+}
+
+async function copyPlainText(text, message) {
+  if (!String(text || "").trim()) {
+    alert("복사할 내용이 없습니다.");
+    return false;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const temp = document.createElement("textarea");
+    temp.value = text;
+    document.body.appendChild(temp);
+    temp.select();
+    document.execCommand("copy");
+    temp.remove();
+  }
+  updateAiStatus(message);
+  return true;
+}
+
+async function registerImageDraftFile(file) {
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    alert("PNG, JPG, WEBP 이미지 파일만 등록할 수 있습니다.");
+    return;
+  }
+  if (currentImageDraftObjectUrl) URL.revokeObjectURL(currentImageDraftObjectUrl);
+  currentImageDraftObjectUrl = URL.createObjectURL(file);
+  setImageDraftPreview(currentImageDraftObjectUrl, file.name);
+  const projectId = imageDraftProjectId();
+  try {
+    await window.customerFileStore?.saveProjectFileGroup?.(projectId, IMAGE_DRAFT_GROUP, [file]);
+  } catch {
+    updateAiStatus("시안은 현재 화면에 등록됐지만 브라우저 저장소에는 저장하지 못했습니다.");
+  }
+  saveImageDraftState({ fileName: file.name, status: "draft" });
+  updateAiStatus("이미지 시안을 등록했습니다. 새로고침 후에도 이 브라우저에서 다시 불러옵니다.");
+}
+
+function completeImageDraftReview() {
+  const preview = $("#imageDraftPreview");
+  if (!preview?.src || preview.hidden) {
+    alert("검토할 이미지 시안을 먼저 등록해주세요.");
+    return;
+  }
+  saveImageDraftState({ status: "reviewed", reviewedAt: new Date().toLocaleString("ko-KR") });
+  updateAiStatus("이미지 시안 내부 검토를 완료로 표시했습니다.");
+}
+
+function addImageRevisionRequest() {
+  const text = value("imageRevisionRequest");
+  if (!text) {
+    alert("수정 요청 내용을 입력해주세요.");
+    return;
+  }
+  const state = readImageDraftState();
+  const revisions = [
+    {
+      text,
+      direction: imageDraftDirectionLabel(state.direction || value("imageDraftDirection")),
+      createdAt: new Date().toLocaleString("ko-KR"),
+    },
+    ...(Array.isArray(state.revisions) ? state.revisions : []),
+  ].slice(0, 30);
+  saveImageDraftState({ revisions, status: "revision" });
+  $("#imageRevisionRequest").value = "";
+  updateAiStatus("수정 요청을 기록했습니다.");
+}
+
+function designerHandoffText() {
+  const state = readImageDraftState();
+  const revisions = Array.isArray(state.revisions) ? state.revisions : [];
+  return `[디자이너 전달본]
+프로젝트: ${product().clientName} / ${product().productName}
+선택 방향: ${imageDraftDirectionLabel(state.direction)}
+시안 파일: ${state.fileName || $("#imageDraftFileName")?.textContent || "등록된 이미지 시안"}
+검토 상태: ${state.status === "reviewed" || state.status === "handoff" ? "내부 검토 완료" : "수정 요청 확인 필요"}
+
+${state.brief || buildImageDraftBrief()}
+
+[수정 요청 기록]
+${revisions.length ? revisions.map((item, index) => `${index + 1}. ${item.text} (${item.createdAt})`).join("\n") : "별도 수정 요청 없음"}
+
+[작업 구분]
+- 이미지 재생성: 제품 외형, 배경 장면, 원료 연출, 로고 왜곡
+- 코드/조판 보정: 이미지 위치·크롭, 정확한 한글 문구, 표·수치·법정 고지, CTA
+- 최종 상세페이지 제작은 이미지 시안 승인 후 사람 디자이너가 진행`;
+}
+
+async function copyDesignerHandoff() {
+  const copied = await copyPlainText(designerHandoffText(), "디자이너 전달본을 복사했습니다.");
+  if (copied) saveImageDraftState({ status: "handoff", handedOffAt: new Date().toLocaleString("ko-KR") });
+}
+
+function resetImageDraftReviewState() {
+  const state = readImageDraftState();
+  saveImageDraftState({
+    status: state.fileName || $("#imageDraftPreview")?.src ? "draft" : state.brief ? "brief" : "",
+    revisions: [],
+    reviewedAt: "",
+    handedOffAt: "",
+  });
+  if ($("#imageRevisionRequest")) $("#imageRevisionRequest").value = "";
+  updateAiStatus("이미지 파일과 브리프는 유지하고 검토·수정 기록만 초기화했습니다.");
 }
 
 function generateClientMailText() {
@@ -9592,6 +9965,7 @@ function showPanel(target) {
   $$(".panel").forEach((item) => {
     item.classList.toggle("active", item.id === target);
   });
+  if (target === "drafts") initializeImageDraftWorkflow();
   updateWorkflowState();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -9664,8 +10038,35 @@ $("#copyClientMail")?.addEventListener("click", () => copyResultText("#clientMai
 $("#openClientMail")?.addEventListener("click", () => openMailDraft("#clientMailResult", `[${value("productName") || "상세페이지"}] 상세페이지 1차 방향성 시안 전달드립니다`));
 $("#applyDraftEdits")?.addEventListener("click", (event) => {
   event.preventDefault();
-  generateDraftsRules();
-  updateAiStatus("시안 수정값을 적용했습니다.");
+  createImageDraftBrief();
+});
+$("#copyImagePrompt")?.addEventListener("click", () => {
+  const brief = $("#imageDraftBrief")?.value.trim() || createImageDraftBrief();
+  copyPlainText(brief, "이미지 생성 프롬프트를 복사했습니다.");
+});
+$("#registerImageDraft")?.addEventListener("click", () => $("#imageDraftFile")?.click());
+$("#imageDraftFile")?.addEventListener("change", (event) => {
+  registerImageDraftFile(event.target.files?.[0]);
+  event.target.value = "";
+});
+$("#openImageDraft")?.addEventListener("click", () => {
+  const src = $("#imageDraftPreview")?.src;
+  if (!src || $("#imageDraftPreview")?.hidden) {
+    alert("먼저 이미지 시안을 등록해주세요.");
+    return;
+  }
+  window.open(src, "_blank", "noopener,noreferrer");
+});
+$("#completeImageReview")?.addEventListener("click", completeImageDraftReview);
+$("#applyImagePresentation")?.addEventListener("click", () => applyImageDraftPresentation(true));
+$("#imageDraftZoom")?.addEventListener("input", () => {
+  if ($("#imageDraftZoomValue")) $("#imageDraftZoomValue").textContent = `${$("#imageDraftZoom").value}%`;
+});
+$("#addImageRevision")?.addEventListener("click", addImageRevisionRequest);
+$("#copyDesignerHandoff")?.addEventListener("click", copyDesignerHandoff);
+$("#resetImageDraftWorkflow")?.addEventListener("click", resetImageDraftReviewState);
+$("#imageDraftDirection")?.addEventListener("change", () => {
+  saveImageDraftState({ direction: value("imageDraftDirection") });
 });
 $("#applySectionEdits")?.addEventListener("click", (event) => {
   event.preventDefault();
@@ -9784,4 +10185,5 @@ renderAiWorkflowStatus();
 updateReferenceStatus();
 updateRouteSummary();
 updateWorkflowState();
+initializeImageDraftWorkflow();
 
