@@ -8569,7 +8569,7 @@ async function loadStoredImageDraft() {
   }
   const productName = value("productName");
   if (productName.includes("호아비") || productName.includes("리치꿀스틱")) {
-    setImageDraftPreview("assets/generated-concepts/hoabi-image-draft-a-v1.png", "호아비_리치꿀스틱_이미지생성_시안_v1.png");
+    setImageDraftPreview("assets/generated-concepts/hoabi-image-draft-a-v1.png?v=20260724-23", "호아비_리치꿀스틱_이미지생성_시안_v1.png");
     return true;
   }
   return false;
