@@ -1185,6 +1185,37 @@ function closeCustomerAssetsDialog() {
   $("#customerAssetsDialog")?.close();
 }
 
+function resolveCustomerFolderFileUrl(project, group, name, folderPath) {
+  const configuredUrl = project?.assetWebPaths?.[group]?.[name];
+  if (configuredUrl) return configuredUrl;
+
+  const isHoabiProject =
+    project?.seedVersion === "hoabi-complete-v5" ||
+    String(project?.productName || "").includes("호아비 리치꿀스틱");
+  if (isHoabiProject) {
+    const hoabiWebAssets = {
+      productImages: {
+        "20251217 호아비 누끼 001.png": "assets/hoabi-mybox/hoabi-stick-single.png",
+        "20251217 호아비 누끼 003.png": "assets/hoabi-mybox/hoabi-open-box-30p.png",
+        "20251218 호아비 누끼 001.png": "assets/hoabi-mybox/hoabi-package-front.png",
+        "20251218 호아비 누끼 002.png": "assets/hoabi-mybox/hoabi-box-yellow.png",
+        "20251218 호아비 누끼 003.png": "assets/hoabi-mybox/hoabi-box-pink.png",
+        "20251218 호아비 누끼 004.png": "assets/hoabi-mybox/hoabi-shopping-bag.png",
+        "hoabi-lifestyle-package.jfif": "assets/hoabi-product/hoabi-lifestyle-package.jfif",
+      },
+      brandLogo: {
+        "hoabi-product-info.jpg": "assets/hoabi-mybox/hoabi-product-info.jpg",
+      },
+      referenceFiles: {},
+    };
+    const mappedUrl = hoabiWebAssets[group]?.[name];
+    if (mappedUrl) return mappedUrl;
+  }
+
+  const filePath = `${String(folderPath || "").replace(/\\/g, "/")}/${name}`;
+  return encodeURI(`file:///${filePath}`);
+}
+
 function openCustomerAssetsDialog(group) {
   const folderPath = currentCustomerAssetProject?.assetFolderPaths?.[group];
   const labels = { productImages: "제품 이미지", brandLogo: "로고·스펙 자료", referenceFiles: "참고 이미지" };
@@ -1214,8 +1245,8 @@ function openCustomerAssetsDialog(group) {
     }).join("");
   } else if (folderFiles.length && folderPath) {
     list.innerHTML = folderFiles.map((name) => {
-      const filePath = `${String(folderPath).replace(/\\/g, "/")}/${name}`;
-      const url = encodeURI(`file:///${filePath}`);
+      const url = resolveCustomerFolderFileUrl(currentCustomerAssetProject, group, name, folderPath);
+      const isWebAsset = !url.startsWith("file:///");
       const isImage = /\.(png|jpe?g|jfif|webp|gif)$/i.test(name);
       const preview = isImage
         ? `<img src="${url}" alt="${escapeHtml(name)}">`
@@ -1223,7 +1254,7 @@ function openCustomerAssetsDialog(group) {
       return `<article class="customer-asset-item">
         ${preview}
         <div><strong>${escapeHtml(name)}</strong><small>03_업체 자료 · 분류 완료</small></div>
-        <a href="${url}" target="_blank" rel="noopener">원본 열기</a>
+        <a href="${url}" target="_blank" rel="noopener">${isWebAsset ? "웹에서 열기" : "원본 열기"}</a>
       </article>`;
     }).join("");
   } else {
