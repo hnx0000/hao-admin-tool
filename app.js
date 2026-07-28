@@ -657,7 +657,7 @@ function saveAiSettings() {
     setImageGenerationNotice(
       "ready",
       "이미지 생성 연결 완료",
-      "GPT Image 2 · 세로형 최대 1024 × 1536 · High · 고객 이미지 고충실도 참조로 생성합니다.",
+      "GPT Image 2 · 세로형 최대 1024 × 1536 · High · 고객 이미지를 직접 참조해 생성합니다.",
     );
   }
   alert("AI 설정을 저장했습니다.");
@@ -8667,7 +8667,6 @@ async function requestOpenAiImageDraft(prompt, references, signal) {
     body.append("prompt", prompt);
     body.append("size", IMAGE_DRAFT_SIZE);
     body.append("quality", IMAGE_DRAFT_QUALITY);
-    body.append("input_fidelity", "high");
     body.append("output_format", "png");
     references.forEach((reference) => body.append("image[]", reference.blob, reference.name));
     requestOptions.body = body;
