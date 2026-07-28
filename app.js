@@ -10242,29 +10242,71 @@ renderSectionEditor();
 
 async function runBeforePanel(action) {
   if (action === "plan") await prepareInternalAiPlanning();
-  if (action === "drafts") await prepareImageDraftWorkspace();
+  if (action === "drafts") {
+    setImageGenerationNotice(
+      "working",
+      "A/B 추천 방향 준비 중",
+      "화면은 먼저 열렸습니다. 고객 작성 내용을 바탕으로 추천 방향과 이미지 생성 브리프를 정리하고 있습니다.",
+    );
+    await prepareImageDraftWorkspace();
+    if (readImageDraftState().status === "draft") {
+      setImageGenerationNotice(
+        "success",
+        "기존 이미지 시안 불러오기 완료",
+        "등록된 시안을 바로 검토하거나 생성 조건을 바꿔 새 시안을 만들 수 있습니다.",
+      );
+    } else {
+      setImageGenerationNotice(
+        "ready",
+        "이미지 시안 생성 준비 완료",
+        "A/B 추천 방향과 브리프를 확인한 뒤 ‘브리프 생성 + 이미지 시안 만들기’를 눌러주세요.",
+      );
+    }
+  }
   if (action === "clientMail") await generateClientMail();
   if (action === "revision") await generateRevision();
   if (action === "handoff") await generateHandoff();
   if (action === "finalMail") await generateFinalMail();
 }
 
-document.addEventListener("click", async (event) => {
+function showPanelThenRun(button, target, action) {
+  button.disabled = true;
+  button.classList.add("is-preparing");
+  showPanel(target);
+  if (!action) {
+    button.disabled = false;
+    button.classList.remove("is-preparing");
+    return;
+  }
+  Promise.resolve(runBeforePanel(action))
+    .catch((error) => {
+      updateAiStatus(error?.message || "화면 준비 중 오류가 발생했습니다.");
+      if (action === "drafts") {
+        setImageGenerationNotice(
+          "error",
+          "추천 방향 준비 실패",
+          "프로젝트 정보는 유지됩니다. 잠시 후 다시 시도해주세요.",
+        );
+      }
+    })
+    .finally(() => {
+      button.disabled = false;
+      button.classList.remove("is-preparing");
+    });
+}
+
+document.addEventListener("click", (event) => {
   const button = event.target.closest("#nextActionButton");
   if (!button) return;
   event.preventDefault();
   const action = button.dataset.nextAction;
   const target = button.dataset.nextTarget || "projects";
-  if (action) await runBeforePanel(action);
-  showPanel(target);
+  showPanelThenRun(button, target, action);
 });
 
 $$("[data-go-panel]").forEach((button) => {
-  button.addEventListener("click", async () => {
-    if (button.dataset.runBefore) {
-      await runBeforePanel(button.dataset.runBefore);
-    }
-    showPanel(button.dataset.goPanel);
+  button.addEventListener("click", () => {
+    showPanelThenRun(button, button.dataset.goPanel, button.dataset.runBefore);
   });
 });
 
