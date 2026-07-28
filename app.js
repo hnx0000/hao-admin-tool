@@ -10201,6 +10201,49 @@ async function generateAll() {
   await generateDrafts();
 }
 
+async function generateAllFromTopbar() {
+  const button = $("#generateAll");
+  const hasLoadedProject = Boolean(value("clientName") && value("productName") && value("category"));
+  if (!hasLoadedProject) {
+    showPanel("projects");
+    alert("고객 작성 프로젝트를 먼저 불러와주세요. 고객사명, 제품명, 카테고리가 확인된 뒤 자동 생성을 시작할 수 있습니다.");
+    updateAiStatus("프로젝트 불러오기 완료 후 기획/시안 자동 생성을 눌러주세요.");
+    return;
+  }
+  if (currentImageGenerationController) {
+    showPanel("drafts");
+    setImageGenerationNotice("working", "이미지 시안 생성 중", "현재 진행 중인 상단·중단·하단 이미지 생성을 이어서 보여드립니다.");
+    return;
+  }
+
+  const originalText = button?.textContent || "기획/시안 자동 생성";
+  if (button) {
+    button.disabled = true;
+    button.classList.add("is-preparing");
+    button.textContent = "3페이지 이동 · 시안 생성 중…";
+  }
+  showPanel("drafts");
+  setImageGenerationNotice(
+    "working",
+    "원클릭 자동 생성 시작",
+    "불러온 프로젝트 정보로 A/B 추천 방향과 이미지 브리프를 준비하고 있습니다.",
+  );
+
+  try {
+    await generateAll();
+  } catch (error) {
+    const message = error?.message || "기획/시안 자동 생성 중 오류가 발생했습니다.";
+    setImageGenerationNotice("error", "자동 생성 실패", message);
+    updateAiStatus(message);
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.classList.remove("is-preparing");
+      button.textContent = originalText;
+    }
+  }
+}
+
 async function runHoabiFlowTest() {
   addHoabiCustomerTest(true);
   const latest = readCustomerProjects()[0];
@@ -10467,7 +10510,10 @@ if (planningOptionsMount && optionsPanel) {
 
 $("#loadSample")?.addEventListener("click", () => loadSample());
 $("#importCustomerProject")?.addEventListener("click", () => importCustomerProject());
-$("#generateAll")?.addEventListener("click", () => generateAll());
+$("#generateAll")?.addEventListener("click", (event) => {
+  event.preventDefault();
+  generateAllFromTopbar();
+});
 $("#generatePlan")?.addEventListener("click", () => generatePlan());
 $("#generateDrafts")?.addEventListener("click", () => generateDrafts());
 $("#toggleGuideMode")?.addEventListener("click", () => toggleGuideMode());
