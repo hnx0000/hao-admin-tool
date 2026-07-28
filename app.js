@@ -24,6 +24,25 @@ const IMAGE_DRAFT_GROUP = "adminImageDraft";
 const IMAGE_DRAFT_MODEL = "gpt-image-2";
 const IMAGE_DRAFT_SIZE = "1024x1536";
 const IMAGE_DRAFT_QUALITY = "high";
+const DETAIL_PAGE_PRODUCTION_STANDARD = Object.freeze({
+  defaultService: "planningDesign",
+  planningDesign: Object.freeze({
+    label: "기획 + 디자인",
+    baseHeightPx: 10000,
+    basePrice: 600000,
+    additionalUnitPx: 5000,
+    additionalUnitPrice: 150000,
+  }),
+  designOnly: Object.freeze({
+    label: "디자인",
+    baseHeightPx: 10000,
+    basePrice: 400000,
+    additionalUnitPx: 5000,
+    additionalUnitPrice: 100000,
+  }),
+  psdSourceFee: 100000,
+  variationDiscountRate: 0.5,
+});
 const SECTION_VARIANT_LABELS = {
   auto: "자동 디자인",
   "premium-card": "프리미엄 카드형",
@@ -1595,7 +1614,18 @@ function product() {
     clientRequests: value("clientRequests"),
     emphasis: value("emphasis"),
     references: value("references"),
+    productionStandard: DETAIL_PAGE_PRODUCTION_STANDARD,
   };
+}
+
+function detailPageProductionStandardText() {
+  const planning = DETAIL_PAGE_PRODUCTION_STANDARD.planningDesign;
+  const design = DETAIL_PAGE_PRODUCTION_STANDARD.designOnly;
+  return `기본 기준: ${planning.label} ${planning.baseHeightPx.toLocaleString("ko-KR")}px / ${planning.basePrice.toLocaleString("ko-KR")}원
+추가 분량: ${planning.additionalUnitPx.toLocaleString("ko-KR")}px당 ${planning.additionalUnitPrice.toLocaleString("ko-KR")}원
+디자인 단독: ${design.baseHeightPx.toLocaleString("ko-KR")}px / ${design.basePrice.toLocaleString("ko-KR")}원, 추가 ${design.additionalUnitPx.toLocaleString("ko-KR")}px당 ${design.additionalUnitPrice.toLocaleString("ko-KR")}원
+PSD 원본 제공: ${DETAIL_PAGE_PRODUCTION_STANDARD.psdSourceFee.toLocaleString("ko-KR")}원 추가
+동일 디자인 기반 바리에이션: 신규 제작비의 ${Math.round((1 - DETAIL_PAGE_PRODUCTION_STANDARD.variationDiscountRate) * 100)}% 금액`;
 }
 
 function productionRouteConfig(route = value("productionRoute"), customerType = value("customerType")) {
@@ -2243,6 +2273,10 @@ ${dataset.sections.map((item, index) => `${index + 1}. ${item}`).join("\n")}
 
 [촬영/합성 방향]
 ${photoConcepts().map((item, index) => `${index + 1}. ${item}`).join("\n")}
+
+[내부 제작 기본 규격]
+${detailPageProductionStandardText()}
+기획과 디자인 분량은 기본 10,000px 안에서 완결되도록 구성하고, 분량을 늘릴 때는 5,000px 단위로 섹션을 확장합니다.
 
 [디자이너 전달 메모]
 ${p.optionMemo || p.clientRequests || dataset.psdMemo.join("\n")}
@@ -8495,6 +8529,7 @@ function buildImageDraftBrief() {
   };
   const mainCopy = value("draftMainCopy") || p.oneLine;
   const goal = value("imageDraftGoal") || "첫 화면의 제품 인지, 고객 자료와의 일치, 디자이너 보정 범위를 확인";
+  const production = DETAIL_PAGE_PRODUCTION_STANDARD.planningDesign;
   const directionFocus = direction === "B"
     ? "제품 장점과 구매 이유를 빠르게 이해시키는 정보/구매 판단형"
     : "브랜드 신뢰, 원료 스토리, 선물 가치를 감성적으로 보여주는 브랜드형";
@@ -8525,9 +8560,16 @@ function buildImageDraftBrief() {
 
 [출력물의 정확한 성격]
 - 1024×1536 세로 한 장에 표현한 상세페이지 방향성 시안 보드
+- 실제 제작 시 기본 ${production.baseHeightPx.toLocaleString("ko-KR")}px 상세페이지의 전체 흐름을 축약해 보여주는 구성
 - 바로 판매에 쓰는 완성 상세페이지가 아니라, 디자이너가 첫 화면·장면 흐름·색감·사진 합성 방향을 결정하는 컨셉 시안
 - 장면은 자연스럽게 이어지되 섹션별 수정 지점을 구분할 수 있어야 함
 - 모바일 쇼핑 화면에서 축소해도 제품과 큰 시각 위계가 먼저 읽혀야 함
+
+[내부 제작 범위 규칙 — 이미지 안에 가격이나 견적 문구를 표시하지 않음]
+${detailPageProductionStandardText()}
+- 이번 시안은 기본 ${production.baseHeightPx.toLocaleString("ko-KR")}px 기획+디자인 범위 안에서 완결되는 5개 핵심 구간을 기준으로 구성
+- 추가 ${production.additionalUnitPx.toLocaleString("ko-KR")}px가 필요할 때만 별도 콘텐츠 구간을 확장하며, 기본 시안에 불필요한 섹션을 억지로 추가하지 않음
+- 위 금액과 할인 규칙은 내부 분량·견적 계산 기준이며 고객용 상세페이지 이미지의 카피나 배지로 렌더링하지 않음
 
 [세로형 시안 흐름]
 1. 실제 제품 형태가 즉시 보이는 히어로 장면과 허용된 핵심 카피
@@ -8807,7 +8849,10 @@ async function loadStoredImageDraft() {
   }
   const productName = value("productName");
   if (productName.includes("호아비") || productName.includes("리치꿀스틱")) {
-    setImageDraftPreview("assets/generated-concepts/hoabi-image-draft-a-v1.png?v=20260724-23", "호아비_리치꿀스틱_이미지생성_시안_v1.png");
+    setImageDraftPreview(
+      "assets/generated-concepts/hoabi-10000px-standard-concept-v1.png?v=20260728-01",
+      "호아비_리치꿀스틱_10000px_기본제작_방향성시안_v1.png",
+    );
     return true;
   }
   return false;
