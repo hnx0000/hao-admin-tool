@@ -24,6 +24,41 @@ const IMAGE_DRAFT_GROUP = "adminImageDraft";
 const IMAGE_DRAFT_MODEL = "gpt-image-2";
 const IMAGE_DRAFT_SIZE = "1024x1536";
 const IMAGE_DRAFT_QUALITY = "high";
+const IMAGE_DRAFT_SEGMENTS = Object.freeze([
+  Object.freeze({
+    id: "opening",
+    label: "상단 설득",
+    progress: "제품 인지와 첫 구매 이유",
+    prompt: `이번에는 전체 상세페이지를 한 장에 압축하지 말고 상단 구간만 생성합니다.
+- 첫 화면에서 제품명·실물·한 줄 가치가 즉시 보이는 히어로
+- 30포, 스틱형, 선물 패키지를 빠르게 판단하는 3개 근거 영역
+- 다음 원료 이야기로 자연스럽게 이어지는 하단 전환
+- 제품은 모바일 축소 화면에서도 식별될 만큼 크게 표현
+- 장면을 반복 배치한 무드 콜라주가 아니라 명확한 판매 설득 흐름으로 구성`,
+  }),
+  Object.freeze({
+    id: "story",
+    label: "중단 근거",
+    progress: "원료·제품 차이와 사용 장면",
+    prompt: `이번에는 전체 상세페이지를 한 장에 압축하지 말고 중단 구간만 생성합니다.
+- 고객 자료에 있는 원료와 브랜드 이야기를 먼저 보여주는 에디토리얼 장면
+- 스틱 외형·개봉·내용물처럼 제품 차이를 설명할 수 있는 매크로 장면
+- 휴대와 섭취 상황을 실제 생활 장면으로 연결
+- 설명 문구를 나중에 조판할 넓고 정돈된 안전 영역 확보
+- 인증, 효능, 임의 수치, 후기처럼 고객 자료에 없는 근거는 만들지 않음`,
+  }),
+  Object.freeze({
+    id: "decision",
+    label: "하단 판단",
+    progress: "구성·선물 가치와 정보 확인",
+    prompt: `이번에는 전체 상세페이지를 한 장에 압축하지 말고 하단 구간만 생성합니다.
+- 실제 박스와 30포 구성이 한눈에 보이는 개봉·구성 장면
+- 기존 패키지만 활용한 선물 가치와 마감 품질 장면
+- 제품 정보, 주의사항, 법정 고지를 디자이너가 넣을 수 있는 표·텍스트 안전 영역
+- 마지막에 제품을 다시 기억시키는 차분한 클로징 히어로
+- 가격, 할인, 구매 버튼 등 판매 채널 UI는 상세페이지 이미지 안에 만들지 않음`,
+  }),
+]);
 const DETAIL_PAGE_PRODUCTION_STANDARD = Object.freeze({
   defaultService: "planningDesign",
   planningDesign: Object.freeze({
@@ -8559,24 +8594,22 @@ function buildImageDraftBrief() {
 - 색상은 별도 프리셋을 고르지 말고 고객 로고·패키지·업로드 이미지에서 추출
 
 [출력물의 정확한 성격]
-- 1024×1536 세로 한 장에 표현한 상세페이지 방향성 시안 보드
-- 실제 제작 시 기본 ${production.baseHeightPx.toLocaleString("ko-KR")}px 상세페이지의 전체 흐름을 축약해 보여주는 구성
+- 1024×1536 세로 시안 3장을 상단·중단·하단으로 각각 생성한 뒤 하나의 긴 미리보기로 연결
+- 실제 제작 시 기본 ${production.baseHeightPx.toLocaleString("ko-KR")}px 상세페이지의 설득 흐름을 세 구간으로 검토하는 구성
 - 바로 판매에 쓰는 완성 상세페이지가 아니라, 디자이너가 첫 화면·장면 흐름·색감·사진 합성 방향을 결정하는 컨셉 시안
-- 장면은 자연스럽게 이어지되 섹션별 수정 지점을 구분할 수 있어야 함
+- 각 구간은 독립적으로 수정할 수 있고, 연결했을 때 색·여백·사진 조명이 자연스럽게 이어져야 함
 - 모바일 쇼핑 화면에서 축소해도 제품과 큰 시각 위계가 먼저 읽혀야 함
 
 [내부 제작 범위 규칙 — 이미지 안에 가격이나 견적 문구를 표시하지 않음]
 ${detailPageProductionStandardText()}
-- 이번 시안은 기본 ${production.baseHeightPx.toLocaleString("ko-KR")}px 기획+디자인 범위 안에서 완결되는 5개 핵심 구간을 기준으로 구성
+- 이번 시안은 기본 ${production.baseHeightPx.toLocaleString("ko-KR")}px 기획+디자인 범위 안에서 상단 설득·중단 근거·하단 구매 판단의 3개 묶음으로 구성
 - 추가 ${production.additionalUnitPx.toLocaleString("ko-KR")}px가 필요할 때만 별도 콘텐츠 구간을 확장하며, 기본 시안에 불필요한 섹션을 억지로 추가하지 않음
 - 위 금액과 할인 규칙은 내부 분량·견적 계산 기준이며 고객용 상세페이지 이미지의 카피나 배지로 렌더링하지 않음
 
 [세로형 시안 흐름]
-1. 실제 제품 형태가 즉시 보이는 히어로 장면과 허용된 핵심 카피
-2. 고객이 관심을 가져야 하는 이유를 분위기로 전달하는 원료·브랜드 장면
-3. 제품 특징과 사용/섭취 상황을 보여주는 현실적인 라이프스타일 장면
-4. 구성·편의·선물 맥락 중 선택 방향에 맞는 제품 중심 장면
-5. 정확한 제품 정보와 주의사항을 디자이너가 조판할 수 있는 정돈된 빈 영역
+1. 상단 설득: 실제 제품 히어로 → 한 줄 가치 → 3가지 즉시 판단 근거
+2. 중단 근거: 원료·브랜드 이야기 → 제품 차이 → 현실적인 사용/섭취 상황
+3. 하단 판단: 구성·선물 맥락 → 제품 정보/주의사항 안전 영역 → 클로징 제품 히어로
 
 [생성 규칙]
 - 제공된 참조 이미지가 있으면 제품 사진, 패키지 비율, 로고, 라벨 구조를 가장 높은 우선순위로 고정
@@ -8586,6 +8619,7 @@ ${detailPageProductionStandardText()}
 - 카피 정책에서 허용한 범위를 넘는 읽을 수 없는 가짜 글자, 워터마크, UI 버튼을 만들지 않음
 - 실제 촬영과 자연스러운 상업 사진처럼 빛, 재질, 원근, 그림자를 일관되게 표현
 - 장식보다 제품 식별성과 장면 간 흐름을 우선하고, 안전 영역은 의도된 여백처럼 정돈
+- 같은 제품 사진을 타일처럼 반복하거나 제품과 원료만 늘어놓는 무드 콜라주 방식은 금지
 - 절대로 바로 게시 가능한 판매용 최종 상세페이지처럼 만들지 말고 방향성 검토용 이미지 시안으로 출력`;
 }
 
@@ -8646,12 +8680,15 @@ function base64ImageFile(base64, fileName) {
   return new File([bytes], fileName, { type: "image/png" });
 }
 
-function generatedImageDraftFileName() {
+function generatedImageDraftFileName(suffix = "") {
   const safeName = String(product().productName || "프로젝트")
     .replace(/[\\/:*?"<>|]+/g, "_")
     .replace(/\s+/g, "_")
     .slice(0, 60);
-  return `${safeName}_상세페이지_방향성시안_${Date.now()}.png`;
+  const safeSuffix = String(suffix || "")
+    .replace(/[\\/:*?"<>|]+/g, "_")
+    .replace(/\s+/g, "_");
+  return `${safeName}_상세페이지_방향성시안${safeSuffix ? `_${safeSuffix}` : ""}_${Date.now()}.png`;
 }
 
 async function imageDraftReferenceFiles() {
@@ -8688,7 +8725,7 @@ async function imageDraftReferenceFiles() {
   return references;
 }
 
-async function requestOpenAiImageDraft(prompt, references, signal) {
+async function requestOpenAiImageDraft(prompt, references, signal, fileSuffix = "") {
   const settings = readAiSettings();
   if (!settings.apiKey) {
     const error = new Error("OpenAI API Key를 먼저 연결해주세요.");
@@ -8733,7 +8770,7 @@ async function requestOpenAiImageDraft(prompt, references, signal) {
   }
 
   const result = data?.data?.[0];
-  const fileName = generatedImageDraftFileName();
+  const fileName = generatedImageDraftFileName(fileSuffix);
   if (result?.b64_json) return base64ImageFile(result.b64_json, fileName);
   if (result?.url) {
     const imageResponse = await fetch(result.url, { signal });
@@ -8741,6 +8778,51 @@ async function requestOpenAiImageDraft(prompt, references, signal) {
     return new File([await imageResponse.blob()], fileName, { type: "image/png" });
   }
   throw new Error("이미지 생성 결과에 이미지 데이터가 없습니다.");
+}
+
+async function imageFileBitmap(file) {
+  if ("createImageBitmap" in window) return createImageBitmap(file);
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = objectUrl;
+    await image.decode();
+    return image;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+async function stitchImageDraftSegments(files) {
+  const bitmaps = [];
+  try {
+    for (const file of files) bitmaps.push(await imageFileBitmap(file));
+    const width = Math.max(...bitmaps.map((bitmap) => bitmap.width));
+    const height = bitmaps.reduce((sum, bitmap) => sum + Math.round(bitmap.height * (width / bitmap.width)), 0);
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d", { alpha: false });
+    context.fillStyle = "#f7f1e8";
+    context.fillRect(0, 0, width, height);
+    let y = 0;
+    bitmaps.forEach((bitmap) => {
+      const segmentHeight = Math.round(bitmap.height * (width / bitmap.width));
+      context.drawImage(bitmap, 0, y, width, segmentHeight);
+      y += segmentHeight;
+    });
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((result) => {
+        if (result) resolve(result);
+        else reject(new Error("세 구간 시안을 하나의 미리보기로 연결하지 못했습니다."));
+      }, "image/png");
+    });
+    return new File([blob], generatedImageDraftFileName("전체"), { type: "image/png" });
+  } finally {
+    bitmaps.forEach((bitmap) => {
+      if (typeof bitmap.close === "function") bitmap.close();
+    });
+  }
 }
 
 async function generateImageDraftConcept() {
@@ -8766,28 +8848,49 @@ async function generateImageDraftConcept() {
   try {
     setImageGenerationNotice("working", "고객 자료 확인 중", "제품·패키지·로고 원본을 이미지 생성 참조로 준비하고 있습니다.");
     const references = await imageDraftReferenceFiles();
-    setImageGenerationNotice(
-      "working",
-      "고품질 방향성 시안 생성 중",
-      references.length
-        ? `고객 이미지 ${references.length}개를 강하게 참조해 GPT Image 2가 세로형 시안을 만들고 있습니다.`
-        : "업로드된 이미지 없이 고객 작성 정보와 브리프를 기준으로 세로형 시안을 만들고 있습니다.",
-    );
-    const file = await requestOpenAiImageDraft(prompt, references, currentImageGenerationController.signal);
+    const segmentFiles = [];
+    for (let index = 0; index < IMAGE_DRAFT_SEGMENTS.length; index += 1) {
+      const segment = IMAGE_DRAFT_SEGMENTS[index];
+      setImageGenerationNotice(
+        "working",
+        `${index + 1}/${IMAGE_DRAFT_SEGMENTS.length} · ${segment.label} 생성 중`,
+        references.length
+          ? `고객 이미지 ${references.length}개를 고정 참조해 ${segment.progress} 구간을 만들고 있습니다.`
+          : `고객 작성 정보와 브리프로 ${segment.progress} 구간을 만들고 있습니다.`,
+      );
+      const segmentPrompt = `${prompt}
+
+[이번 생성 구간: ${segment.label}]
+${segment.prompt}
+
+[연결 일관성]
+- 고객 패키지에서 추출한 색, 제품 비율, 사진 조명, 좌우 여백과 조판 그리드를 세 구간 모두 동일하게 유지
+- 다른 구간의 내용을 한 장 안에 다시 반복하지 않음`;
+      segmentFiles.push(await requestOpenAiImageDraft(
+        segmentPrompt,
+        references,
+        currentImageGenerationController.signal,
+        `${index + 1}_${segment.id}`,
+      ));
+    }
+    setImageGenerationNotice("working", "세 구간 연결 중", "상단·중단·하단 시안을 하나의 긴 미리보기로 정리하고 있습니다.");
+    const file = await stitchImageDraftSegments(segmentFiles);
     await registerImageDraftFile(file, {
       provider: "openai",
       model: IMAGE_DRAFT_MODEL,
       quality: IMAGE_DRAFT_QUALITY,
       size: IMAGE_DRAFT_SIZE,
       referenceCount: references.length,
+      segmentCount: IMAGE_DRAFT_SEGMENTS.length,
+      workflow: "opening-story-decision",
       generatedAt: new Date().toLocaleString("ko-KR"),
     });
     setImageGenerationNotice(
       "success",
       "상세페이지 방향성 시안 생성 완료",
-      "완성 상세페이지가 아닙니다. 장면 흐름과 무드를 검토한 뒤 수정 요청을 기록해주세요.",
+      "상단 설득·중단 근거·하단 판단을 연결한 시안입니다. 구간별 수정 요청을 기록해주세요.",
     );
-    updateAiStatus(`GPT Image 2 고품질 시안 생성 완료 · 고객 이미지 ${references.length}개 참조`);
+    updateAiStatus(`GPT Image 2 고품질 3구간 시안 생성 완료 · 고객 이미지 ${references.length}개 참조`);
   } catch (error) {
     const message = imageGenerationErrorMessage(error);
     const isCanceled = error?.name === "AbortError";
@@ -8850,8 +8953,8 @@ async function loadStoredImageDraft() {
   const productName = value("productName");
   if (productName.includes("호아비") || productName.includes("리치꿀스틱")) {
     setImageDraftPreview(
-      "assets/generated-concepts/hoabi-10000px-standard-concept-v1.png?v=20260728-01",
-      "호아비_리치꿀스틱_10000px_기본제작_방향성시안_v1.png",
+      "assets/generated-concepts/hoabi-detail-page-concept-v2.jpg?v=20260728-09",
+      "호아비_리치꿀스틱_상중하_판매전환형_방향성시안_v2.jpg",
     );
     return true;
   }
