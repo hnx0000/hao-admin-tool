@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AI 상세페이지 제작 보조 관리자툴</title>
-  <link rel="stylesheet" href="styles.css?v=20260724-17">
+  <link rel="stylesheet" href="styles.css?v=20260728-01">
   <script>
     if (new URLSearchParams(location.search).get("variant") !== "original-light") {
       document.documentElement.classList.add("admin-customer-clean");
       const cleanStyle = document.createElement("link");
       cleanStyle.rel = "stylesheet";
-      cleanStyle.href = "관리자툴 비교/02_고객용톤 개선안/admin-clean.css?v=20260724-17";
+      cleanStyle.href = "관리자툴 비교/02_고객용톤 개선안/admin-clean.css?v=20260728-01";
       document.head.appendChild(cleanStyle);
     }
   </script>
@@ -243,7 +243,7 @@
           <p class="eyebrow">Step 4</p>
         <h2>이미지 시안 · 디자이너 협업</h2>
         </div>
-        <button class="primary small" id="generateDrafts">이미지 시안 브리프 만들기</button>
+        <button class="primary small" id="generateDrafts">고품질 이미지 시안 생성</button>
       </div>
       <div class="workflow-guide" id="guide-drafts">
         <strong>이 단계에서 할 일</strong>
@@ -265,6 +265,30 @@
           <p id="templateBReason">제품 정보 기반 추천 방향입니다.</p>
         </div>
       </div>
+      <details class="image-api-settings" id="imageApiSettings">
+        <summary>
+          <span>ChatGPT 이미지 생성 연결</span>
+          <b>GPT Image 2 · 품질 높음 · 세로형</b>
+        </summary>
+        <div class="image-api-settings-grid">
+          <input id="aiMode" type="hidden" value="openai">
+          <input id="aiModel" type="hidden" value="gpt-5.6-terra">
+          <label>OpenAI API Key
+            <input id="apiKey" type="password" autocomplete="off" placeholder="sk-...">
+          </label>
+          <div class="image-api-fixed">
+            <span>이미지 모델</span>
+            <strong>GPT Image 2</strong>
+          </div>
+          <div class="image-api-fixed">
+            <span>출력 설정</span>
+            <strong>1024 × 1536 · High</strong>
+          </div>
+          <button class="secondary small" id="saveAiSettings" type="button">이 브라우저에 연결 저장</button>
+        </div>
+        <p id="aiStatus">API Key를 저장하면 실제 이미지 시안을 생성할 수 있습니다.</p>
+        <small>정적 관리자툴이므로 키는 GitHub에 전송하거나 코드에 저장하지 않고 현재 브라우저 저장소에만 보관합니다. 공용 PC에서는 사용하지 마세요.</small>
+      </details>
       <details class="draft-editor" open>
         <summary>이미지 시안 생성 조건</summary>
         <input id="draftTone" type="hidden" value="premium">
@@ -277,30 +301,59 @@
           </label>
           <label>사진 배치
             <select id="draftImagePosition">
-              <option value="right">오른쪽 중심</option>
-              <option value="left">왼쪽 중심</option>
-              <option value="top">상단 큰 이미지</option>
-              <option value="full">풀비주얼</option>
+              <option value="right">히어로 제품 오른쪽 · 카피 왼쪽</option>
+              <option value="left">히어로 제품 왼쪽 · 카피 오른쪽</option>
+              <option value="top">상단 제품 집중 · 아래 스토리</option>
+              <option value="full">제품 중심 풀 비주얼</option>
             </select>
           </label>
-          <label>디자인 밀도
+          <label>시안 정보 밀도
             <select id="draftDensity">
-              <option value="balanced">기본</option>
-              <option value="rich">풍부하게</option>
-              <option value="simple">간결하게</option>
+              <option value="balanced">균형형 · 4개 장면</option>
+              <option value="rich">풍부형 · 5~6개 장면</option>
+              <option value="simple">집중형 · 3개 장면</option>
             </select>
           </label>
-          <label>메인 카피 수정
-            <input id="draftMainCopy" placeholder="비워두면 AI 기획 카피를 사용합니다">
+          <label>시각적으로 검토할 핵심
+            <select id="imageDraftVisualFocus">
+              <option value="product">제품과 패키지 첫인상</option>
+              <option value="ingredient">원료·소재 스토리</option>
+              <option value="usage">사용·섭취 장면</option>
+              <option value="gift">선물 가치와 패키지</option>
+              <option value="structure">전체 정보 흐름과 위계</option>
+            </select>
+          </label>
+          <label>이미지 안의 문구 범위
+            <select id="imageDraftCopyPolicy">
+              <option value="hero">핵심 헤드라인만</option>
+              <option value="placeholder">문구 없이 조판 자리만</option>
+              <option value="minimal">헤드라인과 짧은 키워드만</option>
+            </select>
+          </label>
+          <label>메인 카피
+            <input id="draftMainCopy" placeholder="비워두면 고객의 한 줄 설명을 사용합니다">
+          </label>
+          <label>고객 자료 반영 강도
+            <select id="imageDraftReferenceStrength" disabled>
+              <option value="high">높음 · 제품/로고 형태 우선 고정</option>
+            </select>
           </label>
           <label class="wide-field">이번 시안에서 확인할 것
-            <textarea id="imageDraftGoal" rows="3" placeholder="예: 패키지가 선물용으로 충분히 고급스럽게 보이는지 확인"></textarea>
+            <textarea id="imageDraftGoal" rows="3" placeholder="예: 첫 화면에서 제품이 바로 인지되고, 중간 원료 장면과 선물 패키지 장면의 무드가 자연스럽게 이어지는지 확인"></textarea>
           </label>
         </div>
         <div class="draft-editor-actions">
-          <button class="primary small" id="applyDraftEdits">브리프 생성</button>
+          <button class="primary small" id="applyDraftEdits">브리프 생성 + 이미지 시안 만들기</button>
           <button class="secondary small" id="copyImagePrompt">생성 프롬프트 복사</button>
-          <p>색상은 고객 자료와 브랜드 자산에서 자동 추출하고, 제품·수치·인증 정보는 임의로 만들지 않습니다.</p>
+          <button class="secondary small" id="cancelImageGeneration" type="button" hidden>생성 취소</button>
+          <p>완성 상세페이지가 아니라 디자이너가 방향·구성·무드를 판단하는 세로형 시안 보드를 생성합니다.</p>
+        </div>
+        <div class="image-generation-notice" id="imageGenerationNotice" aria-live="polite">
+          <span></span>
+          <div>
+            <strong>생성 준비</strong>
+            <p>고객 자료와 조건을 확인한 뒤 버튼을 누르세요.</p>
+          </div>
         </div>
       </details>
 
@@ -317,7 +370,7 @@
           <div class="image-draft-card-head">
             <div>
               <span class="status-dot" id="imageDraftStatus">초안 준비</span>
-              <strong id="imageDraftTitle">등록된 이미지 시안</strong>
+              <strong id="imageDraftTitle">상세페이지 방향성 시안</strong>
             </div>
             <div class="image-draft-card-actions">
               <input id="imageDraftFile" type="file" accept="image/png,image/jpeg,image/webp" hidden>
@@ -330,7 +383,7 @@
             <img id="imageDraftPreview" alt="이미지 생성 상세페이지 시안" hidden>
             <div class="image-draft-empty" id="imageDraftEmpty">
               <strong>이미지 시안 대기</strong>
-              <p>브리프를 만든 뒤 생성된 PNG·JPG 시안을 등록하세요.</p>
+              <p>고품질 생성 버튼을 누르거나 기존 PNG·JPG 시안을 등록하세요.</p>
             </div>
             <div class="image-draft-copy" id="imageDraftCopyOverlay" hidden></div>
           </div>
@@ -702,7 +755,7 @@
   <script src="data/company-reference-dataset.js"></script>
   <script src="data/company-reference-auto.js"></script>
   <script src="customer-file-store.js?v=20260724-2"></script>
-  <script src="app.js?v=20260724-24"></script>
+  <script src="app.js?v=20260728-01"></script>
   <script>
     if (document.documentElement.classList.contains("admin-customer-clean")) {
       const cleanScript = document.createElement("script");

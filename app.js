@@ -19,7 +19,11 @@ let currentCustomerAssetRecords = [];
 let customerAssetObjectUrls = [];
 let currentCustomerAssetProject = null;
 let currentImageDraftObjectUrl = "";
+let currentImageGenerationController = null;
 const IMAGE_DRAFT_GROUP = "adminImageDraft";
+const IMAGE_DRAFT_MODEL = "gpt-image-2";
+const IMAGE_DRAFT_SIZE = "1024x1536";
+const IMAGE_DRAFT_QUALITY = "high";
 const SECTION_VARIANT_LABELS = {
   auto: "자동 디자인",
   "premium-card": "프리미엄 카드형",
@@ -635,17 +639,17 @@ function renderAiWorkflowStatus() {
 
 function loadAiSettings() {
   const settings = readAiSettings();
-  if ($("#aiMode")) $("#aiMode").value = settings.mode || "rules";
+  if ($("#aiMode")) $("#aiMode").value = "openai";
   if ($("#apiKey")) $("#apiKey").value = settings.apiKey || "";
-  if ($("#aiModel")) $("#aiModel").value = settings.model || "gpt-4.1-mini";
+  if ($("#aiModel")) $("#aiModel").value = settings.model || "gpt-5.6-terra";
   updateAiStatus();
 }
 
 function saveAiSettings() {
   writeAiSettings({
-    mode: $("#aiMode").value,
+    mode: "openai",
     apiKey: $("#apiKey").value.trim(),
-    model: $("#aiModel").value.trim() || "gpt-4.1-mini",
+    model: $("#aiModel").value.trim() || "gpt-5.6-terra",
   });
   updateAiStatus();
   alert("AI 설정을 저장했습니다.");
@@ -658,11 +662,9 @@ function updateAiStatus(message) {
     $("#aiStatus").textContent = message;
     return;
   }
-  if (settings.mode === "openai") {
-    $("#aiStatus").textContent = settings.apiKey ? "OpenAI API 생성 모드입니다." : "OpenAI API 모드입니다. API Key를 입력해야 합니다.";
-  } else {
-    $("#aiStatus").textContent = "현재 규칙 기반 생성 모드입니다.";
-  }
+  $("#aiStatus").textContent = settings.apiKey
+    ? "GPT Image 2 고품질 이미지 시안 생성이 연결되어 있습니다."
+    : "API Key를 저장하면 GPT Image 2로 실제 이미지 시안을 생성합니다.";
 }
 
 function updateReferenceStatus() {
@@ -8394,26 +8396,15 @@ function generateDraftsRules() {
   updateWorkflowState();
 }
 
-async function generateDrafts() {
+async function prepareImageDraftWorkspace() {
   await prepareInternalAiPlanning();
   generateDraftsRules();
   createImageDraftBrief();
-  const settings = readAiSettings();
-  if (settings.mode !== "openai") return;
-  try {
-    const aiText = await invokeAiRole("draftSummary", "A/B 상세페이지 시안 요약 생성", {
-      product: product(),
-      layoutA: $("#templateA").textContent.trim(),
-      layoutB: $("#templateB").textContent.trim(),
-      instruction: "A안과 B안의 고객용 비교 요약을 짧게 작성하라. 긴 섹션별 지시서는 만들지 말고 핵심 컨셉, 메인 카피, 선택 포인트만 정리하라.",
-    }, "");
-    if (aiText) {
-      $("#draftA").innerHTML += `<div class="draft-summary"><h3>AI 보강 요약</h3><pre>${escapeHtml(aiText)}</pre></div>`;
-    }
-    updateAiStatus("A/B 시안 AI 보강 완료");
-  } catch (error) {
-    updateAiStatus("A/B 시안 AI 보강 실패. 기본 미리보기를 유지합니다.");
-  }
+}
+
+async function generateDrafts() {
+  await prepareImageDraftWorkspace();
+  return generateImageDraftConcept();
 }
 
 function imageDraftStateKey() {
@@ -8478,9 +8469,21 @@ function buildImageDraftBrief() {
     full: "제품 중심의 풀 비주얼",
   };
   const densityLabels = {
-    balanced: "핵심 장면과 정보 여백이 균형 잡힌 밀도",
-    rich: "장면 전환이 풍부한 고밀도 구성",
-    simple: "핵심 메시지에 집중한 간결한 구성",
+    balanced: "서로 연결되는 4개 장면과 충분한 조판 여백",
+    rich: "서로 연결되는 5~6개 장면과 풍부한 무드 변화",
+    simple: "핵심 메시지에 집중한 3개 장면",
+  };
+  const visualFocusLabels = {
+    product: "실제 제품과 패키지의 첫인상",
+    ingredient: "고객 자료에 근거한 원료·소재 스토리",
+    usage: "자연스러운 사용·섭취 상황",
+    gift: "선물 가치와 패키지 경험",
+    structure: "전체 정보 흐름과 시각 위계",
+  };
+  const copyPolicyLabels = {
+    hero: "첫 화면에 메인 헤드라인 하나만 사용하고 나머지는 조판 자리로 비움",
+    placeholder: "읽을 수 있는 문구를 생성하지 않고 카피 조판용 안전 영역만 확보",
+    minimal: "메인 헤드라인 하나와 1~3단어의 짧은 키워드만 제한적으로 사용",
   };
   const mainCopy = value("draftMainCopy") || p.oneLine;
   const goal = value("imageDraftGoal") || "첫 화면의 제품 인지, 고객 자료와의 일치, 디자이너 보정 범위를 확인";
@@ -8507,23 +8510,229 @@ function buildImageDraftBrief() {
 - 목적: ${directionFocus}
 - 사진 배치: ${positionLabels[value("draftImagePosition")] || positionLabels.right}
 - 정보 밀도: ${densityLabels[value("draftDensity")] || densityLabels.balanced}
-- 메인 카피 검토문: ${mainCopy}
+- 핵심 검토 요소: ${visualFocusLabels[value("imageDraftVisualFocus")] || visualFocusLabels.product}
+- 문구 정책: ${copyPolicyLabels[value("imageDraftCopyPolicy")] || copyPolicyLabels.hero}
+- 허용된 메인 카피: ${mainCopy}
 - 색상은 별도 프리셋을 고르지 말고 고객 로고·패키지·업로드 이미지에서 추출
 
-[긴 세로형 시안 흐름]
-1. 실제 제품 형태가 한눈에 보이는 첫 화면 + 하나의 핵심 가치
-2. 고객이 왜 관심을 가져야 하는지 보여주는 원료·브랜드 장면
-3. 제품 장점과 사용/섭취 상황을 분리한 시각 장면
-4. 구성·편의·선물 맥락을 확인하는 제품 중심 장면
-5. 정확한 제품 정보와 주의사항을 디자이너가 조판할 수 있는 빈 정보 영역
+[출력물의 정확한 성격]
+- 1024×1536 세로 한 장에 표현한 상세페이지 방향성 시안 보드
+- 바로 판매에 쓰는 완성 상세페이지가 아니라, 디자이너가 첫 화면·장면 흐름·색감·사진 합성 방향을 결정하는 컨셉 시안
+- 장면은 자연스럽게 이어지되 섹션별 수정 지점을 구분할 수 있어야 함
+- 모바일 쇼핑 화면에서 축소해도 제품과 큰 시각 위계가 먼저 읽혀야 함
+
+[세로형 시안 흐름]
+1. 실제 제품 형태가 즉시 보이는 히어로 장면과 허용된 핵심 카피
+2. 고객이 관심을 가져야 하는 이유를 분위기로 전달하는 원료·브랜드 장면
+3. 제품 특징과 사용/섭취 상황을 보여주는 현실적인 라이프스타일 장면
+4. 구성·편의·선물 맥락 중 선택 방향에 맞는 제품 중심 장면
+5. 정확한 제품 정보와 주의사항을 디자이너가 조판할 수 있는 정돈된 빈 영역
 
 [생성 규칙]
-- 고객 제공 제품 사진과 패키지 비율, 로고, 라벨 구조를 참조 이미지로 강하게 고정
-- 제품 외형과 로고를 재해석하거나 가상의 맛·원료·구성품을 추가하지 않음
+- 제공된 참조 이미지가 있으면 제품 사진, 패키지 비율, 로고, 라벨 구조를 가장 높은 우선순위로 고정
+- 제품 외형, 패키지 색, 로고를 재해석하지 않고 가상의 맛·원료·구성품을 추가하지 않음
 - 인증, 효능, 수치, 원재료, 후기, 비교 우위는 자료에 없으면 생성하지 않음
 - 작은 한글 문장, 표, 법정 고지는 이미지 안에 생성하지 않고 조판용 안전 영역으로 비워둠
-- 한 장의 완성본처럼 보이되 장면별 경계와 수정 지점이 식별되는 세로형 시안으로 생성
-- 실제 판매용 최종본이 아니라 방향성 검토용 이미지 시안 수준으로 출력`;
+- 카피 정책에서 허용한 범위를 넘는 읽을 수 없는 가짜 글자, 워터마크, UI 버튼을 만들지 않음
+- 실제 촬영과 자연스러운 상업 사진처럼 빛, 재질, 원근, 그림자를 일관되게 표현
+- 장식보다 제품 식별성과 장면 간 흐름을 우선하고, 안전 영역은 의도된 여백처럼 정돈
+- 절대로 바로 게시 가능한 판매용 최종 상세페이지처럼 만들지 말고 방향성 검토용 이미지 시안으로 출력`;
+}
+
+function setImageGenerationNotice(tone = "ready", title = "생성 준비", detail = "고객 자료와 조건을 확인한 뒤 버튼을 누르세요.") {
+  const notice = $("#imageGenerationNotice");
+  if (!notice) return;
+  notice.className = `image-generation-notice is-${tone}`;
+  const titleNode = notice.querySelector("strong");
+  const detailNode = notice.querySelector("p");
+  if (titleNode) titleNode.textContent = title;
+  if (detailNode) detailNode.textContent = detail;
+}
+
+function setImageGenerationBusy(isBusy) {
+  ["generateDrafts", "applyDraftEdits"].forEach((id) => {
+    const button = $(`#${id}`);
+    if (!button) return;
+    button.disabled = isBusy;
+    button.classList.toggle("is-generating", isBusy);
+  });
+  if ($("#generateDrafts")) {
+    $("#generateDrafts").textContent = isBusy ? "고품질 시안 생성 중…" : "고품질 이미지 시안 생성";
+  }
+  if ($("#applyDraftEdits")) {
+    $("#applyDraftEdits").textContent = isBusy ? "이미지 시안 생성 중…" : "브리프 생성 + 이미지 시안 만들기";
+  }
+  if ($("#cancelImageGeneration")) $("#cancelImageGeneration").hidden = !isBusy;
+}
+
+function imageGenerationErrorMessage(error) {
+  if (error?.name === "AbortError") return "이미지 생성을 취소했습니다.";
+  if (error?.status === 401) return "API Key가 올바르지 않습니다. 이미지 생성 연결 정보를 확인해주세요.";
+  if (error?.status === 429) return "API 사용 한도 또는 결제 설정을 확인해주세요.";
+  if (error?.status >= 500) return "이미지 생성 서버가 잠시 응답하지 않습니다. 잠시 후 다시 시도해주세요.";
+  return error?.message || "이미지 시안을 생성하지 못했습니다.";
+}
+
+function base64ImageFile(base64, fileName) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return new File([bytes], fileName, { type: "image/png" });
+}
+
+function generatedImageDraftFileName() {
+  const safeName = String(product().productName || "프로젝트")
+    .replace(/[\\/:*?"<>|]+/g, "_")
+    .replace(/\s+/g, "_")
+    .slice(0, 60);
+  return `${safeName}_상세페이지_방향성시안_${Date.now()}.png`;
+}
+
+async function imageDraftReferenceFiles() {
+  const allowedGroups = ["productImages", "brandLogo", "referenceFiles"];
+  const stored = currentCustomerAssetRecords
+    .filter((record) => allowedGroups.includes(record.group) && String(record.type || record.blob?.type || "").startsWith("image/"))
+    .sort((a, b) => allowedGroups.indexOf(a.group) - allowedGroups.indexOf(b.group))
+    .slice(0, 4)
+    .map((record) => ({
+      blob: record.blob,
+      name: record.name || `customer-reference-${Date.now()}.png`,
+      group: record.group,
+    }));
+  if (stored.length) return stored;
+
+  const project = currentCustomerAssetProject;
+  const references = [];
+  for (const group of allowedGroups) {
+    const folderPath = project?.assetFolderPaths?.[group];
+    const names = Array.from(project?.assetFolderFiles?.[group] || []);
+    for (const name of names) {
+      if (references.length >= 4 || !/\.(png|jpe?g|jfif|webp)$/i.test(name)) continue;
+      const url = resolveCustomerFolderFileUrl(project, group, name, folderPath);
+      if (!url || url.startsWith("file:///")) continue;
+      try {
+        const response = await fetch(url);
+        if (!response.ok) continue;
+        references.push({ blob: await response.blob(), name, group });
+      } catch {
+        // 웹에서 읽을 수 없는 로컬 원본은 프롬프트의 파일명 정보만 사용합니다.
+      }
+    }
+  }
+  return references;
+}
+
+async function requestOpenAiImageDraft(prompt, references, signal) {
+  const settings = readAiSettings();
+  if (!settings.apiKey) {
+    const error = new Error("OpenAI API Key를 먼저 연결해주세요.");
+    error.status = 401;
+    throw error;
+  }
+
+  const requestOptions = {
+    method: "POST",
+    headers: { Authorization: `Bearer ${settings.apiKey}` },
+    signal,
+  };
+  let endpoint = "https://api.openai.com/v1/images/generations";
+  if (references.length) {
+    endpoint = "https://api.openai.com/v1/images/edits";
+    const body = new FormData();
+    body.append("model", IMAGE_DRAFT_MODEL);
+    body.append("prompt", prompt);
+    body.append("size", IMAGE_DRAFT_SIZE);
+    body.append("quality", IMAGE_DRAFT_QUALITY);
+    body.append("input_fidelity", "high");
+    body.append("output_format", "png");
+    references.forEach((reference) => body.append("image[]", reference.blob, reference.name));
+    requestOptions.body = body;
+  } else {
+    requestOptions.headers["Content-Type"] = "application/json";
+    requestOptions.body = JSON.stringify({
+      model: IMAGE_DRAFT_MODEL,
+      prompt,
+      size: IMAGE_DRAFT_SIZE,
+      quality: IMAGE_DRAFT_QUALITY,
+      output_format: "png",
+      n: 1,
+    });
+  }
+
+  const response = await fetch(endpoint, requestOptions);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data?.error?.message || `이미지 생성 API 오류 ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
+
+  const result = data?.data?.[0];
+  const fileName = generatedImageDraftFileName();
+  if (result?.b64_json) return base64ImageFile(result.b64_json, fileName);
+  if (result?.url) {
+    const imageResponse = await fetch(result.url, { signal });
+    if (!imageResponse.ok) throw new Error("생성된 이미지 파일을 내려받지 못했습니다.");
+    return new File([await imageResponse.blob()], fileName, { type: "image/png" });
+  }
+  throw new Error("이미지 생성 결과에 이미지 데이터가 없습니다.");
+}
+
+async function generateImageDraftConcept() {
+  if (!value("productName")) {
+    alert("프로젝트를 먼저 불러와주세요.");
+    return;
+  }
+  const settings = readAiSettings();
+  if (!settings.apiKey) {
+    if ($("#imageApiSettings")) $("#imageApiSettings").open = true;
+    $("#apiKey")?.focus();
+    setImageGenerationNotice("error", "이미지 생성 연결 필요", "OpenAI API Key를 저장한 뒤 다시 눌러주세요.");
+    updateAiStatus("OpenAI API Key를 먼저 연결해주세요.");
+    return;
+  }
+
+  const prompt = createImageDraftBrief();
+  if (!prompt || currentImageGenerationController) return;
+  currentImageGenerationController = new AbortController();
+  setImageGenerationBusy(true);
+  saveImageDraftState({ status: "generating" });
+
+  try {
+    setImageGenerationNotice("working", "고객 자료 확인 중", "제품·패키지·로고 원본을 이미지 생성 참조로 준비하고 있습니다.");
+    const references = await imageDraftReferenceFiles();
+    setImageGenerationNotice(
+      "working",
+      "고품질 방향성 시안 생성 중",
+      references.length
+        ? `고객 이미지 ${references.length}개를 강하게 참조해 GPT Image 2가 세로형 시안을 만들고 있습니다.`
+        : "업로드된 이미지 없이 고객 작성 정보와 브리프를 기준으로 세로형 시안을 만들고 있습니다.",
+    );
+    const file = await requestOpenAiImageDraft(prompt, references, currentImageGenerationController.signal);
+    await registerImageDraftFile(file, {
+      provider: "openai",
+      model: IMAGE_DRAFT_MODEL,
+      quality: IMAGE_DRAFT_QUALITY,
+      size: IMAGE_DRAFT_SIZE,
+      referenceCount: references.length,
+      generatedAt: new Date().toLocaleString("ko-KR"),
+    });
+    setImageGenerationNotice(
+      "success",
+      "상세페이지 방향성 시안 생성 완료",
+      "완성 상세페이지가 아닙니다. 장면 흐름과 무드를 검토한 뒤 수정 요청을 기록해주세요.",
+    );
+    updateAiStatus(`GPT Image 2 고품질 시안 생성 완료 · 고객 이미지 ${references.length}개 참조`);
+  } catch (error) {
+    const message = imageGenerationErrorMessage(error);
+    const isCanceled = error?.name === "AbortError";
+    saveImageDraftState({ status: readImageDraftState().fileName ? "draft" : "brief" });
+    setImageGenerationNotice(isCanceled ? "ready" : "error", isCanceled ? "생성 취소" : "이미지 생성 실패", message);
+    updateAiStatus(message);
+  } finally {
+    currentImageGenerationController = null;
+    setImageGenerationBusy(false);
+  }
 }
 
 function setImageDraftPreview(src, fileName = "") {
@@ -8611,6 +8820,7 @@ function renderImageDraftState(state = readImageDraftState()) {
   if ($("#imageDraftStatus")) {
     const statusLabels = {
       brief: "브리프 준비",
+      generating: "고품질 생성 중",
       draft: "이미지 시안 등록",
       reviewed: "내부 검토 완료",
       revision: "수정 요청",
@@ -8700,7 +8910,7 @@ async function copyPlainText(text, message) {
   return true;
 }
 
-async function registerImageDraftFile(file) {
+async function registerImageDraftFile(file, generation = null) {
   if (!file) return;
   if (!file.type.startsWith("image/")) {
     alert("PNG, JPG, WEBP 이미지 파일만 등록할 수 있습니다.");
@@ -8715,7 +8925,7 @@ async function registerImageDraftFile(file) {
   } catch {
     updateAiStatus("시안은 현재 화면에 등록됐지만 브라우저 저장소에는 저장하지 못했습니다.");
   }
-  saveImageDraftState({ fileName: file.name, status: "draft" });
+  saveImageDraftState({ fileName: file.name, status: "draft", generation });
   updateAiStatus("이미지 시안을 등록했습니다. 새로고침 후에도 이 브라우저에서 다시 불러옵니다.");
 }
 
@@ -9993,7 +10203,7 @@ renderSectionEditor();
 
 async function runBeforePanel(action) {
   if (action === "plan") await prepareInternalAiPlanning();
-  if (action === "drafts") await generateDrafts();
+  if (action === "drafts") await prepareImageDraftWorkspace();
   if (action === "clientMail") await generateClientMail();
   if (action === "revision") await generateRevision();
   if (action === "handoff") await generateHandoff();
@@ -10038,7 +10248,7 @@ $("#copyClientMail")?.addEventListener("click", () => copyResultText("#clientMai
 $("#openClientMail")?.addEventListener("click", () => openMailDraft("#clientMailResult", `[${value("productName") || "상세페이지"}] 상세페이지 1차 방향성 시안 전달드립니다`));
 $("#applyDraftEdits")?.addEventListener("click", (event) => {
   event.preventDefault();
-  createImageDraftBrief();
+  generateImageDraftConcept();
 });
 $("#copyImagePrompt")?.addEventListener("click", () => {
   const brief = $("#imageDraftBrief")?.value.trim() || createImageDraftBrief();
@@ -10048,6 +10258,9 @@ $("#registerImageDraft")?.addEventListener("click", () => $("#imageDraftFile")?.
 $("#imageDraftFile")?.addEventListener("change", (event) => {
   registerImageDraftFile(event.target.files?.[0]);
   event.target.value = "";
+});
+$("#cancelImageGeneration")?.addEventListener("click", () => {
+  currentImageGenerationController?.abort();
 });
 $("#openImageDraft")?.addEventListener("click", () => {
   const src = $("#imageDraftPreview")?.src;
