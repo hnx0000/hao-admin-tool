@@ -1655,3 +1655,267 @@
     max-height: 620px;
   }
 }
+
+/* 이미지 시안 생성 연결 및 발송 점검 — 전체 다크 모드 */
+.admin-customer-clean #drafts .image-api-settings {
+  margin-top: 14px;
+  overflow: hidden;
+  border: 1px solid #343b45;
+  border-radius: 14px;
+  background: #1d2127;
+}
+
+.admin-customer-clean #drafts button.secondary {
+  border-color: #3a424c;
+  background: #272c33;
+  color: #dfe5ec;
+  box-shadow: none;
+}
+
+.admin-customer-clean #drafts button.secondary:hover {
+  border-color: #4a5664;
+  background: #30363e;
+  color: #fff;
+}
+
+.admin-customer-clean #drafts .image-api-settings > summary {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 17px;
+  color: #edf1f6;
+  cursor: pointer;
+  list-style-position: inside;
+}
+
+.admin-customer-clean #drafts .image-api-settings > summary span {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.admin-customer-clean #drafts .image-api-settings > summary b {
+  color: #8fb5ff;
+  font-size: 11px;
+}
+
+.admin-customer-clean #drafts .image-api-settings[open] > summary {
+  border-bottom: 1px solid #313842;
+  background: #20252c;
+}
+
+.admin-customer-clean #drafts .image-api-settings-grid {
+  display: grid;
+  grid-template-columns: minmax(250px, 1.35fr) minmax(145px, .65fr) minmax(175px, .75fr) auto;
+  gap: 10px;
+  align-items: end;
+  padding: 16px 17px 10px;
+}
+
+.admin-customer-clean #drafts .image-api-settings-grid label,
+.admin-customer-clean #drafts .image-api-fixed {
+  display: grid;
+  gap: 7px;
+  color: #aab3be;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.admin-customer-clean #drafts .image-api-settings-grid input {
+  width: 100%;
+  height: 39px;
+  border: 1px solid #3a424d;
+  border-radius: 9px;
+  background: #15191e;
+  color: #eef1f5;
+}
+
+.admin-customer-clean #drafts .image-api-fixed {
+  min-height: 39px;
+  padding: 8px 10px;
+  border: 1px solid #343c47;
+  border-radius: 9px;
+  background: #191d23;
+}
+
+.admin-customer-clean #drafts .image-api-fixed span {
+  color: #79838f;
+  font-size: 9px;
+}
+
+.admin-customer-clean #drafts .image-api-fixed strong {
+  color: #dce3ec;
+  font-size: 11px;
+}
+
+.admin-customer-clean #drafts .image-api-settings > p {
+  margin: 2px 17px 7px;
+  color: #99b8ef;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.admin-customer-clean #drafts .image-api-settings > small {
+  display: block;
+  padding: 0 17px 15px;
+  color: #7f8996;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.admin-customer-clean #drafts .draft-editor select:disabled {
+  border-color: #354253;
+  background: #19212b;
+  color: #9db7df;
+  opacity: 1;
+  cursor: default;
+}
+
+.admin-customer-clean #drafts .image-generation-notice {
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr);
+  gap: 11px;
+  align-items: center;
+  margin: 0 18px 18px;
+  padding: 11px 13px;
+  border: 1px solid #343b45;
+  border-radius: 10px;
+  background: #191d22;
+}
+
+.admin-customer-clean #drafts .image-generation-notice > span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #727c89;
+  box-shadow: 0 0 0 4px rgb(114 124 137 / 12%);
+}
+
+.admin-customer-clean #drafts .image-generation-notice strong {
+  display: block;
+  color: #dfe5ec;
+  font-size: 11px;
+}
+
+.admin-customer-clean #drafts .image-generation-notice p {
+  margin: 3px 0 0;
+  color: #89939f;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.admin-customer-clean #drafts .image-generation-notice.is-working {
+  border-color: #35578c;
+  background: #1b2432;
+}
+
+.admin-customer-clean #drafts .image-generation-notice.is-working > span {
+  border: 2px solid #31558b;
+  border-top-color: #7babff;
+  background: transparent;
+  box-shadow: none;
+  animation: image-draft-spin .8s linear infinite;
+}
+
+.admin-customer-clean #drafts .image-generation-notice.is-success {
+  border-color: #315b48;
+  background: #1b2923;
+}
+
+.admin-customer-clean #drafts .image-generation-notice.is-success > span {
+  background: #55b27b;
+  box-shadow: 0 0 0 4px rgb(85 178 123 / 12%);
+}
+
+.admin-customer-clean #drafts .image-generation-notice.is-error {
+  border-color: #67483e;
+  background: #2a211e;
+}
+
+.admin-customer-clean #drafts .image-generation-notice.is-error > span {
+  background: #dd875e;
+  box-shadow: 0 0 0 4px rgb(221 135 94 / 12%);
+}
+
+.admin-customer-clean #drafts button.is-generating::before {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgb(255 255 255 / 35%);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: image-draft-spin .8s linear infinite;
+}
+
+@keyframes image-draft-spin {
+  to { transform: rotate(360deg); }
+}
+
+.admin-customer-clean .preflight-panel,
+.admin-customer-clean .preflight-panel.passed,
+.admin-customer-clean .preflight-panel.needs-check {
+  border-color: #343b45;
+  background: #1d2127;
+}
+
+.admin-customer-clean .preflight-panel > strong {
+  color: #edf1f6;
+}
+
+.admin-customer-clean .preflight-panel > p {
+  color: #96a0ad;
+}
+
+.admin-customer-clean .preflight-panel li {
+  border-color: #343b45;
+  background: #20252b;
+}
+
+.admin-customer-clean .preflight-panel li span {
+  color: #dce2ea;
+}
+
+.admin-customer-clean .preflight-panel li em {
+  color: #929ca9;
+}
+
+.admin-customer-clean .preflight-panel li b {
+  background: #303740;
+  color: #c8d0da;
+}
+
+.admin-customer-clean .preflight-panel li.ok b {
+  background: #21372d;
+  color: #83cea0;
+}
+
+.admin-customer-clean .preflight-panel li.warn b {
+  background: #3a2b21;
+  color: #e3a276;
+}
+
+@media (max-width: 1080px) {
+  .admin-customer-clean #drafts .image-api-settings-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-customer-clean #drafts .image-api-settings > summary,
+  .admin-customer-clean #drafts .draft-editor-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-customer-clean #drafts .image-api-settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-customer-clean .preflight-panel li {
+    grid-template-columns: 48px 1fr;
+  }
+
+  .admin-customer-clean .preflight-panel li em {
+    grid-column: 1 / -1;
+  }
+}
