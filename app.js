@@ -24,6 +24,17 @@ const IMAGE_DRAFT_GROUP = "adminImageDraft";
 const IMAGE_DRAFT_MODEL = "gpt-image-2";
 const IMAGE_DRAFT_SIZE = "1024x1536";
 const IMAGE_DRAFT_QUALITY = "high";
+const DESIGN_REFERENCE_POLICY = Object.freeze({
+  figmaTeam: "퍼스트마케팅컴퍼니",
+  sharedArchiveLabel: "네이버 MYBOX 상세페이지 2021~2026",
+  sharedArchiveUrl: "https://naver.me/xrSupF4h",
+  priority: Object.freeze([
+    "고객이 작성한 사실 정보와 고객 업로드 제품 원본",
+    "퍼스트마케팅컴퍼니 Figma에서 승인·분류된 상세페이지 프레임",
+    "네이버 MYBOX 상세페이지 2021~2026 자료에서 선별한 섹션 레퍼런스",
+    "쿠팡·컬리·스마트스토어의 판매 흐름 분석",
+  ]),
+});
 const IMAGE_DRAFT_SEGMENTS = Object.freeze([
   Object.freeze({
     id: "opening",
@@ -8593,6 +8604,14 @@ function buildImageDraftBrief() {
 - 허용된 메인 카피: ${mainCopy}
 - 색상은 별도 프리셋을 고르지 말고 고객 로고·패키지·업로드 이미지에서 추출
 
+[레퍼런스 적용 우선순위]
+${DESIGN_REFERENCE_POLICY.priority.map((item, index) => `${index + 1}. ${item}`).join("\n")}
+- Figma 기준 팀: ${DESIGN_REFERENCE_POLICY.figmaTeam}
+- 공유 아카이브: ${DESIGN_REFERENCE_POLICY.sharedArchiveLabel} (${DESIGN_REFERENCE_POLICY.sharedArchiveUrl})
+- Figma와 MYBOX 자료는 색·카피·레이아웃을 통째로 복제하지 않고 섹션 역할, 정보 밀도, 사진 리듬, 조판 방식만 분석
+- 제품군과 판매 목적이 맞지 않는 레퍼런스는 사용하지 않으며, 한 시안에는 핵심 레퍼런스 3~5개만 선별
+- 실제 이미지 생성 참조에는 사용 권한이 확인된 고객 자료와 Figma 승인 프레임만 넣고, 출처가 불분명한 이미지는 구조 참고에만 사용
+
 [출력물의 정확한 성격]
 - 1024×1536 세로 시안 3장을 상단·중단·하단으로 각각 생성한 뒤 하나의 긴 미리보기로 연결
 - 실제 제작 시 기본 ${production.baseHeightPx.toLocaleString("ko-KR")}px 상세페이지의 설득 흐름을 세 구간으로 검토하는 구성
@@ -8620,6 +8639,7 @@ ${detailPageProductionStandardText()}
 - 실제 촬영과 자연스러운 상업 사진처럼 빛, 재질, 원근, 그림자를 일관되게 표현
 - 장식보다 제품 식별성과 장면 간 흐름을 우선하고, 안전 영역은 의도된 여백처럼 정돈
 - 같은 제품 사진을 타일처럼 반복하거나 제품과 원료만 늘어놓는 무드 콜라주 방식은 금지
+- 레퍼런스의 로고, 고유 문구, 모델, 제품 사진을 복사하거나 다른 고객 시안에 재사용하지 않음
 - 절대로 바로 게시 가능한 판매용 최종 상세페이지처럼 만들지 말고 방향성 검토용 이미지 시안으로 출력`;
 }
 
