@@ -646,12 +646,20 @@ function loadAiSettings() {
 }
 
 function saveAiSettings() {
+  const apiKey = $("#apiKey").value.trim();
   writeAiSettings({
     mode: "openai",
-    apiKey: $("#apiKey").value.trim(),
+    apiKey,
     model: $("#aiModel").value.trim() || "gpt-5.6-terra",
   });
   updateAiStatus();
+  if (apiKey) {
+    setImageGenerationNotice(
+      "ready",
+      "이미지 생성 연결 완료",
+      "GPT Image 2 · 세로형 최대 1024 × 1536 · High · 고객 이미지 고충실도 참조로 생성합니다.",
+    );
+  }
   alert("AI 설정을 저장했습니다.");
 }
 
@@ -8566,11 +8574,27 @@ function setImageGenerationBusy(isBusy) {
 }
 
 function imageGenerationErrorMessage(error) {
+  const rawMessage = String(error?.message || "");
+  const normalizedMessage = rawMessage.toLowerCase();
   if (error?.name === "AbortError") return "이미지 생성을 취소했습니다.";
   if (error?.status === 401) return "API Key가 올바르지 않습니다. 이미지 생성 연결 정보를 확인해주세요.";
-  if (error?.status === 429) return "API 사용 한도 또는 결제 설정을 확인해주세요.";
+  if (
+    normalizedMessage.includes("billing hard limit")
+    || normalizedMessage.includes("insufficient_quota")
+    || normalizedMessage.includes("exceeded your current quota")
+  ) {
+    return "OpenAI API 결제 한도에 도달했습니다. Platform의 Billing에서 크레딧 또는 월 사용 한도를 올린 뒤 같은 버튼을 다시 눌러주세요.";
+  }
+  if (error?.status === 429) return "API 요청 한도에 도달했습니다. 잠시 후 다시 시도하거나 OpenAI Platform의 사용 한도를 확인해주세요.";
   if (error?.status >= 500) return "이미지 생성 서버가 잠시 응답하지 않습니다. 잠시 후 다시 시도해주세요.";
-  return error?.message || "이미지 시안을 생성하지 못했습니다.";
+  return rawMessage || "이미지 시안을 생성하지 못했습니다.";
+}
+
+function isImageGenerationBillingError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return message.includes("billing hard limit")
+    || message.includes("insufficient_quota")
+    || message.includes("exceeded your current quota");
 }
 
 function base64ImageFile(base64, fileName) {
@@ -8727,7 +8751,12 @@ async function generateImageDraftConcept() {
     const message = imageGenerationErrorMessage(error);
     const isCanceled = error?.name === "AbortError";
     saveImageDraftState({ status: readImageDraftState().fileName ? "draft" : "brief" });
-    setImageGenerationNotice(isCanceled ? "ready" : "error", isCanceled ? "생성 취소" : "이미지 생성 실패", message);
+    const title = isCanceled
+      ? "생성 취소"
+      : isImageGenerationBillingError(error)
+        ? "API 결제 한도 확인 필요"
+        : "이미지 생성 실패";
+    setImageGenerationNotice(isCanceled ? "ready" : "error", title, message);
     updateAiStatus(message);
   } finally {
     currentImageGenerationController = null;
@@ -8744,6 +8773,7 @@ function setImageDraftPreview(src, fileName = "") {
   empty.hidden = true;
   preview.dataset.source = src;
   if ($("#imageDraftFileName")) $("#imageDraftFileName").textContent = fileName || "이미지 시안";
+  if ($("#imageDraftTitle")) $("#imageDraftTitle").textContent = "상세페이지 방향성 이미지 시안";
   $("#imageFlowDraft")?.classList.add("done");
 }
 
@@ -8827,6 +8857,11 @@ function renderImageDraftState(state = readImageDraftState()) {
       handoff: "디자이너 전달",
     };
     $("#imageDraftStatus").textContent = statusLabels[state.status] || "초안 준비";
+  }
+  if ($("#imageDraftTitle")) {
+    $("#imageDraftTitle").textContent = state.generation?.provider === "openai"
+      ? "AI 생성 상세페이지 방향성 시안"
+      : "상세페이지 방향성 이미지 시안";
   }
   if ($("#imageDraftUpdatedAt")) {
     $("#imageDraftUpdatedAt").textContent = state.updatedAt ? `최근 기록 ${state.updatedAt}` : "검토 기록 없음";
@@ -8927,6 +8962,11 @@ async function registerImageDraftFile(file, generation = null) {
   }
   saveImageDraftState({ fileName: file.name, status: "draft", generation });
   updateAiStatus("이미지 시안을 등록했습니다. 새로고침 후에도 이 브라우저에서 다시 불러옵니다.");
+  if (generation?.provider === "openai") {
+    requestAnimationFrame(() => {
+      $("#imageDraftViewport")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }
 }
 
 function completeImageDraftReview() {
