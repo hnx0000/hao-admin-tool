@@ -929,7 +929,7 @@
       <span class="alert-icon">!</span>
       <div>
         <strong>핵심 로컬 흐름은 가동 중이며 중앙 서버 배포는 일시 중지 상태입니다.</strong>
-        <span>Figma는 팀 자료실 주소까지 연결했고, 개별 디자인 프레임·Cloudflare·고객 진행현황은 후속 연결이 필요합니다.</span>
+        <span>Figma는 팀 자료실 주소까지 연결했고, Google Drive 실제 제작 레퍼런스·Cloudflare·고객 진행현황은 후속 연결이 필요합니다.</span>
       </div>
       <div class="commit-pair"><span>STATUS PUBLIC</span><span>·</span><span>APP LOCAL LATEST</span></div>
     </div>
@@ -1002,7 +1002,7 @@
           <article class="process-node lock" data-state="connected"><strong>기획·시안 생성 잠금</strong><small>미승인 프로젝트의 생성 차단</small><span class="process-state">연결 완료</span></article>
           <article class="process-node idbref" data-state="connected"><strong>고객 업로드 자료</strong><small>제품·로고·참고 이미지 원본 사용</small><span class="process-state">연결 완료</span></article>
           <article class="process-node figma" data-state="partial"><strong>Figma 시안 자료</strong><small>팀 자료실 주소 고정 · 개별 디자인 프레임 연결 필요</small><span class="process-state">부분 연결</span></article>
-          <article class="process-node mybox" data-state="disconnected"><strong>MYBOX 레퍼런스</strong><small>현재 URL 이름만 전달</small><span class="process-state">미연결</span></article>
+          <article class="process-node mybox" data-state="disconnected"><strong>Google Drive 레퍼런스</strong><small>실제 제작 상세페이지 자료 이전·연결 예정</small><span class="process-state">미연결</span></article>
           <article class="process-node localref" data-state="connected"><strong>로컬 레퍼런스 DB</strong><small>분석 완료 자료를 프롬프트에 반영</small><span class="process-state">연결 완료</span></article>
           <article class="process-node prompt" data-state="connected"><strong>이미지 생성 브리프·프롬프트</strong><small>검수 정보와 사용 가능한 자료를 결합</small><span class="process-state">연결 완료</span></article>
           <article class="process-node openai" data-state="partial"><strong>OpenAI 이미지 API</strong><small>GPT Image 2 · High, 관리자 개인 키 방식</small><span class="process-state">부분 연결</span></article>
@@ -1035,7 +1035,7 @@
         <div class="matrix-row" data-status="connected"><strong>8. 기획·시안 생성 잠금</strong><span class="status-pill connected">연결 완료</span><p>검수 미승인 프로젝트 생성 차단</p><p>서버 권한과 이중 검증</p></div>
         <div class="matrix-row" data-status="connected"><strong>9. 고객 업로드 자료</strong><span class="status-pill connected">연결 완료</span><p>제품·로고·참고 이미지 원본을 생성에 사용</p><p>클라우드 원본 다운로드는 서버 배포 필요</p></div>
         <div class="matrix-row" data-status="partial"><strong>10. Figma 시안 자료</strong><span class="status-pill partial">주소 연결</span><p>팀 자료실을 상세페이지 시안 기준으로 등록</p><p>개별 design 파일과 프레임 인덱스 연결</p></div>
-        <div class="matrix-row" data-status="disconnected"><strong>11. MYBOX 레퍼런스</strong><span class="status-pill disconnected">미연결</span><p>단축 URL과 자료명만 프롬프트에 전달</p><p>사용 승인 자료를 별도 DB로 수집</p></div>
+        <div class="matrix-row" data-status="disconnected"><strong>11. Google Drive 실제 제작 레퍼런스</strong><span class="status-pill disconnected">전환 예정</span><p>기존 제작 완료 상세페이지를 Drive로 이전 예정</p><p>폴더 주소·접근 권한·파일 인덱스 연결</p></div>
         <div class="matrix-row" data-status="connected"><strong>12. 로컬 레퍼런스 DB</strong><span class="status-pill connected">연결 완료</span><p>분석된 상세페이지 자료를 구조 참고에 사용</p><p>출처·승인·카테고리 메타데이터 강화</p></div>
         <div class="matrix-row" data-status="connected"><strong>13. 이미지 생성 브리프</strong><span class="status-pill connected">연결 완료</span><p>검수 정보·A/B 방향·사용 자료를 결합</p><p>Figma 프레임 링크 자동 첨부</p></div>
         <div class="matrix-row" data-status="partial"><strong>14. OpenAI 이미지 API</strong><span class="status-pill partial">직접 연결</span><p>GPT Image 2·High·1024×1536 호출 가능</p><p>브라우저 API 키를 서버 프록시로 이전</p></div>
@@ -1054,7 +1054,7 @@
       <div class="section-head"><div><p class="eyebrow">Fix Priority</p><h2>수정 우선순위</h2></div><p>위에서부터 처리해야 다음 단계가 안정적으로 연결됩니다.</p></div>
       <div class="priority-grid">
         <article class="priority-card p0"><span class="priority">P0 · 운영 필수</span><h3>중앙 운영과 보안</h3><ul><li>Cloudflare Worker·비공개 R2 실제 배포</li><li>관리자 인증값과 서버 주소 안전하게 연결</li><li>OpenAI API 키를 서버 프록시로 이전</li><li>고객 진행현황·피드백 기록 중앙화</li></ul></article>
-        <article class="priority-card p1"><span class="priority">P1 · 정확성</span><h3>Figma와 이미지 품질</h3><ul><li>Figma 개별 design 파일·프레임 인덱스 구축</li><li>MYBOX 승인 자료를 별도 레퍼런스 DB로 수집</li><li>세 구간 이미지의 제품·조명·구도 일관성 검수</li><li>Figma 시안과 촬영 슬롯의 자동 연결</li></ul></article>
+        <article class="priority-card p1"><span class="priority">P1 · 정확성</span><h3>Figma와 이미지 품질</h3><ul><li>Figma 개별 design 파일·프레임 인덱스 구축</li><li>Google Drive 실제 제작 자료의 승인 레퍼런스 DB 구축</li><li>세 구간 이미지의 제품·조명·구도 일관성 검수</li><li>Figma 시안과 촬영 슬롯의 자동 연결</li></ul></article>
         <article class="priority-card p2"><span class="priority">P2 · 유지보수</span><h3>구조 정리와 자동 검증</h3><ul><li>대형 app.js·CSS를 단계별 모듈로 분리</li><li>중복 함수와 단계 번호 정리</li><li>고객 접수부터 납품까지 통합 테스트 추가</li><li>민감정보 제외 자동 배포 규칙 확립</li></ul></article>
       </div>
     </section>
