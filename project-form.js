@@ -90,8 +90,10 @@ function collectProjectForm() {
     data.productionTrust,
     data.purchaseBenefit,
     data.reviewKeywords,
+    data.additionalNotes,
   ].filter(Boolean).join("\n\n");
   data.references = [data.seoKeyword, data.referenceUrls].filter(Boolean).join("\n");
+  data.sourceApplicationText = data.additionalNotes || "";
   data.imageMemo = data.styleTone;
   data.source = "AI 상세페이지 5단계 원고 생성폼";
   data.customerInputVersion = "wizard-intake-v1";
@@ -111,6 +113,28 @@ function updateFileStatus(field) {
   const visibleNames = names.slice(0, 2).join(", ");
   const extraCount = names.length > 2 ? ` 외 ${names.length - 2}개` : "";
   status.textContent = `${names.length}개 선택됨 · ${visibleNames}${extraCount}`;
+}
+
+function renderDualStorageStatus(localStatus, serverStatus, message = "") {
+  const panel = $("#dualStorageStatus");
+  if (!panel) return;
+  panel.hidden = false;
+  panel.dataset.localStatus = localStatus;
+  panel.dataset.serverStatus = serverStatus;
+  const labels = {
+    saved: "저장 완료",
+    failed: "저장 실패",
+    pending: "전송 대기",
+    uploading: "업로드 중",
+    synced: "저장 완료",
+    unconfigured: "서버 연결 필요",
+  };
+  panel.innerHTML = `
+    <div class="storage-state ${localStatus}"><i aria-hidden="true"></i><span>내 브라우저</span><strong>${labels[localStatus] || localStatus}</strong></div>
+    <div class="storage-connector" aria-hidden="true">+</div>
+    <div class="storage-state ${serverStatus}"><i aria-hidden="true"></i><span>접수 서버</span><strong>${labels[serverStatus] || serverStatus}</strong></div>
+    ${message ? `<p>${escapeHtml(message)}</p>` : ""}
+  `;
 }
 
 function readProjectList() {
@@ -816,21 +840,34 @@ async function saveProjectForm(event) {
     return;
   }
 
-  const project = {
+  const rawProject = {
     id: `customer-project-${Date.now()}`,
     ...data,
     savedAt: new Date().toLocaleString("ko-KR"),
   };
+  const project = window.haoWorkflow?.normalizeCustomerSubmission
+    ? window.haoWorkflow.normalizeCustomerSubmission(rawProject)
+    : rawProject;
   const customerFiles = {};
   $$("[data-file-group]").forEach((field) => {
     customerFiles[field.dataset.fileGroup] = Array.from(field.files || []);
   });
+  let localSaved = false;
   if (window.customerFileStore) {
     try {
-      await window.customerFileStore.saveProjectFiles(project.id, customerFiles);
-      project.fileStorage = "indexeddb-v1";
+      renderDualStorageStatus("pending", "pending", "첨부 자료를 두 저장소에 보관하고 있습니다.");
+      if (window.customerFileStore.saveLocalSubmission) {
+        await window.customerFileStore.saveLocalSubmission(project, customerFiles);
+      } else {
+        await window.customerFileStore.saveProjectFiles(project.id, customerFiles);
+      }
+      project.fileStorage = "indexeddb-v2";
+      project.localFileStatus = "saved";
+      localSaved = true;
     } catch (error) {
       console.warn("고객 파일 원본 저장에 실패했습니다.", error);
+      project.localFileStatus = "failed";
+      renderDualStorageStatus("failed", "pending", "브라우저 저장에 실패했습니다. 서버 전송은 계속 시도합니다.");
     }
   }
   const projectList = readProjectList();
@@ -838,11 +875,48 @@ async function saveProjectForm(event) {
   localStorage.setItem(CUSTOMER_PROJECT_LIST_KEY, JSON.stringify(projectList));
   localStorage.setItem(CUSTOMER_PROJECT_KEY, JSON.stringify(project));
 
+  let cloudSyncMessage = "현재 브라우저의 관리자 프로젝트에 등록되었습니다.";
+  if (window.haoSubmissionSync?.isConfigured?.()) {
+    try {
+      renderDualStorageStatus(localSaved ? "saved" : "failed", "uploading", "접수 서버로 전송 중입니다.");
+      const syncResult = localSaved && window.haoSubmissionSync.syncStoredProject
+        ? await window.haoSubmissionSync.syncStoredProject(project.id)
+        : await window.haoSubmissionSync.submitProject(project, customerFiles);
+      project.cloudSubmissionId = syncResult.id || syncResult.submissionId || project.cloudSubmissionId;
+      project.cloudFiles = Array.isArray(syncResult.files) ? syncResult.files : [];
+      project.workflow = {
+        ...(project.workflow || {}),
+        cloudSync: { status: "synced", at: new Date().toISOString(), id: project.cloudSubmissionId || "" },
+      };
+      cloudSyncMessage = "온라인 접수 서버와 관리자 프로젝트에 자동 등록되었습니다.";
+      renderDualStorageStatus(localSaved ? "saved" : "failed", "synced", "이중 저장이 완료되었습니다. 다른 컴퓨터의 관리자도 서버 자료를 확인할 수 있습니다.");
+    } catch (error) {
+      project.workflow = {
+        ...(project.workflow || {}),
+        cloudSync: { status: "failed", at: new Date().toISOString(), message: error?.message || "동기화 실패" },
+      };
+      cloudSyncMessage = "온라인 전송에 실패해 현재 브라우저에 안전하게 보관했습니다. 담당자에게 접수 여부를 확인해주세요.";
+      renderDualStorageStatus(localSaved ? "saved" : "failed", "failed", "네트워크가 복구되면 브라우저 보관본을 자동으로 다시 전송합니다.");
+    }
+    projectList[0] = project;
+    localStorage.setItem(CUSTOMER_PROJECT_LIST_KEY, JSON.stringify(projectList));
+    localStorage.setItem(CUSTOMER_PROJECT_KEY, JSON.stringify(project));
+  } else {
+    project.workflow = {
+      ...(project.workflow || {}),
+      cloudSync: { status: "local-only", at: new Date().toISOString() },
+    };
+    renderDualStorageStatus(localSaved ? "saved" : "failed", "unconfigured", "서버 주소를 연결하면 대기 중인 접수건도 자동으로 재전송됩니다.");
+  }
+  projectList[0] = project;
+  localStorage.setItem(CUSTOMER_PROJECT_LIST_KEY, JSON.stringify(projectList));
+  localStorage.setItem(CUSTOMER_PROJECT_KEY, JSON.stringify(project));
+
   $("#projectWizard").classList.add("is-complete");
   $("#generatingScreen").classList.add("active");
   $("#submitMessage").innerHTML = `
     <strong>원고 생성 요청이 완료되었습니다.</strong>
-    <p>관리자 화면에서 접수 내용을 불러와 A/B 상세페이지 시안을 바로 생성할 수 있습니다.</p>
+    <p>작성 내용은 1차 내용정리본으로 구조화됩니다. ${cloudSyncMessage} 관리자 검수 완료 후 기획 프롬프트와 이미지 방향성 시안이 생성됩니다.</p>
   `;
   renderResultPlan(data);
   window.setTimeout(() => {
@@ -911,3 +985,6 @@ $$("[data-file-group]").forEach((field) => {
 });
 
 updateProgress();
+window.haoSubmissionSync?.retryPendingProjects?.().catch((error) => {
+  console.warn("대기 중인 고객 접수 재전송을 시작하지 못했습니다.", error);
+});
