@@ -1077,8 +1077,9 @@ function projectManagerReviewApproved(project = activeCustomerProject()) {
 
 function projectFigmaReferenceReady(project = activeCustomerProject()) {
   if (!project?.requiresFigmaReference) return true;
-  return Number(project?.figmaReferenceSet?.apiAccessible || 0) > 0
-    && project?.workflow?.figmaReference?.status === "ready";
+  const apiAccessible = Number(project?.figmaReferenceSet?.apiAccessible || 0);
+  const previewCacheAvailable = Number(project?.figmaReferenceSet?.previewCacheAvailable || 0);
+  return apiAccessible > 0 || previewCacheAvailable > 0;
 }
 
 function adminReviewChecks(project = activeCustomerProject()) {
@@ -9225,8 +9226,10 @@ ${DESIGN_REFERENCE_POLICY.priority.map((item, index) => `${index + 1}. ${item}`)
 - Figma 개별 시안 등록: ${Number(figmaReference.registered || 0)}건
 - Figma 브라우저 열람 확인: ${Number(figmaReference.browserViewAvailable || 0)}건
 - Figma 자동분석·이미지 참조 가능: ${Number(figmaReference.apiAccessible || 0)}건
+- Figma 공식 미리보기 캐시 참조 가능: ${Number(figmaReference.previewCacheAvailable || 0)}건
 - 연결된 시안 목록: ${figmaLabels.length ? figmaLabels.join(", ") : "프로젝트별 연결 자료 없음"}
-- 자동분석 가능 건수가 0이면 Figma 시안을 실제 이미지 입력으로 사용했다고 간주하지 않음
+- 편집 API가 없어도 공식 미리보기 캐시가 준비된 시안은 구조·정보 밀도·사진 리듬 참고용 이미지 입력으로 사용
+- 편집 API와 공식 미리보기 캐시가 모두 0건이면 Figma 시안을 실제 이미지 입력으로 사용했다고 간주하지 않음
 - 공유 아카이브: ${DESIGN_REFERENCE_POLICY.sharedArchiveLabel}${DESIGN_REFERENCE_POLICY.sharedArchiveUrl ? ` (${DESIGN_REFERENCE_POLICY.sharedArchiveUrl})` : ` (${DESIGN_REFERENCE_POLICY.sharedArchiveStatus})`}
 - Figma와 Google Drive의 실제 제작 자료는 색·카피·레이아웃을 통째로 복제하지 않고 섹션 역할, 정보 밀도, 사진 리듬, 조판 방식만 분석
 - 제품군과 판매 목적이 맞지 않는 레퍼런스는 사용하지 않으며, 한 시안에는 핵심 레퍼런스 3~5개만 선별
@@ -9333,7 +9336,7 @@ function generatedImageDraftFileName(suffix = "") {
 
 async function imageDraftReferenceFiles() {
   const allowedGroups = ["productImages", "brandLogo", "referenceFiles"];
-  const stored = currentCustomerAssetRecords
+  const customerReferences = currentCustomerAssetRecords
     .filter((record) => allowedGroups.includes(record.group) && String(record.type || record.blob?.type || "").startsWith("image/"))
     .sort((a, b) => allowedGroups.indexOf(a.group) - allowedGroups.indexOf(b.group))
     .slice(0, 4)
@@ -9342,27 +9345,47 @@ async function imageDraftReferenceFiles() {
       name: record.name || `customer-reference-${Date.now()}.png`,
       group: record.group,
     }));
-  if (stored.length) return stored;
 
   const project = currentCustomerAssetProject;
-  const references = [];
-  for (const group of allowedGroups) {
-    const folderPath = project?.assetFolderPaths?.[group];
-    const names = Array.from(project?.assetFolderFiles?.[group] || []);
-    for (const name of names) {
-      if (references.length >= 4 || !/\.(png|jpe?g|jfif|webp)$/i.test(name)) continue;
-      const url = resolveCustomerFolderFileUrl(project, group, name, folderPath);
-      if (!url || url.startsWith("file:///")) continue;
-      try {
-        const response = await fetch(url);
-        if (!response.ok) continue;
-        references.push({ blob: await response.blob(), name, group });
-      } catch {
-        // 웹에서 읽을 수 없는 로컬 원본은 프롬프트의 파일명 정보만 사용합니다.
+  if (!customerReferences.length) {
+    for (const group of allowedGroups) {
+      const folderPath = project?.assetFolderPaths?.[group];
+      const names = Array.from(project?.assetFolderFiles?.[group] || []);
+      for (const name of names) {
+        if (customerReferences.length >= 4 || !/\.(png|jpe?g|jfif|webp)$/i.test(name)) continue;
+        const url = resolveCustomerFolderFileUrl(project, group, name, folderPath);
+        if (!url || url.startsWith("file:///")) continue;
+        try {
+          const response = await fetch(url);
+          if (!response.ok) continue;
+          customerReferences.push({ blob: await response.blob(), name, group });
+        } catch {
+          // 웹에서 읽을 수 없는 로컬 원본은 프롬프트의 파일명 정보만 사용합니다.
+        }
       }
     }
   }
-  return references;
+
+  const figmaReferences = [];
+  const previewPaths = Array.from(project?.figmaReferenceSet?.previewPaths || []).slice(0, 2);
+  for (let index = 0; index < previewPaths.length; index += 1) {
+    const url = previewPaths[index];
+    try {
+      const response = await fetch(url);
+      if (!response.ok) continue;
+      const blob = await response.blob();
+      if (!String(blob.type || "").startsWith("image/")) continue;
+      figmaReferences.push({
+        blob,
+        name: `figma-approved-preview-${index + 1}.png`,
+        group: "figmaReference",
+      });
+    } catch {
+      // 캐시가 없는 공개 배포 환경에서는 고객 자료만 사용합니다.
+    }
+  }
+
+  return [...customerReferences.slice(0, 4), ...figmaReferences].slice(0, 6);
 }
 
 async function requestOpenAiImageDraft(prompt, references, signal, fileSuffix = "") {
@@ -9495,7 +9518,7 @@ async function generateImageDraftConcept() {
         "working",
         `${index + 1}/${IMAGE_DRAFT_SEGMENTS.length} · ${segment.label} 생성 중`,
         references.length
-          ? `고객 이미지 ${references.length}개를 고정 참조해 ${segment.progress} 구간을 만들고 있습니다.`
+          ? `고객·Figma 승인 이미지 ${references.length}개를 고정 참조해 ${segment.progress} 구간을 만들고 있습니다.`
           : `고객 작성 정보와 브리프로 ${segment.progress} 구간을 만들고 있습니다.`,
       );
       const segmentPrompt = `${prompt}
