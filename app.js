@@ -505,6 +505,32 @@ function readAiSettings() {
   }
 }
 
+function validateOpenAiSecretKey(rawValue) {
+  const apiKey = String(rawValue || "").trim();
+  if (!apiKey) {
+    return {
+      ok: false,
+      reason: "empty",
+      message: "OpenAI 비밀 API 키를 입력해주세요.",
+    };
+  }
+  if (/^key_[A-Za-z0-9_-]+$/i.test(apiKey)) {
+    return {
+      ok: false,
+      reason: "key-id",
+      message: "현재 값은 API 키 ID(key_…)라서 이미지 생성에 사용할 수 없습니다. OpenAI API Keys 화면에서 새 비밀키를 만든 직후 한 번만 표시되는 전체 키(sk-… 또는 sk-proj-…)를 입력해주세요.",
+    };
+  }
+  if (!/^sk-[A-Za-z0-9_-]{20,}$/.test(apiKey)) {
+    return {
+      ok: false,
+      reason: "invalid-format",
+      message: "OpenAI 비밀 API 키 형식이 아닙니다. 전체 키(sk-… 또는 sk-proj-…)를 확인해주세요.",
+    };
+  }
+  return { ok: true, reason: "secret", apiKey };
+}
+
 function readCustomerProject() {
   try {
     return JSON.parse(localStorage.getItem(CUSTOMER_PROJECT_KEY) || "{}");
@@ -724,14 +750,26 @@ function loadAiSettings() {
   if ($("#aiMode")) $("#aiMode").value = "openai";
   if ($("#apiKey")) $("#apiKey").value = settings.apiKey || "";
   if ($("#aiModel")) $("#aiModel").value = settings.model || "gpt-5.6-terra";
+  const validation = validateOpenAiSecretKey(settings.apiKey);
+  if (settings.apiKey && !validation.ok && $("#imageApiSettings")) $("#imageApiSettings").open = true;
   updateAiStatus();
 }
 
 function saveAiSettings() {
   const apiKey = $("#apiKey").value.trim();
+  const validation = validateOpenAiSecretKey(apiKey);
+  if (!validation.ok) {
+    if ($("#imageApiSettings")) $("#imageApiSettings").open = true;
+    $("#apiKey")?.setCustomValidity(validation.message);
+    $("#apiKey")?.reportValidity();
+    setImageGenerationNotice("error", "이미지 생성 연결 실패", validation.message);
+    updateAiStatus(validation.message);
+    return;
+  }
+  $("#apiKey")?.setCustomValidity("");
   writeAiSettings({
     mode: "openai",
-    apiKey,
+    apiKey: validation.apiKey,
     model: $("#aiModel").value.trim() || "gpt-5.6-terra",
   });
   updateAiStatus();
@@ -752,9 +790,12 @@ function updateAiStatus(message) {
     $("#aiStatus").textContent = message;
     return;
   }
-  $("#aiStatus").textContent = settings.apiKey
+  const validation = validateOpenAiSecretKey(settings.apiKey);
+  $("#aiStatus").textContent = validation.ok
     ? "GPT Image 2 고품질 이미지 시안 생성이 연결되어 있습니다."
-    : "API Key를 저장하면 GPT Image 2로 실제 이미지 시안을 생성합니다.";
+    : settings.apiKey
+      ? validation.message
+      : "비밀 API 키를 저장하면 GPT Image 2로 실제 이미지 시안을 생성합니다.";
 }
 
 function updateReferenceStatus() {
@@ -774,13 +815,14 @@ function updateReferenceStatus() {
 async function callOpenAi(task, payload) {
   const settings = readAiSettings();
   if (settings.mode !== "openai") return null;
-  if (!settings.apiKey) throw new Error("API Key가 없습니다.");
+  const validation = validateOpenAiSecretKey(settings.apiKey);
+  if (!validation.ok) throw new Error(validation.message);
 
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${settings.apiKey}`,
+      "Authorization": `Bearer ${validation.apiKey}`,
     },
     body: JSON.stringify({
       model: settings.model || "gpt-4.1-mini",
@@ -9296,7 +9338,7 @@ function imageGenerationErrorMessage(error) {
   const rawMessage = String(error?.message || "");
   const normalizedMessage = rawMessage.toLowerCase();
   if (error?.name === "AbortError") return "이미지 생성을 취소했습니다.";
-  if (error?.status === 401) return "API Key가 올바르지 않습니다. 이미지 생성 연결 정보를 확인해주세요.";
+  if (error?.status === 401) return "비밀 API 키가 올바르지 않거나 만료·폐기되었습니다. key_… 형태의 키 ID가 아니라 새로 발급한 전체 비밀키(sk-… 또는 sk-proj-…)를 입력해주세요.";
   if (
     normalizedMessage.includes("billing hard limit")
     || normalizedMessage.includes("insufficient_quota")
@@ -9390,15 +9432,16 @@ async function imageDraftReferenceFiles() {
 
 async function requestOpenAiImageDraft(prompt, references, signal, fileSuffix = "") {
   const settings = readAiSettings();
-  if (!settings.apiKey) {
-    const error = new Error("OpenAI API Key를 먼저 연결해주세요.");
+  const validation = validateOpenAiSecretKey(settings.apiKey);
+  if (!validation.ok) {
+    const error = new Error(validation.message);
     error.status = 401;
     throw error;
   }
 
   const requestOptions = {
     method: "POST",
-    headers: { Authorization: `Bearer ${settings.apiKey}` },
+    headers: { Authorization: `Bearer ${validation.apiKey}` },
     signal,
   };
   let endpoint = "https://api.openai.com/v1/images/generations";
@@ -9494,11 +9537,12 @@ async function generateImageDraftConcept() {
     return;
   }
   const settings = readAiSettings();
-  if (!settings.apiKey) {
+  const validation = validateOpenAiSecretKey(settings.apiKey);
+  if (!validation.ok) {
     if ($("#imageApiSettings")) $("#imageApiSettings").open = true;
     $("#apiKey")?.focus();
-    setImageGenerationNotice("error", "이미지 생성 연결 필요", "OpenAI API Key를 저장한 뒤 다시 눌러주세요.");
-    updateAiStatus("OpenAI API Key를 먼저 연결해주세요.");
+    setImageGenerationNotice("error", "이미지 생성 연결 필요", validation.message);
+    updateAiStatus(validation.message);
     return;
   }
 
@@ -11360,6 +11404,17 @@ $$("[data-customer-assets]").forEach((button) => {
   button.addEventListener("click", () => openCustomerAssetsDialog(button.dataset.customerAssets));
 });
 $("#saveAiSettings")?.addEventListener("click", saveAiSettings);
+$("#apiKey")?.addEventListener("input", () => {
+  $("#apiKey")?.setCustomValidity("");
+  const validation = validateOpenAiSecretKey($("#apiKey")?.value);
+  if (validation.reason === "key-id" || validation.reason === "invalid-format") {
+    updateAiStatus(validation.message);
+  } else if (validation.ok) {
+    updateAiStatus("비밀키 형식을 확인했습니다. ‘이 브라우저에 연결 저장’을 눌러주세요.");
+  } else {
+    updateAiStatus("비밀 API 키를 입력해주세요.");
+  }
+});
 $("#aiMode")?.addEventListener("change", updateAiStatus);
 $$("#review input[type='checkbox']").forEach((checkbox) => {
   checkbox.addEventListener("change", updateWorkflowState);
