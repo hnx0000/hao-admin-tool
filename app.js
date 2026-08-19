@@ -1098,16 +1098,19 @@ function adminReviewChecks(project = activeCustomerProject()) {
 function updateGenerateReviewLock(project = activeCustomerProject()) {
   const button = $("#generateAll");
   if (!button) return;
-  const reviewLocked = Boolean(project?.id) && !projectManagerReviewApproved(project);
+  const reviewPending = Boolean(project?.id) && !projectManagerReviewApproved(project);
+  const reviewLocked = reviewPending && adminReviewChecks(project).some((item) => !item.ok);
   const figmaLocked = Boolean(project?.id) && project?.requiresFigmaReference && !projectFigmaReferenceReady(project);
   const locked = reviewLocked || figmaLocked;
   button.classList.toggle("is-review-locked", locked);
   button.setAttribute("aria-disabled", locked ? "true" : "false");
   button.title = reviewLocked
-    ? "관리자 내용 검수 완료 후 생성할 수 있습니다."
+    ? "필수 검수 항목을 보완한 뒤 생성할 수 있습니다."
     : figmaLocked
       ? "Figma 시안의 자동분석 권한과 프레임 이미지 연결이 완료되어야 생성할 수 있습니다."
-      : "검수된 내용정리본과 연결된 Figma 시안으로 프롬프트와 이미지 시안을 생성합니다.";
+      : reviewPending
+        ? "현재 내용을 검수 완료로 확정하고 프롬프트와 이미지 시안을 생성합니다."
+        : "검수된 내용정리본과 연결된 Figma 시안으로 프롬프트와 이미지 시안을 생성합니다.";
 }
 
 function renderProjectReviewGate(project = activeCustomerProject()) {
@@ -1158,6 +1161,43 @@ function renderProjectReviewGate(project = activeCustomerProject()) {
   }
   if (summaryButton) summaryButton.disabled = false;
   updateGenerateReviewLock(project);
+}
+
+function focusProjectReviewGate(message = "") {
+  showPanel("projects");
+  renderProjectReviewGate();
+  const gate = $("#projectReviewGate");
+  const description = $("#projectReviewDescription");
+  if (message && description) description.textContent = message;
+  if (!gate) return;
+  gate.classList.remove("needs-attention");
+  void gate.offsetWidth;
+  gate.classList.add("needs-attention");
+  gate.scrollIntoView({ behavior: "smooth", block: "center" });
+  window.setTimeout(() => gate.classList.remove("needs-attention"), 1800);
+  window.setTimeout(() => $("#approveProjectReview")?.focus({ preventScroll: true }), 450);
+}
+
+function ensureProjectReviewApprovedForGeneration() {
+  const active = activeCustomerProject();
+  if (!active) {
+    focusProjectReviewGate("고객 프로젝트를 먼저 불러와야 검수와 시안 생성을 진행할 수 있습니다.");
+    updateAiStatus("검수할 고객 프로젝트를 먼저 불러와주세요.");
+    return false;
+  }
+  if (projectManagerReviewApproved(active)) return true;
+
+  const missing = adminReviewChecks(active).filter((item) => !item.ok);
+  if (missing.length) {
+    focusProjectReviewGate(`시안 생성 전 필수 항목 ${missing.length}개를 보완하세요: ${missing.map((item) => item.label).join(", ")}`);
+    updateAiStatus(`검수 필수 항목 ${missing.length}개를 보완한 뒤 시안 생성을 다시 실행해주세요.`);
+    return false;
+  }
+
+  // 관리자가 상단 생성 버튼을 누르는 행위 자체를 최종 검수 확정으로 봅니다.
+  // 필수 항목이 모두 채워진 경우에만 승인하므로, 빈 프로젝트가 자동 승인되지는 않습니다.
+  approveCurrentProjectReview();
+  return projectManagerReviewApproved();
 }
 
 function projectFromAdminFields(project = activeCustomerProject()) {
@@ -9653,13 +9693,7 @@ function createImageDraftBrief() {
     alert("프로젝트를 먼저 불러와주세요.");
     return "";
   }
-  if (!projectManagerReviewApproved()) {
-    showPanel("projects");
-    renderProjectReviewGate();
-    alert("관리자 내용 검수 완료 후 프롬프트를 생성할 수 있습니다.");
-    updateAiStatus("1차 내용정리본 검수 승인이 필요합니다.");
-    return "";
-  }
+  if (!projectManagerReviewApproved() && !ensureProjectReviewApprovedForGeneration()) return "";
   if (!projectFigmaReferenceReady()) {
     showPanel("projects");
     alert("연결된 Figma 상세페이지 시안의 편집 권한과 프레임 이미지 준비가 아직 완료되지 않았습니다.");
@@ -10856,14 +10890,7 @@ async function generateAllFromTopbar() {
     updateAiStatus("프로젝트 불러오기 완료 후 기획/시안 자동 생성을 눌러주세요.");
     return;
   }
-  const active = activeCustomerProject();
-  if (!projectManagerReviewApproved(active)) {
-    showPanel("projects");
-    renderProjectReviewGate(active);
-    alert("관리자 내용 검수가 필요합니다. 고객 원문과 1차 내용정리본을 확인한 뒤 ‘내용 검수 완료’를 눌러주세요.");
-    updateAiStatus("관리자 검수 승인 후 기획 프롬프트와 이미지 시안을 생성할 수 있습니다.");
-    return;
-  }
+  if (!ensureProjectReviewApprovedForGeneration()) return;
   if (currentImageGenerationController) {
     showPanel("drafts");
     setImageGenerationNotice("working", "이미지 시안 생성 중", "현재 진행 중인 상단·중단·하단 이미지 생성을 이어서 보여드립니다.");

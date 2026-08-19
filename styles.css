@@ -33,6 +33,20 @@
   border-left-color: #c69348;
 }
 
+.project-review-gate.needs-attention {
+  animation: review-gate-attention 1.8s ease;
+}
+
+@keyframes review-gate-attention {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(74, 139, 255, 0);
+  }
+  35% {
+    border-color: #4a8bff;
+    box-shadow: 0 0 0 5px rgba(74, 139, 255, .14);
+  }
+}
+
 .project-review-gate h3 {
   margin: 4px 0 7px;
   color: #f3f5f8;
