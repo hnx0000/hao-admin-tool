@@ -20,20 +20,35 @@ let customerAssetObjectUrls = [];
 let currentCustomerAssetProject = null;
 let currentImageDraftObjectUrl = "";
 let currentImageGenerationController = null;
+let productionRootDirectoryHandle = null;
+let currentGeneratedImageDraftFile = null;
 const IMAGE_DRAFT_GROUP = "adminImageDraft";
 const IMAGE_DRAFT_MODEL = "gpt-image-2";
 const IMAGE_DRAFT_SIZE = "1024x1536";
 const IMAGE_DRAFT_QUALITY = "high";
 const DESIGN_REFERENCE_POLICY = Object.freeze({
   figmaTeam: "퍼스트마케팅컴퍼니",
-  sharedArchiveLabel: "네이버 MYBOX 상세페이지 2021~2026",
-  sharedArchiveUrl: "https://naver.me/xrSupF4h",
+  figmaLibraryUrl: window.HAO_CONFIG?.figmaDraftLibraryUrl || "",
+  figmaReferenceIndexUrl: window.HAO_CONFIG?.figmaReferenceIndexUrl || "",
+  sharedArchiveLabel: "Google Drive 실제 제작 상세페이지 레퍼런스",
+  sharedArchiveUrl: "",
+  sharedArchiveStatus: "폴더 주소 연결 예정",
   priority: Object.freeze([
     "고객이 작성한 사실 정보와 고객 업로드 제품 원본",
     "퍼스트마케팅컴퍼니 Figma에서 승인·분류된 상세페이지 프레임",
-    "네이버 MYBOX 상세페이지 2021~2026 자료에서 선별한 섹션 레퍼런스",
+    "Google Drive에 정리할 실제 제작 상세페이지에서 승인·선별한 섹션 레퍼런스",
     "쿠팡·컬리·스마트스토어의 판매 흐름 분석",
   ]),
+});
+const AI_DETAIL_PRODUCTION_POLICY = Object.freeze({
+  guideFile: "AI_TOOL_GUIDELINES.md",
+  sourceOrder: ["고객 원문", "1차 내용정리본", "관리자 검수 수정", "승인된 참고자료"],
+  hardRules: [
+    "미기입 항목과 근거 없는 효능·인증·수치·후기·비교우위를 추정하지 않는다.",
+    "관리자 검수 승인 전에는 프롬프트와 이미지 시안을 생성하지 않는다.",
+    "생성 이미지는 방향성 시안이며 정확한 문구·표·법정 고지는 디자이너 조판 영역으로 남긴다.",
+    "내용정리본, 사용 프롬프트, 고객 자료, 생성 이미지를 업체별 표준 폴더에 함께 보존한다.",
+  ],
 });
 const IMAGE_DRAFT_SEGMENTS = Object.freeze([
   Object.freeze({
@@ -42,9 +57,10 @@ const IMAGE_DRAFT_SEGMENTS = Object.freeze([
     progress: "제품 인지와 첫 구매 이유",
     prompt: `이번에는 전체 상세페이지를 한 장에 압축하지 말고 상단 구간만 생성합니다.
 - 첫 화면에서 제품명·실물·한 줄 가치가 즉시 보이는 히어로
-- 30포, 스틱형, 선물 패키지를 빠르게 판단하는 3개 근거 영역
+- 고객이 제공하고 관리자가 검수한 제품 형태·용량·수량·패키지 구성만 사용한 3개 핵심 근거 영역
 - 다음 원료 이야기로 자연스럽게 이어지는 하단 전환
 - 제품은 모바일 축소 화면에서도 식별될 만큼 크게 표현
+- 고객 자료에 없는 구성품·옵션·문구·로고·수치를 임의로 추가하지 않음
 - 장면을 반복 배치한 무드 콜라주가 아니라 명확한 판매 설득 흐름으로 구성`,
   }),
   Object.freeze({
@@ -53,8 +69,8 @@ const IMAGE_DRAFT_SEGMENTS = Object.freeze([
     progress: "원료·제품 차이와 사용 장면",
     prompt: `이번에는 전체 상세페이지를 한 장에 압축하지 말고 중단 구간만 생성합니다.
 - 고객 자료에 있는 원료와 브랜드 이야기를 먼저 보여주는 에디토리얼 장면
-- 스틱 외형·개봉·내용물처럼 제품 차이를 설명할 수 있는 매크로 장면
-- 휴대와 섭취 상황을 실제 생활 장면으로 연결
+- 실제 제품의 외형·개봉·내용물·질감처럼 검수된 차이를 설명할 수 있는 매크로 장면
+- 고객이 명시한 사용·섭취·착용·설치 상황 중 해당 제품에 맞는 실제 생활 장면으로 연결
 - 설명 문구를 나중에 조판할 넓고 정돈된 안전 영역 확보
 - 인증, 효능, 임의 수치, 후기처럼 고객 자료에 없는 근거는 만들지 않음`,
   }),
@@ -63,10 +79,11 @@ const IMAGE_DRAFT_SEGMENTS = Object.freeze([
     label: "하단 판단",
     progress: "구성·선물 가치와 정보 확인",
     prompt: `이번에는 전체 상세페이지를 한 장에 압축하지 말고 하단 구간만 생성합니다.
-- 실제 박스와 30포 구성이 한눈에 보이는 개봉·구성 장면
-- 기존 패키지만 활용한 선물 가치와 마감 품질 장면
+- 고객이 제공한 실제 패키지와 옵션 구성이 한눈에 보이는 개봉·구성 장면
+- 검수된 패키지와 구성품만 활용한 마감 품질·보관·사용 편의 장면
 - 제품 정보, 주의사항, 법정 고지를 디자이너가 넣을 수 있는 표·텍스트 안전 영역
 - 마지막에 제품을 다시 기억시키는 차분한 클로징 히어로
+- 확인되지 않은 구성 수량, 인증 마크, 사은품, 선물 포장, 가격 혜택을 임의로 만들지 않음
 - 가격, 할인, 구매 버튼 등 판매 채널 UI는 상세페이지 이미지 안에 만들지 않음`,
   }),
 ]);
@@ -746,9 +763,12 @@ function updateReferenceStatus() {
   const auto = window.COMPANY_REFERENCE_AUTO;
   const curated = window.COMPANY_REFERENCE_DATASET;
   const total = auto?.total || curated?.summary?.totalFiles || 0;
+  const figmaConnected = Boolean(DESIGN_REFERENCE_POLICY.figmaLibraryUrl);
   status.textContent = total
-    ? `참고 상세페이지 ${total}개 분석 데이터 연결됨`
-    : "참고 상세페이지 자료가 아직 연결되지 않았습니다.";
+    ? `참고 상세페이지 ${total}개 분석 데이터 · Figma 시안 기준 주소 연결됨`
+    : figmaConnected
+      ? "Figma 상세페이지 시안 기준 주소 연결됨"
+      : "참고 상세페이지 자료가 아직 연결되지 않았습니다.";
 }
 
 async function callOpenAi(task, payload) {
@@ -867,7 +887,11 @@ function importLead(id) {
 }
 
 function importCustomerProject() {
-  const data = readCustomerProject();
+  const storedData = readCustomerProject();
+  const organizedFields = storedData.contentSummary?.adminFields
+    || window.haoWorkflow?.buildAdminFields?.(storedData)
+    || {};
+  const data = { ...storedData, ...organizedFields };
   if (!data.productName) {
     alert("아직 고객이 저장한 프로젝트 작성 내용이 없습니다.");
     return;
@@ -898,6 +922,7 @@ function importCustomerProject() {
     data.source ? `접수 경로: ${data.source}` : "",
     data.targetCustomer ? `주요 고객: ${data.targetCustomer}` : "",
     data.features ? `제품 특징:\n${data.features}` : "",
+    data.additionalNotes ? `추가 요청 및 기존 신청서 원문:\n${data.additionalNotes}` : "",
     data.existingDetailStructure?.length ? `기존 상세페이지 구조 분석:\n${data.existingDetailStructure.map((item, index) => `${index + 1}. ${item}`).join("\n")}` : "",
     imageAssets.length ? `이미지/촬영본 상태: ${imageAssets.join(", ")}` : "",
     uploadedFiles.length ? uploadedFiles.join("\n") : "",
@@ -937,8 +962,9 @@ function importCustomerProject() {
   setChecked("goal", [...new Set(goals)]);
 
   markCustomerFieldCompletion();
+  renderProjectReviewGate(storedData);
   updateWorkflowState();
-  alert("고객 작성 내용을 불러왔습니다. 부족한 부분만 보완하면 됩니다.");
+  updateAiStatus("고객 작성 내용과 1차 내용정리본을 불러왔습니다. 내용을 확인한 뒤 ‘내용 검수 완료’를 눌러주세요.");
 }
 
 function hasMeaningfulAdminValue(id) {
@@ -1040,6 +1066,314 @@ function setupBriefTextareaExpandTriggers() {
   });
 }
 
+function activeCustomerProject() {
+  const project = readCustomerProject();
+  return project?.id ? project : null;
+}
+
+function projectManagerReviewApproved(project = activeCustomerProject()) {
+  return project?.workflow?.managerReview?.status === "approved";
+}
+
+function projectFigmaReferenceReady(project = activeCustomerProject()) {
+  if (!project?.requiresFigmaReference) return true;
+  return Number(project?.figmaReferenceSet?.apiAccessible || 0) > 0
+    && project?.workflow?.figmaReference?.status === "ready";
+}
+
+function adminReviewChecks(project = activeCustomerProject()) {
+  const field = (id) => hasMeaningfulAdminValue(id);
+  return [
+    { key: "clientName", label: "고객사명", ok: field("clientName") },
+    { key: "productName", label: "제품명", ok: field("productName") },
+    { key: "category", label: "카테고리", ok: field("category") },
+    { key: "oneLine", label: "한 줄 설명", ok: field("oneLine") },
+    { key: "consultSummary", label: "제품 정보", ok: field("consultSummary") },
+    { key: "clientRequests", label: "고객 요청", ok: field("clientRequests") },
+    { key: "mustInclude", label: "필수 문구", ok: field("mustInclude") },
+    { key: "references", label: "근거/참고", ok: field("references") },
+  ];
+}
+
+function updateGenerateReviewLock(project = activeCustomerProject()) {
+  const button = $("#generateAll");
+  if (!button) return;
+  const reviewLocked = Boolean(project?.id) && !projectManagerReviewApproved(project);
+  const figmaLocked = Boolean(project?.id) && project?.requiresFigmaReference && !projectFigmaReferenceReady(project);
+  const locked = reviewLocked || figmaLocked;
+  button.classList.toggle("is-review-locked", locked);
+  button.setAttribute("aria-disabled", locked ? "true" : "false");
+  button.title = reviewLocked
+    ? "관리자 내용 검수 완료 후 생성할 수 있습니다."
+    : figmaLocked
+      ? "Figma 시안의 자동분석 권한과 프레임 이미지 연결이 완료되어야 생성할 수 있습니다."
+      : "검수된 내용정리본과 연결된 Figma 시안으로 프롬프트와 이미지 시안을 생성합니다.";
+}
+
+function renderProjectReviewGate(project = activeCustomerProject()) {
+  const gate = $("#projectReviewGate");
+  if (!gate) return;
+  const title = $("#projectReviewTitle");
+  const description = $("#projectReviewDescription");
+  const status = $("#projectReviewStatus");
+  const checksNode = $("#projectReviewChecks");
+  const approveButton = $("#approveProjectReview");
+  const summaryButton = $("#downloadContentSummary");
+
+  gate.classList.remove("is-approved", "is-blocked", "is-pending");
+  if (!project?.id) {
+    gate.classList.add("is-pending");
+    if (title) title.textContent = "프로젝트를 불러온 뒤 내용을 검수하세요";
+    if (description) description.textContent = "고객 원문과 1차 내용정리본을 비교하고, 사실·누락·증빙 상태를 확인해야 시안 생성이 열립니다.";
+    if (status) status.textContent = "프로젝트 미선택";
+    if (checksNode) checksNode.innerHTML = "";
+    if (approveButton) approveButton.disabled = true;
+    if (summaryButton) summaryButton.disabled = true;
+    updateGenerateReviewLock(null);
+    return;
+  }
+
+  const checks = adminReviewChecks(project);
+  const missing = checks.filter((item) => !item.ok);
+  const approved = projectManagerReviewApproved(project);
+  const figmaReady = projectFigmaReferenceReady(project);
+  gate.classList.add(approved ? "is-approved" : missing.length ? "is-blocked" : "is-pending");
+  if (title) title.textContent = approved
+    ? `${project.productName || "프로젝트"} 내용 검수 완료`
+    : `${project.productName || "프로젝트"} 1차 내용정리본 검수`;
+  if (description) description.textContent = approved
+    ? figmaReady
+      ? "승인된 정리본과 연결된 Figma 시안만 이미지 생성 프롬프트의 기준으로 사용합니다. 아래 필드를 수정하면 다시 검수가 필요합니다."
+      : "내용 검수는 완료됐습니다. Figma 시안 자동분석과 프레임 이미지 연결이 완료되면 생성 단계가 열립니다."
+    : missing.length
+      ? `필수 항목 ${missing.length}개를 보완한 뒤 검수를 완료하세요. 미제공 증빙은 확정 문구로 사용하지 않습니다.`
+      : "고객 원문과 정리된 관리자 필드를 대조한 뒤 검수 완료를 눌러 생성 단계를 여세요.";
+  if (status) status.textContent = approved
+    ? figmaReady ? "✓ 검수 완료 · Figma 연결" : "✓ 검수 완료 · Figma 대기"
+    : missing.length ? `보완 ${missing.length}개` : "승인 대기";
+  if (checksNode) checksNode.innerHTML = checks.map((item) => `<span class="${item.ok ? "ok" : "missing"}">${item.ok ? "✓" : "!"} ${escapeHtml(item.label)}</span>`).join("");
+  if (approveButton) {
+    approveButton.disabled = Boolean(missing.length);
+    approveButton.textContent = approved ? "검수 완료됨" : "내용 검수 완료";
+  }
+  if (summaryButton) summaryButton.disabled = false;
+  updateGenerateReviewLock(project);
+}
+
+function projectFromAdminFields(project = activeCustomerProject()) {
+  if (!project) return null;
+  return {
+    ...project,
+    companyName: value("clientName"),
+    clientName: value("clientName"),
+    productName: value("productName"),
+    category: value("category"),
+    channel: value("channel"),
+    dueDate: value("dueDate"),
+    oneLine: value("oneLine"),
+    features: value("consultSummary"),
+    clientRequests: value("clientRequests"),
+    emphasis: value("emphasis"),
+    banWords: value("banWords"),
+    mustInclude: value("mustInclude"),
+    references: value("references"),
+  };
+}
+
+function persistCustomerProject(project) {
+  if (!project?.id) return;
+  const projects = readCustomerProjects();
+  const index = projects.findIndex((item) => item.id === project.id);
+  if (index >= 0) projects[index] = project;
+  else projects.unshift(project);
+  writeCustomerProjects(projects);
+  localStorage.setItem(CUSTOMER_PROJECT_KEY, JSON.stringify(project));
+}
+
+function approveCurrentProjectReview() {
+  const active = activeCustomerProject();
+  if (!active) {
+    alert("검수할 고객 프로젝트를 먼저 불러와주세요.");
+    return;
+  }
+  const missing = adminReviewChecks(active).filter((item) => !item.ok);
+  if (missing.length) {
+    alert(`검수 전 필수 항목을 보완해주세요: ${missing.map((item) => item.label).join(", ")}`);
+    renderProjectReviewGate(active);
+    return;
+  }
+  const reviewed = projectFromAdminFields(active);
+  reviewed.contentSummary = window.haoWorkflow?.buildContentSummary?.(reviewed) || reviewed.contentSummary;
+  reviewed.contentSummaryText = window.haoWorkflow?.buildContentSummaryText?.(reviewed) || reviewed.contentSummaryText;
+  reviewed.status = "검수 완료";
+  const figmaReady = projectFigmaReferenceReady(reviewed);
+  reviewed.workflow = {
+    ...(reviewed.workflow || {}),
+    managerReview: { status: "approved", at: new Date().toISOString() },
+    prompt: { status: figmaReady ? "ready" : "blocked", at: "" },
+    imageDraft: { status: figmaReady ? "ready" : "blocked", at: "" },
+  };
+  persistCustomerProject(reviewed);
+  renderCustomerProjects();
+  renderProjectReviewGate(reviewed);
+  updateWorkflowState();
+  updateAiStatus("관리자 내용 검수가 완료되었습니다. 이제 기획/시안 자동 생성을 실행할 수 있습니다.");
+}
+
+function invalidateCurrentProjectReview() {
+  const active = activeCustomerProject();
+  if (!active || !projectManagerReviewApproved(active)) return;
+  const changed = projectFromAdminFields(active);
+  changed.status = "확인 중";
+  changed.workflow = {
+    ...(changed.workflow || {}),
+    managerReview: { status: "pending", at: "", reason: "관리자 필드 수정" },
+    prompt: { status: "blocked", at: "" },
+    imageDraft: { status: "blocked", at: "" },
+  };
+  persistCustomerProject(changed);
+  renderCustomerProjects();
+  renderProjectReviewGate(changed);
+}
+
+function safeDownloadName(valueText = "프로젝트") {
+  return String(valueText || "프로젝트").replace(/[\\/:*?"<>|]+/g, "_").replace(/\s+/g, "_").slice(0, 80);
+}
+
+function contentSummaryText(project = activeCustomerProject()) {
+  if (!project) return "";
+  return project.contentSummaryText
+    || window.haoWorkflow?.buildContentSummaryText?.(project)
+    || "내용정리본을 생성할 수 없습니다.";
+}
+
+function downloadTextFile(fileName, contents, type = "text/plain;charset=utf-8") {
+  const url = URL.createObjectURL(new Blob([contents], { type }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function downloadCurrentContentSummary(project = activeCustomerProject()) {
+  if (!project) {
+    alert("내용정리본을 받을 프로젝트를 먼저 불러와주세요.");
+    return;
+  }
+  downloadTextFile(`${safeDownloadName(project.productName)}_제품_내용정리본.txt`, contentSummaryText(project));
+  updateAiStatus("고객 원문 기반 1차 내용정리본을 내려받았습니다.");
+}
+
+function updateProductionFolderStatus(message, connected = Boolean(productionRootDirectoryHandle)) {
+  const node = $("#productionFolderStatus");
+  if (!node) return;
+  node.textContent = message;
+  node.classList.toggle("is-connected", connected);
+}
+
+async function connectProductionFolder({ quietCancel = false } = {}) {
+  if (!("showDirectoryPicker" in window)) {
+    updateProductionFolderStatus("이 브라우저는 폴더 직접 저장을 지원하지 않습니다. Chrome 또는 Edge의 HTTPS 주소에서 이용해주세요.", false);
+    if (!quietCancel) alert("폴더 자동 저장은 데스크톱 Chrome 또는 Edge에서 지원됩니다.");
+    return null;
+  }
+  try {
+    const handle = await window.showDirectoryPicker({ id: "hao-detail-production-root", mode: "readwrite" });
+    const permission = await handle.requestPermission?.({ mode: "readwrite" });
+    if (permission && permission !== "granted") throw new Error("선택한 폴더에 저장 권한이 없습니다.");
+    productionRootDirectoryHandle = handle;
+    updateProductionFolderStatus(`✓ ${handle.name} 연결됨 · 생성 완료 시 고객관리/업체별 폴더에 자동 저장됩니다.`, true);
+    return handle;
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      updateProductionFolderStatus("폴더 선택을 건너뛰었습니다. 생성 결과는 현재 브라우저에 보관됩니다.", false);
+      if (!quietCancel) updateAiStatus("작업 폴더 연결을 취소했습니다.");
+      return null;
+    }
+    updateProductionFolderStatus(error?.message || "작업 폴더를 연결하지 못했습니다.", false);
+    if (!quietCancel) alert(error?.message || "작업 폴더를 연결하지 못했습니다.");
+    return null;
+  }
+}
+
+async function childDirectory(parent, name) {
+  return parent.getDirectoryHandle(safeDownloadName(name), { create: true });
+}
+
+async function writeFolderFile(directory, name, contents) {
+  const handle = await directory.getFileHandle(safeDownloadName(name), { create: true });
+  const writer = await handle.createWritable();
+  await writer.write(contents);
+  await writer.close();
+}
+
+async function saveProductionBundleToFolder(imageFile = null) {
+  const project = activeCustomerProject();
+  if (!productionRootDirectoryHandle || !project) return false;
+
+  const customerRoot = await childDirectory(productionRootDirectoryHandle, "고객관리");
+  const companyRoot = await childDirectory(customerRoot, project.clientName || project.companyName || "고객사_미입력");
+  const intakeDirectory = await childDirectory(companyRoot, "01_고객 작성 내용");
+  const promptDirectory = await childDirectory(companyRoot, "02_상세페이지 프롬프트");
+  const materialDirectory = await childDirectory(companyRoot, "03_제품 자료");
+  const imageDirectory = await childDirectory(companyRoot, "04_생성 이미지");
+  const productStem = safeDownloadName(project.productName || "프로젝트");
+
+  await writeFolderFile(intakeDirectory, `${productStem}_제품_내용정리본.txt`, contentSummaryText(project));
+  await writeFolderFile(
+    intakeDirectory,
+    `${productStem}_프로젝트_원본.json`,
+    JSON.stringify({ ...project, id: project.id, exportedAt: new Date().toISOString() }, null, 2),
+  );
+
+  const brief = $("#imageDraftBrief")?.value.trim() || readImageDraftState().brief || "";
+  if (brief) await writeFolderFile(promptDirectory, `${productStem}_상세페이지_이미지생성_프롬프트.txt`, brief);
+
+  const groupDirectories = {
+    productImages: await childDirectory(materialDirectory, "01_제품 이미지"),
+    brandLogo: await childDirectory(materialDirectory, "02_로고스펙 자료"),
+    referenceFiles: await childDirectory(materialDirectory, "03_참고 이미지"),
+  };
+  let records = currentCustomerAssetRecords.length ? currentCustomerAssetRecords : [];
+  if (!records.length && window.customerFileStore?.listProjectFiles) {
+    try {
+      records = await window.customerFileStore.listProjectFiles(project.id);
+    } catch {
+      records = [];
+    }
+  }
+  for (const record of records) {
+    const target = groupDirectories[record.group];
+    if (!target || !record.blob) continue;
+    await writeFolderFile(target, record.name || `자료_${Date.now()}`, record.blob);
+  }
+
+  if (imageFile) {
+    const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+    const draftDirectory = await childDirectory(imageDirectory, `${productStem}_상세페이지_시안_${date}`);
+    await writeFolderFile(draftDirectory, imageFile.name, imageFile);
+    if (brief) await writeFolderFile(draftDirectory, `${productStem}_사용_프롬프트.txt`, brief);
+    await writeFolderFile(
+      draftDirectory,
+      "README.txt",
+      "이 폴더는 관리자 검수를 통과한 1차 내용정리본과 프롬프트를 기준으로 생성된 상세페이지 방향성 시안입니다. 최종 판매용 상세페이지는 디자이너 검수와 조판을 거쳐야 합니다.",
+    );
+  }
+
+  const updated = { ...project };
+  updated.workflow = {
+    ...(updated.workflow || {}),
+    foldering: { status: imageFile ? "completed" : "prepared", at: new Date().toISOString(), root: productionRootDirectoryHandle.name },
+  };
+  persistCustomerProject(updated);
+  updateProductionFolderStatus(`✓ ${productionRootDirectoryHandle.name}/고객관리/${project.clientName || project.companyName} 저장 완료`, true);
+  updateAiStatus("내용정리본, 프롬프트, 고객 자료와 생성 이미지를 업체별 작업 폴더에 저장했습니다.");
+  return true;
+}
+
 function customerProjectReadiness(project) {
   const hasCompletionRecord = Array.isArray(project.customerCompletedFields);
   const completedFields = new Set(project.customerCompletedFields || []);
@@ -1082,9 +1416,15 @@ function renderCustomerProjects() {
   currentCustomerProjectPage = Math.min(Math.max(1, currentCustomerProjectPage), totalPages);
   const pageStart = (currentCustomerProjectPage - 1) * CUSTOMER_PROJECTS_PER_PAGE;
   const visibleProjects = projects.slice(pageStart, pageStart + CUSTOMER_PROJECTS_PER_PAGE);
-  const statuses = ["신규 접수", "확인 중", "기획 생성", "시안 제작", "고객 회신 대기", "완료"];
+  const statuses = ["신규 접수", "확인 중", "검수 완료", "기획 생성", "시안 제작", "고객 회신 대기", "완료"];
   const projectCards = visibleProjects.map((project) => {
     const readiness = customerProjectReadiness(project);
+    const cloudStatus = project.workflow?.cloudSync?.status || "local-only";
+    const storageText = cloudStatus === "synced"
+      ? "브라우저 + 접수 서버 저장 완료"
+      : cloudStatus === "failed"
+        ? "브라우저 보관 완료 · 서버 재전송 대기"
+        : "브라우저 보관 · 접수 서버 연결 필요";
     const readinessText = readiness.missing.length
       ? `보완 필요: ${escapeHtml(readiness.missing.join(", "))}`
       : "바로 시안 생성 가능";
@@ -1103,6 +1443,7 @@ function renderCustomerProjects() {
           <strong>${escapeHtml(project.productName || "제품명 미입력")}</strong>
           <p>${escapeHtml(project.clientName || "브랜드명 미입력")} · ${escapeHtml(project.category || "카테고리 미선택")} · ${escapeHtml(project.savedAt || "")}</p>
           <p>상태: ${escapeHtml(project.status || "신규 접수")}</p>
+          <p class="project-storage-line ${escapeHtml(cloudStatus)}"><i aria-hidden="true"></i>${storageText}</p>
           <p class="readiness-line"><b>시안 준비도 ${readiness.score}%</b> · ${readinessText}</p>
           ${fieldCompletion}
         </div>
@@ -1114,6 +1455,7 @@ function renderCustomerProjects() {
           <div class="project-manage">
             <button class="secondary small project-manage-toggle" type="button" data-id="${escapeHtml(project.id)}" aria-expanded="false">프로젝트 관리</button>
             <div class="project-manage-menu" hidden>
+              <button type="button" data-project-action="summary" data-id="${escapeHtml(project.id)}">↓ 1차 내용정리본 받기</button>
               <button type="button" data-project-action="complete" data-id="${escapeHtml(project.id)}">✓ 완료 처리</button>
               <button type="button" data-project-action="reopen" data-id="${escapeHtml(project.id)}">↺ 신규 접수로 변경</button>
               <button class="danger" type="button" data-project-action="delete" data-id="${escapeHtml(project.id)}">접수 내용 삭제</button>
@@ -1164,10 +1506,31 @@ function renderCustomerProjects() {
   });
 }
 
-function updateCustomerProjectStatus(id, status) {
+async function updateCustomerProjectStatus(id, status) {
   const projects = readCustomerProjects().map((project) => project.id === id ? { ...project, status } : project);
   writeCustomerProjects(projects);
+  const active = readCustomerProject();
+  if (active?.id === id) {
+    localStorage.setItem(CUSTOMER_PROJECT_KEY, JSON.stringify({ ...active, status }));
+  }
   renderCustomerProjects();
+  renderProjectReviewGate();
+  const changed = projects.find((project) => project.id === id);
+  if (changed?.cloudSubmissionId && window.haoSubmissionSync?.updateProjectState) {
+    try {
+      await window.haoSubmissionSync.updateProjectState(changed);
+      updateAiStatus("프로젝트 진행 상태를 중앙 서버에 저장했습니다.");
+    } catch (error) {
+      if (error?.status === 401 && window.haoSubmissionSync?.setAdminToken) {
+        const supplied = window.prompt("중앙 서버 관리자 비밀번호를 입력해주세요.", "") || "";
+        if (supplied.trim()) {
+          window.haoSubmissionSync.setAdminToken(supplied);
+          return updateCustomerProjectStatus(id, status);
+        }
+      }
+      updateAiStatus(error?.message || "중앙 서버 상태 저장에 실패했습니다. 로컬 변경은 유지됩니다.");
+    }
+  }
 }
 
 function requestCustomerProjectDeletion(id) {
@@ -1179,13 +1542,51 @@ function requestCustomerProjectDeletion(id) {
   if ($("#projectDeleteName")) {
     $("#projectDeleteName").textContent = target.productName || target.clientName || "선택한 프로젝트";
   }
+  const confirmation = $("#projectDeleteConfirmText");
+  if (confirmation) {
+    confirmation.value = "";
+    confirmation.placeholder = target.productName || target.projectName || target.clientName || target.companyName || "프로젝트명";
+  }
+  if ($("#projectDeleteError")) $("#projectDeleteError").textContent = "";
   if (dialog?.showModal) dialog.showModal();
 }
 
-function permanentlyDeleteCustomerProject() {
+async function permanentlyDeleteCustomerProject() {
   const id = pendingDeleteProjectId;
   if (!id) return;
   const projects = readCustomerProjects();
+  const target = projects.find((project) => project.id === id);
+  if (!target) return;
+  const confirmName = String(target.productName || target.projectName || target.clientName || target.companyName || "").trim();
+  const typedName = String($("#projectDeleteConfirmText")?.value || "").trim();
+  const errorNode = $("#projectDeleteError");
+  if (!confirmName || typedName !== confirmName) {
+    if (errorNode) errorNode.textContent = `확인을 위해 “${confirmName || "프로젝트명"}”을 정확히 입력해주세요.`;
+    return;
+  }
+  const confirmButton = $("#confirmProjectDelete");
+  if (confirmButton) {
+    confirmButton.disabled = true;
+    confirmButton.textContent = "서버 확인 중…";
+  }
+  try {
+    if (target.cloudSubmissionId && window.haoSubmissionSync?.isConfigured?.()) {
+      try {
+        await window.haoSubmissionSync.permanentlyDeleteProject(target, confirmName);
+      } catch (error) {
+        if (error?.status === 401 && window.haoSubmissionSync?.setAdminToken) {
+          const supplied = window.prompt("영구삭제 권한 확인을 위해 중앙 서버 관리자 비밀번호를 입력해주세요.", "") || "";
+          if (supplied.trim()) {
+            window.haoSubmissionSync.setAdminToken(supplied);
+            await window.haoSubmissionSync.permanentlyDeleteProject(target, confirmName);
+          } else {
+            throw new Error("관리자 인증이 취소되어 삭제하지 않았습니다.");
+          }
+        } else {
+          throw error;
+        }
+      }
+    }
   const remaining = projects.filter((project) => project.id !== id);
   writeCustomerProjects(remaining);
   const active = readCustomerProject();
@@ -1197,11 +1598,20 @@ function permanentlyDeleteCustomerProject() {
     }
   }
   localStorage.removeItem(`detailAiArtifacts:${id}`);
-  window.customerFileStore?.deleteProjectFiles(id).catch(() => {});
+    await window.customerFileStore?.deleteProjectFiles(id).catch(() => {});
   pendingDeleteProjectId = "";
   $("#projectDeleteDialog")?.close();
   renderCustomerProjects();
   updateWorkflowState();
+    updateAiStatus(target.cloudSubmissionId ? "중앙 서버와 현재 브라우저에서 프로젝트를 영구 삭제했습니다." : "현재 브라우저의 로컬 프로젝트를 영구 삭제했습니다.");
+  } catch (error) {
+    if (errorNode) errorNode.textContent = error?.message || "삭제하지 못했습니다. 서버 연결과 관리자 권한을 확인해주세요.";
+  } finally {
+    if (confirmButton) {
+      confirmButton.disabled = false;
+      confirmButton.textContent = "예, 영구 삭제";
+    }
+  }
 }
 
 function handleProjectManagement(event) {
@@ -1214,6 +1624,10 @@ function handleProjectManagement(event) {
     return;
   }
   const { projectAction: action, id } = actionButton.dataset;
+  if (action === "summary") {
+    const project = readCustomerProjects().find((item) => item.id === id);
+    downloadCurrentContentSummary(project);
+  }
   if (action === "complete") updateCustomerProjectStatus(id, "완료");
   if (action === "reopen") updateCustomerProjectStatus(id, "신규 접수");
   if (action === "delete") requestCustomerProjectDeletion(id);
@@ -1225,7 +1639,10 @@ function importCustomerProjectById(id) {
   localStorage.setItem(CUSTOMER_PROJECT_KEY, JSON.stringify(project));
   importCustomerProject();
   renderCustomerAssetBoxes(project);
-  updateCustomerProjectStatus(id, "확인 중");
+  if (!projectManagerReviewApproved(project)) {
+    updateCustomerProjectStatus(id, "확인 중");
+  }
+  renderProjectReviewGate(readCustomerProject());
 }
 
 async function renderCustomerAssetBoxes(project = readCustomerProject()) {
@@ -1247,11 +1664,13 @@ async function renderCustomerAssetBoxes(project = readCustomerProject()) {
   $$("[data-customer-assets]").forEach((button) => {
     const group = button.dataset.customerAssets;
     const stored = records.filter((record) => record.group === group);
+    const remoteFiles = Array.from(project?.cloudFiles || []).filter((record) => record.group === group);
     const legacyNames = stored.length ? [] : Array.from(legacyGroups[group] || []);
     const folderCount = Number(project?.assetFolderCounts?.[group] || 0);
-    const count = stored.length || folderCount || legacyNames.length;
+    const count = stored.length || remoteFiles.length || folderCount || legacyNames.length;
     button.classList.toggle("has-files", count > 0);
-    button.querySelector("span").textContent = count ? `자료있음 · ${count}개` : "자료없음";
+    const storageLabel = stored.length ? "브라우저" : remoteFiles.length ? "서버" : "분류폴더";
+    button.querySelector("span").textContent = count ? `자료있음 · ${count}개 · ${storageLabel}` : "자료없음";
     button.dataset.legacyNames = legacyNames.join("|");
   });
 }
@@ -1298,6 +1717,7 @@ function openCustomerAssetsDialog(group) {
   const labels = { productImages: "제품 이미지", brandLogo: "로고·스펙 자료", referenceFiles: "참고 이미지" };
   const button = $(`[data-customer-assets="${group}"]`);
   const records = currentCustomerAssetRecords.filter((record) => record.group === group);
+  const remoteFiles = Array.from(currentCustomerAssetProject?.cloudFiles || []).filter((record) => record.group === group);
   const legacyNames = String(button?.dataset.legacyNames || "").split("|").filter(Boolean);
   const folderFiles = Array.from(currentCustomerAssetProject?.assetFolderFiles?.[group] || []);
   $("#customerAssetsTitle").textContent = labels[group] || "고객 제출 자료";
@@ -1305,7 +1725,7 @@ function openCustomerAssetsDialog(group) {
   customerAssetObjectUrls.forEach((url) => URL.revokeObjectURL(url));
   customerAssetObjectUrls = [];
 
-  if (!records.length && !legacyNames.length && !folderFiles.length) {
+  if (!records.length && !remoteFiles.length && !legacyNames.length && !folderFiles.length) {
     list.innerHTML = `<div class="assets-empty"><strong>제출된 자료가 없습니다.</strong><p>고객이 작성폼에 파일을 첨부하면 이곳에서 확인할 수 있습니다.</p></div>`;
   } else if (records.length) {
     list.innerHTML = records.map((record) => {
@@ -1320,6 +1740,43 @@ function openCustomerAssetsDialog(group) {
         <a href="${url}" download="${escapeHtml(record.name)}">다운로드</a>
       </article>`;
     }).join("");
+  } else if (remoteFiles.length) {
+    list.innerHTML = remoteFiles.map((file) => {
+      const isImage = String(file.type || "").startsWith("image/");
+      const preview = `<div class="file-type-preview remote">${isImage ? "IMG" : escapeHtml((file.name.split(".").pop() || "FILE").toUpperCase())}</div>`;
+      return `<article class="customer-asset-item remote-file">
+        ${preview}
+        <div><strong>${escapeHtml(file.name)}</strong><small>접수 서버 이중 저장 · ${Math.max(1, Math.round(Number(file.size || 0) / 1024)).toLocaleString()} KB</small></div>
+        <button type="button" data-remote-file-id="${escapeHtml(file.id)}">서버에서 받기</button>
+      </article>`;
+    }).join("");
+    list.querySelectorAll("[data-remote-file-id]").forEach((downloadButton) => {
+      downloadButton.addEventListener("click", async () => {
+        const file = remoteFiles.find((item) => item.id === downloadButton.dataset.remoteFileId);
+        if (!file || !window.haoSubmissionSync?.downloadRemoteFile) return;
+        const originalText = downloadButton.textContent;
+        downloadButton.disabled = true;
+        downloadButton.textContent = "받는 중…";
+        try {
+          const blob = await window.haoSubmissionSync.downloadRemoteFile(file);
+          const url = URL.createObjectURL(blob);
+          customerAssetObjectUrls.push(url);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = file.name;
+          link.click();
+          downloadButton.textContent = "다운로드 완료";
+        } catch (error) {
+          downloadButton.textContent = error?.status === 401 ? "관리자 인증 필요" : "다시 시도";
+          console.warn("서버 파일 다운로드에 실패했습니다.", error);
+        } finally {
+          window.setTimeout(() => {
+            downloadButton.disabled = false;
+            downloadButton.textContent = originalText;
+          }, 1800);
+        }
+      });
+    });
   } else if (folderFiles.length && folderPath) {
     list.innerHTML = folderFiles.map((name) => {
       const url = resolveCustomerFolderFileUrl(currentCustomerAssetProject, group, name, folderPath);
@@ -1449,6 +1906,112 @@ function restoreHoabiCompleteExampleOnce() {
   if (localStorage.getItem(restoreKey)) return;
   addHoabiCustomerTest(true);
   localStorage.setItem(restoreKey, "done");
+}
+
+function restoreImportedCustomerProjectsOnce() {
+  const imports = Array.isArray(window.IMPORTED_CUSTOMER_PROJECTS)
+    ? window.IMPORTED_CUSTOMER_PROJECTS
+    : [];
+  if (!imports.length) return;
+
+  const projects = readCustomerProjects();
+  let changed = false;
+  let newestImportedProject = null;
+
+  imports.slice().reverse().forEach((imported) => {
+    const normalizedImported = window.haoWorkflow?.normalizeCustomerSubmission
+      ? window.haoWorkflow.normalizeCustomerSubmission(imported)
+      : imported;
+    const sourceImportId = String(normalizedImported?.sourceImportId || "").trim();
+    if (!sourceImportId) return;
+    const importKey = `customerProjectImported:${sourceImportId}`;
+    const existingIndex = projects.findIndex((project) => project.sourceImportId === sourceImportId);
+    const existingProject = existingIndex >= 0 ? projects[existingIndex] : null;
+    if (
+      existingProject &&
+      normalizedImported.sourceImportVersion &&
+      existingProject.sourceImportVersion !== normalizedImported.sourceImportVersion
+    ) {
+      projects[existingIndex] = {
+        ...normalizedImported,
+        id: existingProject.id,
+        savedAt: existingProject.savedAt,
+        status: projectManagerReviewApproved(existingProject) ? existingProject.status : normalizedImported.status,
+        workflow: projectManagerReviewApproved(existingProject) ? existingProject.workflow : normalizedImported.workflow,
+      };
+      changed = true;
+    }
+    const alreadyRegistered = existingIndex >= 0;
+    if (localStorage.getItem(importKey) && alreadyRegistered) return;
+    if (!alreadyRegistered) {
+      const project = {
+        id: `customer-project-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        ...normalizedImported,
+        savedAt: new Date().toLocaleString("ko-KR"),
+      };
+      projects.unshift(project);
+      newestImportedProject = project;
+      changed = true;
+    }
+    localStorage.setItem(importKey, "done");
+  });
+
+  if (!changed) return;
+  writeCustomerProjects(projects);
+  if (newestImportedProject) {
+    localStorage.setItem(CUSTOMER_PROJECT_KEY, JSON.stringify(newestImportedProject));
+  }
+}
+
+async function syncCustomerProjectsFromCloud({ notify = false } = {}) {
+  if (!window.haoSubmissionSync?.isConfigured?.()) {
+    if (notify) updateAiStatus("온라인 접수 API가 아직 연결되지 않아 현재 브라우저와 기본 등록 프로젝트만 표시합니다.");
+    renderCustomerProjects();
+    return [];
+  }
+  try {
+    const remoteProjects = await window.haoSubmissionSync.listProjects();
+    const projects = readCustomerProjects();
+    remoteProjects.forEach((remote, index) => {
+      const normalized = window.haoWorkflow?.normalizeCustomerSubmission
+        ? window.haoWorkflow.normalizeCustomerSubmission(remote)
+        : remote;
+      const remoteId = String(remote.cloudSubmissionId || remote.submissionId || remote.id || `remote-${index}`);
+      const existingIndex = projects.findIndex((item) =>
+        String(item.cloudSubmissionId || item.submissionId || "") === remoteId
+        || (remote.sourceImportId && item.sourceImportId === remote.sourceImportId),
+      );
+      const incoming = {
+        ...normalized,
+        id: existingIndex >= 0 ? projects[existingIndex].id : `customer-project-cloud-${remoteId}`,
+        cloudSubmissionId: remoteId,
+        savedAt: remote.savedAt || new Date().toLocaleString("ko-KR"),
+      };
+      if (existingIndex >= 0) {
+        const local = projects[existingIndex];
+        projects[existingIndex] = projectManagerReviewApproved(local)
+          ? { ...incoming, status: local.status, workflow: local.workflow, contentSummary: local.contentSummary, contentSummaryText: local.contentSummaryText }
+          : incoming;
+      } else {
+        projects.unshift(incoming);
+      }
+    });
+    writeCustomerProjects(projects);
+    renderCustomerProjects();
+    if (notify) updateAiStatus(`온라인 고객 접수 ${remoteProjects.length}건을 동기화했습니다.`);
+    return remoteProjects;
+  } catch (error) {
+    if (notify && error?.status === 401 && window.haoSubmissionSync?.setAdminToken) {
+      const supplied = window.prompt("접수 서버 관리자 비밀번호를 입력해주세요.", "") || "";
+      if (supplied.trim()) {
+        window.haoSubmissionSync.setAdminToken(supplied);
+        return syncCustomerProjectsFromCloud({ notify: true });
+      }
+    }
+    renderCustomerProjects();
+    if (notify) updateAiStatus(error?.message || "온라인 고객 접수를 불러오지 못했습니다.");
+    return [];
+  }
 }
 
 function currentProjectData() {
@@ -8548,6 +9111,8 @@ function imageDraftFactSummary() {
 
 function buildImageDraftBrief() {
   const p = product();
+  const reviewedProject = activeCustomerProject();
+  const reviewedSummary = contentSummaryText(reviewedProject);
   const facts = imageDraftFactSummary();
   const direction = value("imageDraftDirection") || "A";
   const positionLabels = {
@@ -8576,6 +9141,8 @@ function buildImageDraftBrief() {
   const mainCopy = value("draftMainCopy") || p.oneLine;
   const goal = value("imageDraftGoal") || "첫 화면의 제품 인지, 고객 자료와의 일치, 디자이너 보정 범위를 확인";
   const production = DETAIL_PAGE_PRODUCTION_STANDARD.planningDesign;
+  const figmaReference = reviewedProject?.figmaReferenceSet || {};
+  const figmaLabels = Array.isArray(figmaReference.labels) ? figmaReference.labels : [];
   const directionFocus = direction === "B"
     ? "제품 장점과 구매 이유를 빠르게 이해시키는 정보/구매 판단형"
     : "브랜드 신뢰, 원료 스토리, 선물 가치를 감성적으로 보여주는 브랜드형";
@@ -8595,6 +9162,14 @@ function buildImageDraftBrief() {
 - 고객 참고: ${facts.references}
 - 기준 파일: ${facts.assets}
 
+[승인된 1차 내용정리본]
+${reviewedSummary || "승인된 내용정리본 없음"}
+
+[상세페이지 AI 제작 툴 기본 지침]
+- 기준 파일: ${AI_DETAIL_PRODUCTION_POLICY.guideFile}
+- 정보 우선순위: ${AI_DETAIL_PRODUCTION_POLICY.sourceOrder.join(" → ")}
+${AI_DETAIL_PRODUCTION_POLICY.hardRules.map((item) => `- ${item}`).join("\n")}
+
 [시각 방향]
 - 목적: ${directionFocus}
 - 사진 배치: ${positionLabels[value("draftImagePosition")] || positionLabels.right}
@@ -8607,8 +9182,13 @@ function buildImageDraftBrief() {
 [레퍼런스 적용 우선순위]
 ${DESIGN_REFERENCE_POLICY.priority.map((item, index) => `${index + 1}. ${item}`).join("\n")}
 - Figma 기준 팀: ${DESIGN_REFERENCE_POLICY.figmaTeam}
-- 공유 아카이브: ${DESIGN_REFERENCE_POLICY.sharedArchiveLabel} (${DESIGN_REFERENCE_POLICY.sharedArchiveUrl})
-- Figma와 MYBOX 자료는 색·카피·레이아웃을 통째로 복제하지 않고 섹션 역할, 정보 밀도, 사진 리듬, 조판 방식만 분석
+- Figma 개별 시안 등록: ${Number(figmaReference.registered || 0)}건
+- Figma 브라우저 열람 확인: ${Number(figmaReference.browserViewAvailable || 0)}건
+- Figma 자동분석·이미지 참조 가능: ${Number(figmaReference.apiAccessible || 0)}건
+- 연결된 시안 목록: ${figmaLabels.length ? figmaLabels.join(", ") : "프로젝트별 연결 자료 없음"}
+- 자동분석 가능 건수가 0이면 Figma 시안을 실제 이미지 입력으로 사용했다고 간주하지 않음
+- 공유 아카이브: ${DESIGN_REFERENCE_POLICY.sharedArchiveLabel}${DESIGN_REFERENCE_POLICY.sharedArchiveUrl ? ` (${DESIGN_REFERENCE_POLICY.sharedArchiveUrl})` : ` (${DESIGN_REFERENCE_POLICY.sharedArchiveStatus})`}
+- Figma와 Google Drive의 실제 제작 자료는 색·카피·레이아웃을 통째로 복제하지 않고 섹션 역할, 정보 밀도, 사진 리듬, 조판 방식만 분석
 - 제품군과 판매 목적이 맞지 않는 레퍼런스는 사용하지 않으며, 한 시안에는 핵심 레퍼런스 3~5개만 선별
 - 실제 이미지 생성 참조에는 사용 권한이 확인된 고객 자료와 Figma 승인 프레임만 넣고, 출처가 불분명한 이미지는 구조 참고에만 사용
 
@@ -9073,6 +9653,19 @@ function createImageDraftBrief() {
     alert("프로젝트를 먼저 불러와주세요.");
     return "";
   }
+  if (!projectManagerReviewApproved()) {
+    showPanel("projects");
+    renderProjectReviewGate();
+    alert("관리자 내용 검수 완료 후 프롬프트를 생성할 수 있습니다.");
+    updateAiStatus("1차 내용정리본 검수 승인이 필요합니다.");
+    return "";
+  }
+  if (!projectFigmaReferenceReady()) {
+    showPanel("projects");
+    alert("연결된 Figma 상세페이지 시안의 편집 권한과 프레임 이미지 준비가 아직 완료되지 않았습니다.");
+    updateAiStatus("Figma 시안 자동분석 0/6 · 연결 계정 편집 권한이 필요합니다.");
+    return "";
+  }
   const brief = buildImageDraftBrief();
   if ($("#imageDraftBrief")) $("#imageDraftBrief").value = brief;
   const direction = value("imageDraftDirection") || "A";
@@ -9087,6 +9680,17 @@ function createImageDraftBrief() {
     direction,
     humanDesignerWorkflow: true,
   });
+  const active = activeCustomerProject();
+  if (active) {
+    const updated = projectFromAdminFields(active);
+    updated.status = "기획 생성";
+    updated.workflow = {
+      ...(updated.workflow || {}),
+      prompt: { status: "generated", at: new Date().toISOString() },
+      imageDraft: { status: "ready", at: "" },
+    };
+    persistCustomerProject(updated);
+  }
   $("#imageFlowBrief")?.classList.add("done");
   $("#imageFlowDraft")?.classList.add("active");
   updateAiStatus("고객 자료를 고정한 이미지 시안 생성 브리프를 만들었습니다.");
@@ -9119,6 +9723,7 @@ async function registerImageDraftFile(file, generation = null) {
     return;
   }
   if (currentImageDraftObjectUrl) URL.revokeObjectURL(currentImageDraftObjectUrl);
+  currentGeneratedImageDraftFile = file;
   currentImageDraftObjectUrl = URL.createObjectURL(file);
   setImageDraftPreview(currentImageDraftObjectUrl, file.name);
   const projectId = imageDraftProjectId();
@@ -9128,7 +9733,27 @@ async function registerImageDraftFile(file, generation = null) {
     updateAiStatus("시안은 현재 화면에 등록됐지만 브라우저 저장소에는 저장하지 못했습니다.");
   }
   saveImageDraftState({ fileName: file.name, status: "draft", generation });
-  updateAiStatus("이미지 시안을 등록했습니다. 새로고침 후에도 이 브라우저에서 다시 불러옵니다.");
+  const active = activeCustomerProject();
+  if (active) {
+    const updated = { ...active };
+    updated.status = "시안 제작";
+    updated.workflow = {
+      ...(updated.workflow || {}),
+      imageDraft: { status: "generated", at: new Date().toISOString(), fileName: file.name },
+    };
+    persistCustomerProject(updated);
+  }
+  if (productionRootDirectoryHandle) {
+    try {
+      await saveProductionBundleToFolder(file);
+    } catch (error) {
+      updateProductionFolderStatus(`폴더 저장 실패 · ${error?.message || "권한과 경로를 확인해주세요."}`, false);
+      updateAiStatus("이미지는 브라우저에 저장됐지만 작업 폴더 자동 저장에 실패했습니다.");
+    }
+  }
+  updateAiStatus(productionRootDirectoryHandle
+    ? "이미지 시안을 등록하고 연결된 업체별 작업 폴더에도 저장했습니다."
+    : "이미지 시안을 등록했습니다. 새로고침 후에도 이 브라우저에서 다시 불러옵니다.");
   if (generation?.provider === "openai") {
     requestAnimationFrame(() => {
       $("#imageDraftViewport")?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -9974,6 +10599,7 @@ Project: ${p.productName}
 Customer type: ${config.customerLabel}
 Production route: ${config.name}
 Selected draft: ${selectedDraft} ${template}
+Figma detail-page draft library: ${DESIGN_REFERENCE_POLICY.figmaLibraryUrl}
 
 [목표]
 ${config.goal}
@@ -10230,10 +10856,22 @@ async function generateAllFromTopbar() {
     updateAiStatus("프로젝트 불러오기 완료 후 기획/시안 자동 생성을 눌러주세요.");
     return;
   }
+  const active = activeCustomerProject();
+  if (!projectManagerReviewApproved(active)) {
+    showPanel("projects");
+    renderProjectReviewGate(active);
+    alert("관리자 내용 검수가 필요합니다. 고객 원문과 1차 내용정리본을 확인한 뒤 ‘내용 검수 완료’를 눌러주세요.");
+    updateAiStatus("관리자 검수 승인 후 기획 프롬프트와 이미지 시안을 생성할 수 있습니다.");
+    return;
+  }
   if (currentImageGenerationController) {
     showPanel("drafts");
     setImageGenerationNotice("working", "이미지 시안 생성 중", "현재 진행 중인 상단·중단·하단 이미지 생성을 이어서 보여드립니다.");
     return;
+  }
+
+  if (!productionRootDirectoryHandle && "showDirectoryPicker" in window) {
+    await connectProductionFolder({ quietCancel: true });
   }
 
   const originalText = button?.textContent || "기획/시안 자동 생성";
@@ -10535,14 +11173,18 @@ $("#generateAll")?.addEventListener("click", (event) => {
   generateAllFromTopbar();
 });
 $("#generatePlan")?.addEventListener("click", () => generatePlan());
-$("#generateDrafts")?.addEventListener("click", () => generateDrafts());
+$("#generateDrafts")?.addEventListener("click", async () => {
+  if (!productionRootDirectoryHandle && "showDirectoryPicker" in window) await connectProductionFolder({ quietCancel: true });
+  generateDrafts();
+});
 $("#toggleGuideMode")?.addEventListener("click", () => toggleGuideMode());
 $("#generateClientMail")?.addEventListener("click", () => generateClientMail());
 $("#runClientPreflight")?.addEventListener("click", () => renderClientPreflight());
 $("#copyClientMail")?.addEventListener("click", () => copyResultText("#clientMailResult", "A/B 시안 전달 메일을 복사했습니다."));
 $("#openClientMail")?.addEventListener("click", () => openMailDraft("#clientMailResult", `[${value("productName") || "상세페이지"}] 상세페이지 1차 방향성 시안 전달드립니다`));
-$("#applyDraftEdits")?.addEventListener("click", (event) => {
+$("#applyDraftEdits")?.addEventListener("click", async (event) => {
   event.preventDefault();
+  if (!productionRootDirectoryHandle && "showDirectoryPicker" in window) await connectProductionFolder({ quietCancel: true });
   generateImageDraftConcept();
 });
 $("#copyImagePrompt")?.addEventListener("click", () => {
@@ -10573,6 +11215,16 @@ $("#imageDraftZoom")?.addEventListener("input", () => {
 $("#addImageRevision")?.addEventListener("click", addImageRevisionRequest);
 $("#copyDesignerHandoff")?.addEventListener("click", copyDesignerHandoff);
 $("#resetImageDraftWorkflow")?.addEventListener("click", resetImageDraftReviewState);
+$("#connectProductionFolder")?.addEventListener("click", async () => {
+  const handle = await connectProductionFolder();
+  if (handle) {
+    try {
+      await saveProductionBundleToFolder(currentGeneratedImageDraftFile);
+    } catch (error) {
+      updateProductionFolderStatus(`폴더 저장 실패 · ${error?.message || "권한과 경로를 확인해주세요."}`, false);
+    }
+  }
+});
 $("#imageDraftDirection")?.addEventListener("change", () => {
   saveImageDraftState({ direction: value("imageDraftDirection") });
 });
@@ -10613,7 +11265,13 @@ $("#generateFigmaBrief")?.addEventListener("click", () => {
   updateWorkflowState();
 });
 $("#openFigmaPlaceholder")?.addEventListener("click", () => {
-  alert("현재는 Figma API 연결 전 단계입니다. 다음 개발 단계에서 이 버튼에 Figma 파일 생성/열기 기능을 연결합니다.");
+  const figmaUrl = DESIGN_REFERENCE_POLICY.figmaReferenceIndexUrl || DESIGN_REFERENCE_POLICY.figmaLibraryUrl;
+  if (!figmaUrl) {
+    alert("Figma 상세페이지 시안 기준 주소가 등록되지 않았습니다.");
+    return;
+  }
+  window.open(figmaUrl, "_blank", "noopener,noreferrer");
+  updateAiStatus("Figma 상세페이지 시안 레퍼런스 허브를 열었습니다.");
 });
 $("#confirmRequestFromRoute")?.addEventListener("click", () => {
   if ($("#revisionMailResult")) $("#revisionMailResult").textContent = generateRevisionMailText();
@@ -10639,7 +11297,9 @@ document.addEventListener("click", (event) => {
 });
 $("#refreshLeads")?.addEventListener("click", renderLeads);
 $("#refreshProjects")?.addEventListener("click", renderProjects);
-$("#refreshCustomerProjects")?.addEventListener("click", renderCustomerProjects);
+$("#refreshCustomerProjects")?.addEventListener("click", () => syncCustomerProjectsFromCloud({ notify: true }));
+$("#approveProjectReview")?.addEventListener("click", approveCurrentProjectReview);
+$("#downloadContentSummary")?.addEventListener("click", () => downloadCurrentContentSummary());
 $("#cancelProjectDelete")?.addEventListener("click", () => {
   pendingDeleteProjectId = "";
   $("#projectDeleteDialog")?.close();
@@ -10677,15 +11337,30 @@ $("#productionRoute")?.addEventListener("change", () => {
   "consultSummary", "clientRequests", "emphasis", "banWords", "mustInclude", "references",
 ].forEach((id) => {
   const field = document.getElementById(id);
-  field?.addEventListener("input", markCustomerFieldCompletion);
-  field?.addEventListener("change", markCustomerFieldCompletion);
+  field?.addEventListener("input", () => {
+    markCustomerFieldCompletion();
+    invalidateCurrentProjectReview();
+    renderProjectReviewGate();
+  });
+  field?.addEventListener("change", () => {
+    markCustomerFieldCompletion();
+    invalidateCurrentProjectReview();
+    renderProjectReviewGate();
+  });
 });
 removeRequestedTestProjects();
 restoreHoabiCompleteExampleOnce();
+restoreImportedCustomerProjectsOnce();
+syncCustomerProjectsFromCloud();
+window.haoSubmissionSync?.startAutoSync?.(async () => {
+  await syncCustomerProjectsFromCloud();
+  updateAiStatus("다른 기기에서 변경된 중앙 서버 내용을 자동 반영했습니다.");
+}, 8000);
 renderLeads();
 renderProjects();
 renderCustomerProjects();
 markCustomerFieldCompletion();
+renderProjectReviewGate();
 setupBriefTextareaExpandTriggers();
 renderCustomerAssetBoxes();
 loadAiSettings();

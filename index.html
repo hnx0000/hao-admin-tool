@@ -10,7 +10,7 @@
       document.documentElement.classList.add("admin-customer-clean");
       const cleanStyle = document.createElement("link");
       cleanStyle.rel = "stylesheet";
-      cleanStyle.href = "관리자툴 비교/02_고객용톤 개선안/admin-clean.css?v=20260728-02";
+      cleanStyle.href = "admin-dark.css?v=20260819-1";
       document.head.appendChild(cleanStyle);
     }
   </script>
@@ -88,6 +88,19 @@
         </div>
         <div class="lead-list" id="customerProjectList">아직 접수된 고객 작성 내용이 없습니다.</div>
       </div>
+      <section class="project-review-gate is-pending" id="projectReviewGate" aria-live="polite">
+        <div>
+          <p class="eyebrow">관리자 검수 게이트</p>
+          <h3 id="projectReviewTitle">프로젝트를 불러온 뒤 내용을 검수하세요</h3>
+          <p id="projectReviewDescription">고객 원문과 1차 내용정리본을 비교하고, 사실·누락·증빙 상태를 확인해야 시안 생성이 열립니다.</p>
+          <div class="project-review-checks" id="projectReviewChecks"></div>
+        </div>
+        <div class="project-review-actions">
+          <span class="review-gate-status" id="projectReviewStatus">검수 전</span>
+          <button class="secondary small" id="downloadContentSummary" type="button">1차 내용정리본 받기</button>
+          <button class="primary small" id="approveProjectReview" type="button">내용 검수 완료</button>
+        </div>
+      </section>
       <div class="grid two">
         <label>고객사명<input id="clientName" placeholder="예: 호아비"></label>
         <label>제품명<input id="productName" placeholder="예: 호아비 리치꿀스틱 30포"></label>
@@ -353,8 +366,10 @@
         <div class="draft-editor-actions">
           <button class="primary small" id="applyDraftEdits">브리프 생성 + 이미지 시안 만들기</button>
           <button class="secondary small" id="copyImagePrompt">생성 프롬프트 복사</button>
+          <button class="secondary small" id="connectProductionFolder" type="button">작업 폴더 연결</button>
           <button class="secondary small" id="cancelImageGeneration" type="button" hidden>생성 취소</button>
           <p>완성 상세페이지가 아니라 디자이너가 방향·구성·무드를 판단하는 세로형 시안 보드를 생성합니다.</p>
+          <p class="production-folder-status" id="productionFolderStatus">폴더 미연결 · 생성 결과는 현재 브라우저에 우선 보관됩니다.</p>
         </div>
         <div class="image-generation-notice" id="imageGenerationNotice" aria-live="polite">
           <span></span>
@@ -667,7 +682,7 @@
         </div>
         <div class="route-action-buttons">
           <button class="secondary small" id="generateFigmaBrief">Figma 초안 생성</button>
-          <button class="secondary small" id="openFigmaPlaceholder">Figma 열기 준비</button>
+          <button class="secondary small" id="openFigmaPlaceholder">Figma 시안 자료 열기</button>
           <button class="secondary small" id="confirmRequestFromRoute">컨펌 요청</button>
           <button class="secondary small" id="finalizeRoute">최종 확정</button>
         </div>
@@ -742,8 +757,13 @@
     <div>
       <p class="eyebrow">영구 삭제 안내</p>
       <h2 id="projectDeleteTitle">이 프로젝트를 영구 삭제할까요?</h2>
-      <p><strong id="projectDeleteName">선택한 프로젝트</strong>의 고객 작성 내용과 현재 선택 정보가 목록에서 완전히 삭제됩니다.</p>
-      <p class="delete-dialog-warning">이 작업은 취소하거나 복구할 수 없습니다.</p>
+      <p><strong id="projectDeleteName">선택한 프로젝트</strong>의 고객 작성 내용, 서버 원본 파일, 현재 브라우저 보관본이 함께 삭제됩니다.</p>
+      <p class="delete-dialog-warning">서버에서 5분짜리 일회용 삭제 승인을 받은 뒤 실행되며, 취소하거나 복구할 수 없습니다.</p>
+      <label class="delete-confirm-field" for="projectDeleteConfirmText">
+        <span>확인을 위해 프로젝트명을 그대로 입력</span>
+        <input id="projectDeleteConfirmText" type="text" autocomplete="off" spellcheck="false">
+      </label>
+      <p class="delete-dialog-error" id="projectDeleteError" role="alert"></p>
     </div>
     <div class="delete-dialog-actions">
       <button class="secondary" id="cancelProjectDelete" type="button">아니요, 유지</button>
@@ -759,15 +779,24 @@
     <div class="customer-assets-list" id="customerAssetsList"></div>
   </dialog>
 
+  <script src="hao-config.js?v=20260819-3"></script>
+  <script src="workflow-core.js?v=20260819-1"></script>
+  <script src="submission-sync.js?v=20260819-3"></script>
   <script src="data/detail-template-dataset.js"></script>
   <script src="data/company-reference-dataset.js"></script>
   <script src="data/company-reference-auto.js"></script>
-  <script src="customer-file-store.js?v=20260724-2"></script>
-  <script src="app.js?v=20260728-11"></script>
+  <script>
+    if (["", "localhost", "127.0.0.1"].includes(location.hostname)
+      && new URLSearchParams(location.search).get("mode") !== "public") {
+      document.write('<script src="data/local-customer-projects.js?v=20260819-2"><\/script>');
+    }
+  </script>
+  <script src="customer-file-store.js?v=20260819-2"></script>
+  <script src="app.js?v=20260819-3"></script>
   <script>
     if (document.documentElement.classList.contains("admin-customer-clean")) {
       const cleanScript = document.createElement("script");
-      cleanScript.src = "관리자툴 비교/02_고객용톤 개선안/admin-clean.js?v=20260724";
+      cleanScript.src = "admin-dark.js?v=20260819-1";
       document.body.appendChild(cleanScript);
     }
   </script>

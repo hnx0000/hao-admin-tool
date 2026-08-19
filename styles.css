@@ -10,6 +10,126 @@
   --gold: #bd8b37;
 }
 
+/* 2026-08-19: 고객 접수 → 관리자 검수 → 프롬프트/이미지 생성 게이트 */
+.project-review-gate {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 18px 0 22px;
+  padding: 18px 20px;
+  border: 1px solid #343a46;
+  border-left: 3px solid #677284;
+  border-radius: 14px;
+  background: #1d2128;
+}
+
+.project-review-gate.is-approved {
+  border-left-color: #3fb57a;
+  background: #1c2723;
+}
+
+.project-review-gate.is-blocked {
+  border-left-color: #c69348;
+}
+
+.project-review-gate h3 {
+  margin: 4px 0 7px;
+  color: #f3f5f8;
+  font-size: 17px;
+}
+
+.project-review-gate p:not(.eyebrow) {
+  margin: 0;
+  color: #aeb6c3;
+  line-height: 1.6;
+}
+
+.project-review-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 13px;
+}
+
+.project-review-checks span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 27px;
+  padding: 4px 9px;
+  border: 1px solid #3a424f;
+  border-radius: 999px;
+  background: #252a32;
+  color: #c9d0da;
+  font-size: 12px;
+}
+
+.project-review-checks span.ok {
+  border-color: #315e4a;
+  color: #8ed7b2;
+}
+
+.project-review-checks span.missing {
+  border-color: #685134;
+  color: #e2ba7f;
+}
+
+.project-review-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 430px;
+}
+
+.review-gate-status,
+.production-folder-status {
+  color: #929cab;
+  font-size: 12px;
+}
+
+.review-gate-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid #3a424f;
+  border-radius: 999px;
+  background: #15191f;
+}
+
+.project-review-gate.is-approved .review-gate-status {
+  border-color: #315e4a;
+  color: #8ed7b2;
+}
+
+#generateAll.is-review-locked {
+  opacity: .58;
+  filter: saturate(.55);
+}
+
+.production-folder-status {
+  flex-basis: 100%;
+  margin: 0 !important;
+}
+
+.production-folder-status.is-connected {
+  color: #8ed7b2;
+}
+
+@media (max-width: 820px) {
+  .project-review-gate {
+    flex-direction: column;
+  }
+
+  .project-review-actions {
+    justify-content: flex-start;
+    max-width: none;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -869,6 +989,41 @@ button {
   font-weight: 850;
 }
 
+.delete-confirm-field {
+  display: grid;
+  gap: 7px;
+  margin-top: 18px;
+}
+
+.delete-confirm-field span {
+  color: #4c4641;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.delete-confirm-field input {
+  width: 100%;
+  border: 1px solid #d4c9bf;
+  border-radius: 9px;
+  padding: 11px 12px;
+  background: #f8f5f2;
+  color: #171412;
+  font: inherit;
+}
+
+.delete-confirm-field input:focus {
+  border-color: #a43f37;
+  outline: 3px solid rgba(164, 63, 55, .12);
+}
+
+.project-delete-dialog .delete-dialog-error {
+  min-height: 20px;
+  margin-top: 7px !important;
+  color: #bd4c42 !important;
+  font-size: 12px !important;
+  font-weight: 800;
+}
+
 .delete-dialog-actions {
   display: grid;
   grid-template-columns: 1fr 1.25fr;
@@ -1282,6 +1437,54 @@ textarea {
   font-size: 12px;
   font-weight: 850;
   text-decoration: none;
+}
+
+.customer-asset-item button {
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: #2f6fe4;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.customer-asset-item button:disabled {
+  cursor: wait;
+  opacity: .68;
+}
+
+.file-type-preview.remote {
+  border: 1px solid #33404f;
+  background: #202832;
+  color: #72a3ff;
+}
+
+.project-storage-line {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  color: #9ba8b7;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.project-storage-line i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #d58a3b;
+}
+
+.project-storage-line.synced i {
+  background: #45c98a;
+  box-shadow: 0 0 0 3px rgba(69, 201, 138, .1);
+}
+
+.project-storage-line.failed i {
+  background: #f2b84b;
+  box-shadow: 0 0 0 3px rgba(242, 184, 75, .1);
 }
 
 .assets-empty {

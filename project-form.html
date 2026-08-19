@@ -215,16 +215,26 @@
           <textarea data-field="referenceUrls" rows="4" placeholder="예: 참고하고 싶은 상세페이지 주소를 한 줄에 하나씩 입력해주세요."></textarea>
         </label>
 
+        <label>추가 요청 및 기존 신청서 원문
+          <textarea data-field="additionalNotes" rows="12" placeholder="기존 신청서에서 옮겨온 내용이나 추가 전달사항을 원문 그대로 입력해주세요."></textarea>
+        </label>
+
         <div class="upload-row compact-upload">
           <label class="upload">제품 이미지
             <input type="file" data-file-group="productImages" multiple accept="image/*">
             <span class="upload-hint" data-file-status="productImages">여러 장 선택 가능</span>
           </label>
+          <label class="upload">로고·스펙 자료
+            <input type="file" data-file-group="brandLogo" multiple accept="image/*,.pdf,.ai,.eps,.svg">
+            <span class="upload-hint" data-file-status="brandLogo">여러 개 선택 가능</span>
+          </label>
           <label class="upload">참고 자료
-            <input type="file" data-file-group="referenceFiles" multiple accept="image/*,.pdf">
+            <input type="file" data-file-group="referenceFiles" multiple accept="image/*,.pdf,.ppt,.pptx">
             <span class="upload-hint" data-file-status="referenceFiles">여러 개 선택 가능</span>
           </label>
         </div>
+
+        <aside class="dual-storage-status" id="dualStorageStatus" hidden aria-live="polite"></aside>
 
         <div class="hidden-field-flags">
           <label><input type="checkbox" data-group="imageAssets" value="제품 이미지 있음" checked>제품 이미지 있음</label>
@@ -355,7 +365,10 @@
     </section>
   </main>
 
-  <script src="customer-file-store.js?v=20260724"></script>
-  <script src="project-form.js?v=20260724-13"></script>
+  <script src="hao-config.js?v=20260819-1"></script>
+  <script src="workflow-core.js?v=20260819-1"></script>
+  <script src="submission-sync.js?v=20260819-2"></script>
+  <script src="customer-file-store.js?v=20260819-2"></script>
+  <script src="project-form.js?v=20260819-2"></script>
 </body>
 </html>
