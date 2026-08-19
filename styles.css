@@ -416,6 +416,55 @@ body {
   gap: 8px;
 }
 
+.system-status-link {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  margin-top: 22px;
+  border: 1px solid #3b4654;
+  border-radius: 10px;
+  padding: 12px 13px;
+  background: rgba(255, 255, 255, 0.045);
+  color: #f3f6fa;
+  text-decoration: none;
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+
+.system-status-link:hover {
+  transform: translateY(-1px);
+  border-color: #63758a;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.system-status-link strong,
+.system-status-link small {
+  display: block;
+}
+
+.system-status-link strong {
+  font-size: 13px;
+}
+
+.system-status-link small {
+  margin-top: 3px;
+  color: #98a7b9;
+  font-size: 11px;
+}
+
+.system-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f2b84b;
+  box-shadow: 0 0 0 4px rgba(242, 184, 75, .11);
+}
+
+.system-status-arrow {
+  color: #8ea2b8;
+  font-size: 13px;
+}
+
 .step {
   width: 100%;
   padding: 12px 14px;
