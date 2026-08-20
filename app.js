@@ -123,15 +123,15 @@ const SECTION_VARIANT_BADGES = {
 const AI_SERVICE_ROLES = {
   planning: {
     label: "AI 기획 생성",
-    defaultProvider: "openai",
-    preferredModel: "chatgpt",
+    defaultProvider: "rules",
+    preferredModel: "codex-package",
     purpose: "제품 분석, 타깃 분석, 상세페이지 섹션 구성, 카피 방향 생성",
   },
   draftSummary: {
-    label: "A/B 시안 요약",
-    defaultProvider: "openai",
-    preferredModel: "chatgpt",
-    purpose: "A/B 상세페이지 시안의 고객용 비교 요약 생성",
+    label: "최적 단일 시안 요약",
+    defaultProvider: "rules",
+    preferredModel: "codex-package",
+    purpose: "최적 단일 상세페이지 방향의 고객용 요약 생성",
   },
   designWorkflow: {
     label: "AI 디자인 워크플로우",
@@ -153,34 +153,34 @@ const AI_SERVICE_ROLES = {
   },
   clientMail: {
     label: "고객 발송 메일",
-    defaultProvider: "openai",
-    preferredModel: "chatgpt",
-    purpose: "A/B 시안 전달 메일 생성",
+    defaultProvider: "rules",
+    preferredModel: "codex-package",
+    purpose: "최적 단일 시안 전달 메일 생성",
   },
   revision: {
     label: "고객 피드백 반영",
-    defaultProvider: "openai",
-    preferredModel: "chatgpt",
+    defaultProvider: "rules",
+    preferredModel: "codex-package",
     purpose: "고객 회신 기반 수정 시안과 컨펌 방향 생성",
   },
   psdHandoff: {
     label: "PSD 작업 지시",
-    defaultProvider: "openai",
-    preferredModel: "chatgpt",
+    defaultProvider: "rules",
+    preferredModel: "codex-package",
     purpose: "미얀마 디자이너용 바이버 전달 패키지 생성",
   },
   finalMail: {
     label: "최종 납품 메일",
-    defaultProvider: "openai",
-    preferredModel: "chatgpt",
+    defaultProvider: "rules",
+    preferredModel: "codex-package",
     purpose: "PNG/JPG, 분할페이지, PSD 원본 추가금 안내 메일 생성",
   },
 };
 const AI_PROVIDERS = {
-  openai: {
-    label: "OpenAI / ChatGPT",
-    status: "active",
-    run: runOpenAiProvider,
+  codex: {
+    label: "Codex 작업 패키지",
+    status: "manual",
+    run: runRulesProvider,
   },
   claude: {
     label: "Claude",
@@ -204,15 +204,15 @@ const AI_PROVIDERS = {
   },
 };
 const AI_ROLE_PROVIDER_MAP = {
-  planning: "openai",
-  draftSummary: "openai",
+  planning: "rules",
+  draftSummary: "rules",
   designWorkflow: "local-design",
   imageDesign: "local-design",
   qualityReview: "claude",
-  clientMail: "openai",
-  revision: "openai",
-  psdHandoff: "openai",
-  finalMail: "openai",
+  clientMail: "rules",
+  revision: "rules",
+  psdHandoff: "rules",
+  finalMail: "rules",
 };
 const DETAIL_DESIGN_QUALITY_GATES = [
   {
@@ -505,32 +505,6 @@ function readAiSettings() {
   }
 }
 
-function validateOpenAiSecretKey(rawValue) {
-  const apiKey = String(rawValue || "").trim();
-  if (!apiKey) {
-    return {
-      ok: false,
-      reason: "empty",
-      message: "OpenAI 비밀 API 키를 입력해주세요.",
-    };
-  }
-  if (/^key_[A-Za-z0-9_-]+$/i.test(apiKey)) {
-    return {
-      ok: false,
-      reason: "key-id",
-      message: "현재 값은 API 키 ID(key_…)라서 이미지 생성에 사용할 수 없습니다. OpenAI API Keys 화면에서 새 비밀키를 만든 직후 한 번만 표시되는 전체 키(sk-… 또는 sk-proj-…)를 입력해주세요.",
-    };
-  }
-  if (!/^sk-[A-Za-z0-9_-]{20,}$/.test(apiKey)) {
-    return {
-      ok: false,
-      reason: "invalid-format",
-      message: "OpenAI 비밀 API 키 형식이 아닙니다. 전체 키(sk-… 또는 sk-proj-…)를 확인해주세요.",
-    };
-  }
-  return { ok: true, reason: "secret", apiKey };
-}
-
 function readCustomerProject() {
   try {
     return JSON.parse(localStorage.getItem(CUSTOMER_PROJECT_KEY) || "{}");
@@ -647,7 +621,7 @@ function providerForRole(role) {
   const settings = readAiSettings();
   const roleConfig = AI_SERVICE_ROLES[role] || {};
   const mappedProvider = settings.roleProviders?.[role] || AI_ROLE_PROVIDER_MAP[role] || roleConfig.defaultProvider || "rules";
-  if (mappedProvider === "openai" && settings.mode === "openai" && settings.apiKey) return "openai";
+  if (mappedProvider === "codex") return "codex";
   if (mappedProvider === "local-design") return "local-design";
   if (mappedProvider === "rules") return "rules";
   return "rules";
@@ -684,10 +658,6 @@ function readAiArtifacts(projectKey = currentProjectKey()) {
   } catch {
     return {};
   }
-}
-
-async function runOpenAiProvider({ task, payload }) {
-  return callOpenAi(task, payload);
 }
 
 async function runRulesProvider({ fallback }) {
@@ -746,56 +716,18 @@ function renderAiWorkflowStatus() {
 }
 
 function loadAiSettings() {
-  const settings = readAiSettings();
-  if ($("#aiMode")) $("#aiMode").value = "openai";
-  if ($("#apiKey")) $("#apiKey").value = settings.apiKey || "";
-  if ($("#aiModel")) $("#aiModel").value = settings.model || "gpt-5.6-terra";
-  const validation = validateOpenAiSecretKey(settings.apiKey);
-  if (settings.apiKey && !validation.ok && $("#imageApiSettings")) $("#imageApiSettings").open = true;
+  writeAiSettings({ mode: "codex-package" });
   updateAiStatus();
 }
 
 function saveAiSettings() {
-  const apiKey = $("#apiKey").value.trim();
-  const validation = validateOpenAiSecretKey(apiKey);
-  if (!validation.ok) {
-    if ($("#imageApiSettings")) $("#imageApiSettings").open = true;
-    $("#apiKey")?.setCustomValidity(validation.message);
-    $("#apiKey")?.reportValidity();
-    setImageGenerationNotice("error", "이미지 생성 연결 실패", validation.message);
-    updateAiStatus(validation.message);
-    return;
-  }
-  $("#apiKey")?.setCustomValidity("");
-  writeAiSettings({
-    mode: "openai",
-    apiKey: validation.apiKey,
-    model: $("#aiModel").value.trim() || "gpt-5.6-terra",
-  });
-  updateAiStatus();
-  if (apiKey) {
-    setImageGenerationNotice(
-      "ready",
-      "이미지 생성 연결 완료",
-      "GPT Image 2 · 세로형 최대 1024 × 1536 · High · 고객 이미지를 직접 참조해 생성합니다.",
-    );
-  }
-  alert("AI 설정을 저장했습니다.");
+  writeAiSettings({ mode: "codex-package" });
+  updateAiStatus("Codex 작업 패키지 방식이 적용되어 있습니다.");
 }
 
 function updateAiStatus(message) {
-  const settings = readAiSettings();
   if (!$("#aiStatus")) return;
-  if (message) {
-    $("#aiStatus").textContent = message;
-    return;
-  }
-  const validation = validateOpenAiSecretKey(settings.apiKey);
-  $("#aiStatus").textContent = validation.ok
-    ? "GPT Image 2 고품질 이미지 시안 생성이 연결되어 있습니다."
-    : settings.apiKey
-      ? validation.message
-      : "비밀 API 키를 저장하면 GPT Image 2로 실제 이미지 시안을 생성합니다.";
+  $("#aiStatus").textContent = message || "API 키 없이 승인 DB를 Codex 작업 패키지로 생성합니다.";
 }
 
 function updateReferenceStatus() {
@@ -810,42 +742,6 @@ function updateReferenceStatus() {
     : figmaConnected
       ? "Figma 상세페이지 시안 기준 주소 연결됨"
       : "참고 상세페이지 자료가 아직 연결되지 않았습니다.";
-}
-
-async function callOpenAi(task, payload) {
-  const settings = readAiSettings();
-  if (settings.mode !== "openai") return null;
-  const validation = validateOpenAiSecretKey(settings.apiKey);
-  if (!validation.ok) throw new Error(validation.message);
-
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${validation.apiKey}`,
-    },
-    body: JSON.stringify({
-      model: settings.model || "gpt-4.1-mini",
-      input: [
-        {
-          role: "system",
-          content: "너는 한국 상세페이지 제작사의 내부 기획 어시스턴트다. 과장 광고와 의약품 오인 표현을 피하고, 실무자가 바로 쓸 수 있는 구조화된 한국어 결과를 만든다.",
-        },
-        {
-          role: "user",
-          content: `작업: ${task}\n\n입력 데이터:\n${JSON.stringify(payload, null, 2)}`,
-        },
-      ],
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `API 오류 ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.output_text || data.output?.flatMap((item) => item.content || []).map((item) => item.text || "").join("\n") || "";
 }
 
 function renderLeads() {
@@ -9326,36 +9222,22 @@ function setImageGenerationBusy(isBusy) {
     button.classList.toggle("is-generating", isBusy);
   });
   if ($("#generateDrafts")) {
-    $("#generateDrafts").textContent = isBusy ? "고품질 시안 생성 중…" : "고품질 이미지 시안 생성";
+    $("#generateDrafts").textContent = isBusy ? "작업 패키지 생성 중…" : "Codex 작업 패키지 준비";
   }
   if ($("#applyDraftEdits")) {
-    $("#applyDraftEdits").textContent = isBusy ? "이미지 시안 생성 중…" : "브리프 생성 + 이미지 시안 만들기";
+    $("#applyDraftEdits").textContent = isBusy ? "작업 패키지 생성 중…" : "브리프 생성 + Codex 패키지";
   }
   if ($("#cancelImageGeneration")) $("#cancelImageGeneration").hidden = !isBusy;
 }
 
 function imageGenerationErrorMessage(error) {
   const rawMessage = String(error?.message || "");
-  const normalizedMessage = rawMessage.toLowerCase();
-  if (error?.name === "AbortError") return "이미지 생성을 취소했습니다.";
-  if (error?.status === 401) return "비밀 API 키가 올바르지 않거나 만료·폐기되었습니다. key_… 형태의 키 ID가 아니라 새로 발급한 전체 비밀키(sk-… 또는 sk-proj-…)를 입력해주세요.";
-  if (
-    normalizedMessage.includes("billing hard limit")
-    || normalizedMessage.includes("insufficient_quota")
-    || normalizedMessage.includes("exceeded your current quota")
-  ) {
-    return "OpenAI API 결제 한도에 도달했습니다. Platform의 Billing에서 크레딧 또는 월 사용 한도를 올린 뒤 같은 버튼을 다시 눌러주세요.";
-  }
-  if (error?.status === 429) return "API 요청 한도에 도달했습니다. 잠시 후 다시 시도하거나 OpenAI Platform의 사용 한도를 확인해주세요.";
-  if (error?.status >= 500) return "이미지 생성 서버가 잠시 응답하지 않습니다. 잠시 후 다시 시도해주세요.";
-  return rawMessage || "이미지 시안을 생성하지 못했습니다.";
+  if (error?.name === "AbortError") return "작업 패키지 생성을 취소했습니다.";
+  return rawMessage || "Codex 작업 패키지를 생성하지 못했습니다.";
 }
 
 function isImageGenerationBillingError(error) {
-  const message = String(error?.message || "").toLowerCase();
-  return message.includes("billing hard limit")
-    || message.includes("insufficient_quota")
-    || message.includes("exceeded your current quota");
+  return false;
 }
 
 function base64ImageFile(base64, fileName) {
@@ -9430,62 +9312,6 @@ async function imageDraftReferenceFiles() {
   return [...customerReferences.slice(0, 4), ...figmaReferences].slice(0, 6);
 }
 
-async function requestOpenAiImageDraft(prompt, references, signal, fileSuffix = "") {
-  const settings = readAiSettings();
-  const validation = validateOpenAiSecretKey(settings.apiKey);
-  if (!validation.ok) {
-    const error = new Error(validation.message);
-    error.status = 401;
-    throw error;
-  }
-
-  const requestOptions = {
-    method: "POST",
-    headers: { Authorization: `Bearer ${validation.apiKey}` },
-    signal,
-  };
-  let endpoint = "https://api.openai.com/v1/images/generations";
-  if (references.length) {
-    endpoint = "https://api.openai.com/v1/images/edits";
-    const body = new FormData();
-    body.append("model", IMAGE_DRAFT_MODEL);
-    body.append("prompt", prompt);
-    body.append("size", IMAGE_DRAFT_SIZE);
-    body.append("quality", IMAGE_DRAFT_QUALITY);
-    body.append("output_format", "png");
-    references.forEach((reference) => body.append("image[]", reference.blob, reference.name));
-    requestOptions.body = body;
-  } else {
-    requestOptions.headers["Content-Type"] = "application/json";
-    requestOptions.body = JSON.stringify({
-      model: IMAGE_DRAFT_MODEL,
-      prompt,
-      size: IMAGE_DRAFT_SIZE,
-      quality: IMAGE_DRAFT_QUALITY,
-      output_format: "png",
-      n: 1,
-    });
-  }
-
-  const response = await fetch(endpoint, requestOptions);
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const error = new Error(data?.error?.message || `이미지 생성 API 오류 ${response.status}`);
-    error.status = response.status;
-    throw error;
-  }
-
-  const result = data?.data?.[0];
-  const fileName = generatedImageDraftFileName(fileSuffix);
-  if (result?.b64_json) return base64ImageFile(result.b64_json, fileName);
-  if (result?.url) {
-    const imageResponse = await fetch(result.url, { signal });
-    if (!imageResponse.ok) throw new Error("생성된 이미지 파일을 내려받지 못했습니다.");
-    return new File([await imageResponse.blob()], fileName, { type: "image/png" });
-  }
-  throw new Error("이미지 생성 결과에 이미지 데이터가 없습니다.");
-}
-
 async function imageFileBitmap(file) {
   if ("createImageBitmap" in window) return createImageBitmap(file);
   const objectUrl = URL.createObjectURL(file);
@@ -9536,81 +9362,21 @@ async function generateImageDraftConcept() {
     alert("프로젝트를 먼저 불러와주세요.");
     return;
   }
-  const settings = readAiSettings();
-  const validation = validateOpenAiSecretKey(settings.apiKey);
-  if (!validation.ok) {
-    if ($("#imageApiSettings")) $("#imageApiSettings").open = true;
-    $("#apiKey")?.focus();
-    setImageGenerationNotice("error", "이미지 생성 연결 필요", validation.message);
-    updateAiStatus(validation.message);
-    return;
-  }
-
   const prompt = createImageDraftBrief();
-  if (!prompt || currentImageGenerationController) return;
-  currentImageGenerationController = new AbortController();
+  if (!prompt) return;
   setImageGenerationBusy(true);
-  saveImageDraftState({ status: "generating" });
+  saveImageDraftState({ status: "packaging" });
 
   try {
-    setImageGenerationNotice("working", "고객 자료 확인 중", "제품·패키지·로고 원본을 이미지 생성 참조로 준비하고 있습니다.");
-    const references = await imageDraftReferenceFiles();
-    const segmentFiles = [];
-    for (let index = 0; index < IMAGE_DRAFT_SEGMENTS.length; index += 1) {
-      const segment = IMAGE_DRAFT_SEGMENTS[index];
-      setImageGenerationNotice(
-        "working",
-        `${index + 1}/${IMAGE_DRAFT_SEGMENTS.length} · ${segment.label} 생성 중`,
-        references.length
-          ? `고객·Figma 승인 이미지 ${references.length}개를 고정 참조해 ${segment.progress} 구간을 만들고 있습니다.`
-          : `고객 작성 정보와 브리프로 ${segment.progress} 구간을 만들고 있습니다.`,
-      );
-      const segmentPrompt = `${prompt}
-
-[이번 생성 구간: ${segment.label}]
-${segment.prompt}
-
-[연결 일관성]
-- 고객 패키지에서 추출한 색, 제품 비율, 사진 조명, 좌우 여백과 조판 그리드를 세 구간 모두 동일하게 유지
-- 다른 구간의 내용을 한 장 안에 다시 반복하지 않음`;
-      segmentFiles.push(await requestOpenAiImageDraft(
-        segmentPrompt,
-        references,
-        currentImageGenerationController.signal,
-        `${index + 1}_${segment.id}`,
-      ));
-    }
-    setImageGenerationNotice("working", "세 구간 연결 중", "상단·중단·하단 시안을 하나의 긴 미리보기로 정리하고 있습니다.");
-    const file = await stitchImageDraftSegments(segmentFiles);
-    await registerImageDraftFile(file, {
-      provider: "openai",
-      model: IMAGE_DRAFT_MODEL,
-      quality: IMAGE_DRAFT_QUALITY,
-      size: IMAGE_DRAFT_SIZE,
-      referenceCount: references.length,
-      segmentCount: IMAGE_DRAFT_SEGMENTS.length,
-      workflow: "opening-story-decision",
-      generatedAt: new Date().toLocaleString("ko-KR"),
-    });
-    setImageGenerationNotice(
-      "success",
-      "상세페이지 방향성 시안 생성 완료",
-      "상단 설득·중단 근거·하단 판단을 연결한 시안입니다. 구간별 수정 요청을 기록해주세요.",
-    );
-    updateAiStatus(`GPT Image 2 고품질 3구간 시안 생성 완료 · 고객 이미지 ${references.length}개 참조`);
+    setImageGenerationNotice("working", "Codex 작업 패키지 생성 중", "승인된 고객 사실·레퍼런스·기획 브리프의 무결성 해시를 계산하고 있습니다.");
+    if (!window.haoCodexMvp?.preparePackage) throw new Error("Codex 작업 패키지 모듈을 불러오지 못했습니다.");
+    await window.haoCodexMvp.preparePackage({ prompt });
   } catch (error) {
     const message = imageGenerationErrorMessage(error);
-    const isCanceled = error?.name === "AbortError";
     saveImageDraftState({ status: readImageDraftState().fileName ? "draft" : "brief" });
-    const title = isCanceled
-      ? "생성 취소"
-      : isImageGenerationBillingError(error)
-        ? "API 결제 한도 확인 필요"
-        : "이미지 생성 실패";
-    setImageGenerationNotice(isCanceled ? "ready" : "error", title, message);
+    setImageGenerationNotice("error", "작업 패키지 생성 실패", message);
     updateAiStatus(message);
   } finally {
-    currentImageGenerationController = null;
     setImageGenerationBusy(false);
   }
 }
@@ -11403,19 +11169,6 @@ $("#closeCustomerAssets")?.addEventListener("click", closeCustomerAssetsDialog);
 $$("[data-customer-assets]").forEach((button) => {
   button.addEventListener("click", () => openCustomerAssetsDialog(button.dataset.customerAssets));
 });
-$("#saveAiSettings")?.addEventListener("click", saveAiSettings);
-$("#apiKey")?.addEventListener("input", () => {
-  $("#apiKey")?.setCustomValidity("");
-  const validation = validateOpenAiSecretKey($("#apiKey")?.value);
-  if (validation.reason === "key-id" || validation.reason === "invalid-format") {
-    updateAiStatus(validation.message);
-  } else if (validation.ok) {
-    updateAiStatus("비밀키 형식을 확인했습니다. ‘이 브라우저에 연결 저장’을 눌러주세요.");
-  } else {
-    updateAiStatus("비밀 API 키를 입력해주세요.");
-  }
-});
-$("#aiMode")?.addEventListener("change", updateAiStatus);
 $$("#review input[type='checkbox']").forEach((checkbox) => {
   checkbox.addEventListener("change", updateWorkflowState);
 });
