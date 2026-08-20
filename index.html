@@ -13,7 +13,7 @@
       document.documentElement.classList.add("admin-customer-clean");
       const cleanStyle = document.createElement("link");
       cleanStyle.rel = "stylesheet";
-      cleanStyle.href = "admin-dark.css?v=20260819-1";
+      cleanStyle.href = "admin-dark.css?v=20260820-planning1";
       document.head.appendChild(cleanStyle);
     }
   </script>
@@ -31,7 +31,7 @@
       <button class="step active" data-target="projects">1. 프로젝트</button>
       <button class="step" data-target="brief">2. 상담/자료</button>
       <button class="step internal-step" data-target="planning">3. AI 기획</button>
-      <button class="step" data-target="drafts">3. 최적 단일 시안</button>
+      <button class="step" data-target="drafts">3. 기획안·시안 검수</button>
       <button class="step" data-target="feedback">4. 고객 피드백</button>
       <button class="step" data-target="revision">5. 수정 시안/컨펌</button>
       <button class="step" data-target="psd">6. 제작 전달</button>
@@ -274,14 +274,41 @@
       <div class="section-head">
         <div>
           <p class="eyebrow">Step 4</p>
-        <h2>최적 단일 시안 · 디자이너 협업</h2>
+        <h2>기획안·시안 검수</h2>
         </div>
         <button class="primary small" id="generateDrafts">Codex 작업 패키지 준비</button>
       </div>
       <div class="workflow-guide" id="guide-drafts">
         <strong>이 단계에서 할 일</strong>
-        <p>검수된 고객 사실과 최적 단일 방향을 작업 패키지로 만들고, Codex에서 생성한 결과를 다시 불러옵니다. 최종 상세페이지 제작 화면이 아닙니다.</p>
+        <p>제작 전 기획안을 먼저 확인하고 수정 메모 또는 검수 완료를 남기세요. 승인 후에만 이미지 시안 작업 패키지를 준비합니다.</p>
       </div>
+      <section class="planning-review-card" id="planningReviewCard" hidden>
+        <div class="planning-review-head">
+          <div>
+            <span class="planning-review-label">제작 전 기획안</span>
+            <h3 id="planningReviewTitle">등록된 기획안</h3>
+            <p id="planningReviewMeta">프로젝트 기획안 정보를 확인 중입니다.</p>
+          </div>
+          <span class="planning-review-status" id="planningReviewStatus">검수 전</span>
+        </div>
+        <div class="planning-review-layout">
+          <a class="planning-review-preview" id="planningReviewOpen" href="#" target="_blank" rel="noopener noreferrer">
+            <img id="planningReviewImage" alt="제작 전 상세페이지 기획안 미리보기">
+            <span>클릭해서 전체 기획안 보기</span>
+          </a>
+          <div class="planning-review-controls">
+            <div class="planning-review-facts" id="planningReviewFacts"></div>
+            <label>수정 메모
+              <textarea id="planningRevisionNote" rows="5" placeholder="예: 03번 섹션의 사용 장면을 직장인 아침 루틴 중심으로 변경하고, 04번 근거 영역은 증빙 확인 후 노출"></textarea>
+            </label>
+            <div class="planning-review-actions">
+              <button class="secondary small" id="savePlanningRevision" type="button">수정 메모 저장</button>
+              <button class="primary small" id="approvePlanningReview" type="button">기획안 검수 완료</button>
+            </div>
+            <small>검수 상태와 수정 메모는 현재 프로젝트 기준으로 저장됩니다.</small>
+          </div>
+        </div>
+      </section>
       <details class="ai-orchestration-box">
         <summary>AI 품질 검수 결과</summary>
         <div class="result compact-result" id="aiQualityReview">Codex 결과 manifest를 불러오면 이미지·프롬프트·QA 상태가 표시됩니다.</div>
@@ -298,7 +325,7 @@
           <p id="templateBReason">제품 정보 기반 추천 방향입니다.</p>
         </div>
       </div>
-      <details class="image-api-settings" id="imageApiSettings" open>
+      <details class="image-api-settings" id="imageApiSettings">
         <summary>
           <span>Codex 반자동 작업 연결</span>
           <b>승인 DB · 무결성 해시 · 결과 manifest</b>
@@ -318,28 +345,16 @@
         <p id="aiStatus">API 키 없이 승인된 고객 DB를 Codex 작업 패키지로 생성합니다.</p>
         <small id="apiKeyHelp">관리자툴은 Codex 계정 사용량을 웹 API처럼 호출하지 않습니다. 내려받은 ZIP의 RUN_WITH_CODEX.md를 Codex에서 실행한 뒤 결과 manifest를 이 화면으로 가져오세요.</small>
       </details>
-      <details class="draft-editor" open>
-        <summary>이미지 시안 생성 조건</summary>
+      <details class="draft-editor">
+        <summary>시안 생성 조건 수정 <small>필요할 때만 열기</small></summary>
         <input id="draftTone" type="hidden" value="premium">
         <div class="draft-editor-grid">
-          <label>추천 방향
-            <select id="imageDraftDirection">
-              <option value="A">최적 단일 방향 · 고객 사실과 레퍼런스 교차 분석</option>
-            </select>
-          </label>
           <label>사진 배치
             <select id="draftImagePosition">
               <option value="right">히어로 제품 오른쪽 · 카피 왼쪽</option>
               <option value="left">히어로 제품 왼쪽 · 카피 오른쪽</option>
               <option value="top">상단 제품 집중 · 아래 스토리</option>
               <option value="full">제품 중심 풀 비주얼</option>
-            </select>
-          </label>
-          <label>시안 정보 밀도
-            <select id="draftDensity">
-              <option value="balanced">균형형 · 4개 장면</option>
-              <option value="rich">풍부형 · 5~6개 장면</option>
-              <option value="simple">집중형 · 3개 장면</option>
             </select>
           </label>
           <label>시각적으로 검토할 핵심
@@ -351,27 +366,44 @@
               <option value="structure">전체 정보 흐름과 위계</option>
             </select>
           </label>
-          <label>이미지 안의 문구 범위
-            <select id="imageDraftCopyPolicy">
-              <option value="hero">핵심 헤드라인만</option>
-              <option value="placeholder">문구 없이 조판 자리만</option>
-              <option value="minimal">헤드라인과 짧은 키워드만</option>
-            </select>
-          </label>
-          <label>메인 카피
-            <input id="draftMainCopy" placeholder="비워두면 고객의 한 줄 설명을 사용합니다">
-          </label>
-          <label>고객 자료 반영 강도
-            <select id="imageDraftReferenceStrength" disabled>
-              <option value="high">높음 · 제품/로고 형태 우선 고정</option>
-            </select>
-          </label>
           <label class="wide-field">이번 시안에서 확인할 것
             <textarea id="imageDraftGoal" rows="3" placeholder="예: 첫 화면에서 제품이 바로 인지되고, 중간 원료 장면과 선물 패키지 장면의 무드가 자연스럽게 이어지는지 확인"></textarea>
           </label>
         </div>
+        <details class="draft-advanced-options">
+          <summary>고급 조건</summary>
+          <div class="draft-advanced-grid">
+            <label>추천 방향
+              <select id="imageDraftDirection">
+                <option value="A">최적 단일 방향 · 고객 사실과 레퍼런스 교차 분석</option>
+              </select>
+            </label>
+            <label>시안 정보 밀도
+              <select id="draftDensity">
+                <option value="balanced">균형형 · 4개 장면</option>
+                <option value="rich">풍부형 · 5~6개 장면</option>
+                <option value="simple">집중형 · 3개 장면</option>
+              </select>
+            </label>
+            <label>이미지 안의 문구 범위
+              <select id="imageDraftCopyPolicy">
+                <option value="hero">핵심 헤드라인만</option>
+                <option value="placeholder">문구 없이 조판 자리만</option>
+                <option value="minimal">헤드라인과 짧은 키워드만</option>
+              </select>
+            </label>
+            <label>메인 카피
+              <input id="draftMainCopy" placeholder="비워두면 고객의 한 줄 설명을 사용합니다">
+            </label>
+            <label>고객 자료 반영 강도
+              <select id="imageDraftReferenceStrength" disabled>
+                <option value="high">높음 · 제품/로고 형태 우선 고정</option>
+              </select>
+            </label>
+          </div>
+        </details>
         <div class="draft-editor-actions">
-          <button class="primary small" id="applyDraftEdits">브리프 생성 + Codex 패키지</button>
+          <button class="primary small" id="applyDraftEdits">작업 패키지 만들기</button>
           <button class="secondary small" id="copyImagePrompt">생성 프롬프트 복사</button>
           <button class="secondary small" id="connectProductionFolder" type="button">작업 폴더 연결</button>
           <button class="secondary small" id="cancelImageGeneration" type="button" hidden>생성 취소</button>
@@ -425,6 +457,9 @@
         </section>
 
         <aside class="image-draft-inspector">
+          <details>
+            <summary>브리프·검토 화면 설정</summary>
+            <div class="image-draft-inspector-body">
           <section class="inspector-block">
             <div class="mini-section-head">
               <span>생성 입력</span>
@@ -468,6 +503,8 @@
             <button class="secondary small" id="applyImagePresentation" type="button">검토 화면에 적용</button>
             <p class="inspector-note">제품 모양·배경·텍스트 픽셀 수정은 이미지 재생성 요청으로 보내고, 코드는 확대·위치·검토 문구만 다룹니다.</p>
           </section>
+            </div>
+          </details>
         </aside>
       </div>
 

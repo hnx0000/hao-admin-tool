@@ -43,6 +43,19 @@ const DESIGN_REFERENCE_POLICY = Object.freeze({
     "쿠팡·컬리·스마트스토어의 판매 흐름 분석",
   ]),
 });
+const PROJECT_PLANNING_PREVIEWS = Object.freeze([
+  Object.freeze({
+    id: "saengjeup-planning-v1",
+    clientToken: "생즙연구소",
+    title: "생즙연구소 과일주스 상세페이지 제작 전 기획안 v1",
+    imageUrl: "assets/planning/saengjeup-planning-v1.png",
+    viewerUrl: "planning/saengjeup-v1.html",
+    dimensions: "3,000 × 18,000px",
+    targetLength: "최종 상세페이지 17,000~20,000px",
+    structure: "왼쪽 촬영 지시 · 중앙 롱페이지 와이어 · 오른쪽 구성 레퍼런스",
+    referenceBasis: "Google Drive 2026(기획안) 28개 · 실제 제작 프로젝트 22개 분석",
+  }),
+]);
 const AI_DETAIL_PRODUCTION_POLICY = Object.freeze({
   guideFile: "AI_TOOL_GUIDELINES.md",
   sourceOrder: ["고객 원문", "1차 내용정리본", "관리자 검수 수정", "승인된 참고자료"],
@@ -1389,6 +1402,124 @@ function customerProjectReadiness(project) {
   return { score, missing, fields };
 }
 
+function planningPreviewForProject(project = {}) {
+  const identity = [project.clientName, project.companyName, project.brandName, project.productName]
+    .filter(Boolean)
+    .join(" ");
+  return PROJECT_PLANNING_PREVIEWS.find((item) => identity.includes(item.clientToken)) || null;
+}
+
+function currentPlanningPreview() {
+  return planningPreviewForProject({
+    clientName: value("clientName"),
+    productName: value("productName"),
+  }) || planningPreviewForProject(activeCustomerProject() || {});
+}
+
+function planningReviewStorageKey(preview = currentPlanningPreview()) {
+  return preview ? `planningReview:${preview.id}:${currentProjectKey()}` : "";
+}
+
+function readPlanningReview(preview = currentPlanningPreview()) {
+  const key = planningReviewStorageKey(preview);
+  if (!key) return { status: "pending", note: "", updatedAt: "" };
+  try {
+    return JSON.parse(localStorage.getItem(key) || "{}") || { status: "pending", note: "", updatedAt: "" };
+  } catch {
+    return { status: "pending", note: "", updatedAt: "" };
+  }
+}
+
+function writePlanningReview(next, preview = currentPlanningPreview()) {
+  const key = planningReviewStorageKey(preview);
+  if (!key) return;
+  localStorage.setItem(key, JSON.stringify({
+    status: next.status || "pending",
+    note: next.note || "",
+    updatedAt: new Date().toLocaleString("ko-KR"),
+  }));
+  renderPlanningReviewCard();
+}
+
+function renderPlanningReviewCard() {
+  const card = $("#planningReviewCard");
+  if (!card) return;
+  const preview = currentPlanningPreview();
+  card.hidden = !preview;
+  if (!preview) return;
+
+  const review = readPlanningReview(preview);
+  const statusNode = $("#planningReviewStatus");
+  const titleNode = $("#planningReviewTitle");
+  const metaNode = $("#planningReviewMeta");
+  const imageNode = $("#planningReviewImage");
+  const openNode = $("#planningReviewOpen");
+  const factsNode = $("#planningReviewFacts");
+  const noteNode = $("#planningRevisionNote");
+  const approveButton = $("#approvePlanningReview");
+
+  if (titleNode) titleNode.textContent = preview.title;
+  if (metaNode) metaNode.textContent = `${preview.dimensions} · ${preview.targetLength}`;
+  if (imageNode) imageNode.src = preview.imageUrl;
+  if (openNode) openNode.href = preview.viewerUrl;
+  if (factsNode) factsNode.innerHTML = [preview.structure, preview.referenceBasis, "정확한 문구·표·법정 정보는 승인 후 디자이너가 조판"]
+    .map((item) => `<span>${escapeHtml(item)}</span>`)
+    .join("");
+  if (noteNode && document.activeElement !== noteNode) noteNode.value = review.note || "";
+  if (statusNode) {
+    statusNode.className = "planning-review-status";
+    if (review.status === "approved") {
+      statusNode.classList.add("is-approved");
+      statusNode.textContent = "✓ 검수 완료";
+    } else if (review.status === "revision") {
+      statusNode.classList.add("is-revision");
+      statusNode.textContent = "수정 요청";
+    } else {
+      statusNode.textContent = "검수 전";
+    }
+    if (review.updatedAt) statusNode.title = `최근 저장 ${review.updatedAt}`;
+  }
+  if (approveButton) approveButton.textContent = review.status === "approved" ? "검수 완료됨" : "기획안 검수 완료";
+}
+
+function savePlanningRevision() {
+  const preview = currentPlanningPreview();
+  if (!preview) return;
+  const note = $("#planningRevisionNote")?.value.trim() || "";
+  if (!note) {
+    alert("수정할 내용을 먼저 입력해주세요.");
+    return;
+  }
+  writePlanningReview({ status: "revision", note }, preview);
+  updateAiStatus("기획안 수정 메모를 현재 프로젝트에 저장했습니다.");
+}
+
+function approvePlanningReview() {
+  const preview = currentPlanningPreview();
+  if (!preview) return;
+  const note = $("#planningRevisionNote")?.value.trim() || "";
+  writePlanningReview({ status: "approved", note }, preview);
+  updateAiStatus("기획안 검수 완료 상태를 저장했습니다. 이미지 시안 작업을 진행할 수 있습니다.");
+}
+
+function planningReviewApproved() {
+  const preview = currentPlanningPreview();
+  return !preview || readPlanningReview(preview).status === "approved";
+}
+
+function ensurePlanningReviewApproved() {
+  const preview = currentPlanningPreview();
+  if (!preview || planningReviewApproved()) return true;
+  showPanel("drafts");
+  renderPlanningReviewCard();
+  const card = $("#planningReviewCard");
+  card?.scrollIntoView({ behavior: "smooth", block: "start" });
+  card?.classList.add("needs-attention");
+  window.setTimeout(() => card?.classList.remove("needs-attention"), 1600);
+  alert("등록된 제작 전 기획안을 먼저 확인하고 ‘기획안 검수 완료’를 눌러주세요.");
+  return false;
+}
+
 function renderCustomerProjects() {
   const list = $("#customerProjectList");
   if (!list) return;
@@ -1405,6 +1536,7 @@ function renderCustomerProjects() {
   const statuses = ["신규 접수", "확인 중", "검수 완료", "기획 생성", "시안 제작", "고객 회신 대기", "완료"];
   const projectCards = visibleProjects.map((project) => {
     const readiness = customerProjectReadiness(project);
+    const planningPreview = planningPreviewForProject(project);
     const cloudStatus = project.workflow?.cloudSync?.status || "local-only";
     const storageText = cloudStatus === "synced"
       ? "브라우저 + 접수 서버 저장 완료"
@@ -1431,6 +1563,7 @@ function renderCustomerProjects() {
           <p>상태: ${escapeHtml(project.status || "신규 접수")}</p>
           <p class="project-storage-line ${escapeHtml(cloudStatus)}"><i aria-hidden="true"></i>${storageText}</p>
           <p class="readiness-line"><b>시안 준비도 ${readiness.score}%</b> · ${readinessText}</p>
+          ${planningPreview ? `<p class="planning-available-line">✓ 제작 전 기획안 등록 · ${escapeHtml(planningPreview.dimensions)}</p>` : ""}
           ${fieldCompletion}
         </div>
         <div class="lead-actions">
@@ -1438,6 +1571,7 @@ function renderCustomerProjects() {
             ${statuses.map((status) => `<option ${status === project.status ? "selected" : ""}>${status}</option>`).join("")}
           </select>
           <button class="secondary small import-customer-project" data-id="${escapeHtml(project.id)}">불러오기</button>
+          ${planningPreview ? `<button class="secondary small open-project-planning" data-id="${escapeHtml(project.id)}">기획안 확인</button>` : ""}
           <div class="project-manage">
             <button class="secondary small project-manage-toggle" type="button" data-id="${escapeHtml(project.id)}" aria-expanded="false">프로젝트 관리</button>
             <div class="project-manage-menu" hidden>
@@ -1468,6 +1602,13 @@ function renderCustomerProjects() {
   });
   $$(".import-customer-project").forEach((button) => {
     button.addEventListener("click", () => importCustomerProjectById(button.dataset.id));
+  });
+  $$(".open-project-planning").forEach((button) => {
+    button.addEventListener("click", () => {
+      importCustomerProjectById(button.dataset.id);
+      showPanel("drafts");
+      renderPlanningReviewCard();
+    });
   });
   $$(".project-manage-toggle").forEach((button) => {
     button.addEventListener("click", (event) => {
@@ -1629,6 +1770,7 @@ function importCustomerProjectById(id) {
     updateCustomerProjectStatus(id, "확인 중");
   }
   renderProjectReviewGate(readCustomerProject());
+  renderPlanningReviewCard();
 }
 
 async function renderCustomerAssetBoxes(project = readCustomerProject()) {
@@ -2934,9 +3076,9 @@ function nextWorkflowAction() {
     return {
       target: "drafts",
       action: "drafts",
-      title: "A/B 상세페이지 시안을 생성하세요",
-      detail: "내부 AI 워크플로우가 제품 분석, 디자인 전략, 섹션 구성, A/B 시안을 백그라운드에서 준비합니다.",
-      button: "A/B 시안 생성",
+      title: "제작 전 기획안을 검수하세요",
+      detail: "등록된 기획안의 구성과 촬영 방향을 확인한 뒤 최적 단일 시안 작업 패키지를 준비합니다.",
+      button: "기획안 검수",
     };
   }
   if (!flags.hasClientMail) {
@@ -2944,7 +3086,7 @@ function nextWorkflowAction() {
       target: "drafts",
       action: "clientMail",
       title: "고객에게 보낼 메일 초안을 준비하세요",
-      detail: "A/B 시안이 생성되었습니다. 발송 전 점검 후 고객에게 방향성 선택 메일을 보낼 수 있습니다.",
+      detail: "최적 단일 시안이 생성되었습니다. 발송 전 점검 후 고객에게 검토 메일을 보낼 수 있습니다.",
       button: "메일 초안 생성",
     };
   }
@@ -2953,7 +3095,7 @@ function nextWorkflowAction() {
       target: "feedback",
       action: "",
       title: "고객 회신을 기다리거나 피드백을 입력하세요",
-      detail: "고객이 선택한 A/B 방향과 수정 요청을 입력하면 AI가 수정 방향을 정리합니다.",
+      detail: "고객이 남긴 수정 요청을 입력하면 섹션별 수정 방향을 정리합니다.",
       button: "피드백 입력",
     };
   }
@@ -3031,6 +3173,7 @@ function updateWorkflowState() {
   setStepDone("delivery", flags.hasFinalMail);
   renderOperatorNextPanel();
   renderProductionHandoffPreflight();
+  renderPlanningReviewCard();
 }
 
 async function generatePlan() {
@@ -9040,6 +9183,7 @@ async function prepareImageDraftWorkspace() {
 }
 
 async function generateDrafts() {
+  if (!ensurePlanningReviewApproved()) return;
   await prepareImageDraftWorkspace();
   return generateImageDraftConcept();
 }
@@ -9366,6 +9510,7 @@ async function stitchImageDraftSegments(files) {
 }
 
 async function generateImageDraftConcept() {
+  if (!ensurePlanningReviewApproved()) return;
   if (!value("productName")) {
     alert("프로젝트를 먼저 불러와주세요.");
     return;
@@ -10754,7 +10899,7 @@ async function generateAllFromTopbar() {
   setImageGenerationNotice(
     "working",
     "원클릭 자동 생성 시작",
-    "불러온 프로젝트 정보로 A/B 추천 방향과 이미지 브리프를 준비하고 있습니다.",
+    "불러온 프로젝트 정보와 승인된 기획안으로 최적 단일 시안 브리프를 준비하고 있습니다.",
   );
 
   try {
@@ -10933,7 +11078,10 @@ function showPanel(target) {
   $$(".panel").forEach((item) => {
     item.classList.toggle("active", item.id === target);
   });
-  if (target === "drafts") initializeImageDraftWorkflow();
+  if (target === "drafts") {
+    initializeImageDraftWorkflow();
+    renderPlanningReviewCard();
+  }
   updateWorkflowState();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -10964,8 +11112,8 @@ async function runBeforePanel(action) {
   if (action === "drafts") {
     setImageGenerationNotice(
       "working",
-      "A/B 추천 방향 준비 중",
-      "화면은 먼저 열렸습니다. 고객 작성 내용을 바탕으로 추천 방향과 이미지 생성 브리프를 정리하고 있습니다.",
+      "최적 단일 방향 준비 중",
+      "화면은 먼저 열렸습니다. 고객 작성 내용과 기획안을 바탕으로 이미지 생성 브리프를 정리하고 있습니다.",
     );
     await prepareImageDraftWorkspace();
     if (readImageDraftState().status === "draft") {
@@ -10978,7 +11126,7 @@ async function runBeforePanel(action) {
       setImageGenerationNotice(
         "ready",
         "이미지 시안 생성 준비 완료",
-        "A/B 추천 방향과 브리프를 확인한 뒤 ‘브리프 생성 + 이미지 시안 만들기’를 눌러주세요.",
+        "기획안을 검수한 뒤 작업 패키지를 만들어 Codex에서 이미지 시안을 생성하세요.",
       );
     }
   }
@@ -11044,6 +11192,7 @@ $("#generateAll")?.addEventListener("click", (event) => {
 });
 $("#generatePlan")?.addEventListener("click", () => generatePlan());
 $("#generateDrafts")?.addEventListener("click", async () => {
+  if (!ensurePlanningReviewApproved()) return;
   if (!productionRootDirectoryHandle && "showDirectoryPicker" in window) await connectProductionFolder({ quietCancel: true });
   generateDrafts();
 });
@@ -11054,9 +11203,12 @@ $("#copyClientMail")?.addEventListener("click", () => copyResultText("#clientMai
 $("#openClientMail")?.addEventListener("click", () => openMailDraft("#clientMailResult", `[${value("productName") || "상세페이지"}] 상세페이지 1차 방향성 시안 전달드립니다`));
 $("#applyDraftEdits")?.addEventListener("click", async (event) => {
   event.preventDefault();
+  if (!ensurePlanningReviewApproved()) return;
   if (!productionRootDirectoryHandle && "showDirectoryPicker" in window) await connectProductionFolder({ quietCancel: true });
   generateImageDraftConcept();
 });
+$("#savePlanningRevision")?.addEventListener("click", savePlanningRevision);
+$("#approvePlanningReview")?.addEventListener("click", approvePlanningReview);
 $("#copyImagePrompt")?.addEventListener("click", () => {
   const brief = $("#imageDraftBrief")?.value.trim() || createImageDraftBrief();
   copyPlainText(brief, "이미지 생성 프롬프트를 복사했습니다.");

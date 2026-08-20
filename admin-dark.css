@@ -1133,6 +1133,171 @@
 }
 
 /* Step 3 · 이미지 시안과 디자이너 협업 */
+.admin-customer-clean .planning-available-line {
+  margin: 7px 0;
+  color: #8fcfa8 !important;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.admin-customer-clean #drafts .planning-review-card {
+  margin-top: 16px;
+  overflow: hidden;
+  border: 1px solid #3b4653;
+  border-radius: 16px;
+  background: #1b2026;
+}
+
+.admin-customer-clean #drafts .planning-review-card.needs-attention {
+  animation: planningAttention 0.8s ease-in-out 2;
+}
+
+@keyframes planningAttention {
+  50% {
+    border-color: rgba(255, 191, 71, 0.85);
+    box-shadow: 0 0 0 4px rgba(255, 191, 71, 0.12);
+  }
+}
+
+.admin-customer-clean #drafts .planning-review-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #303843;
+}
+
+.admin-customer-clean #drafts .planning-review-label {
+  color: #6fa0ff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.admin-customer-clean #drafts .planning-review-head h3 {
+  margin: 6px 0 5px;
+  color: #f2f4f7;
+  font-size: 18px;
+}
+
+.admin-customer-clean #drafts .planning-review-head p {
+  margin: 0;
+  color: #929dab;
+  font-size: 12px;
+}
+
+.admin-customer-clean #drafts .planning-review-status {
+  flex: 0 0 auto;
+  padding: 7px 11px;
+  border: 1px solid #5b4b2d;
+  border-radius: 999px;
+  background: #2b251b;
+  color: #e8bf70;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.admin-customer-clean #drafts .planning-review-status.is-approved {
+  border-color: #315a45;
+  background: #1c2c24;
+  color: #8fd0aa;
+}
+
+.admin-customer-clean #drafts .planning-review-status.is-revision {
+  border-color: #6d4936;
+  background: #30221d;
+  color: #e8a27d;
+}
+
+.admin-customer-clean #drafts .planning-review-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(310px, .65fr);
+  gap: 0;
+}
+
+.admin-customer-clean #drafts .planning-review-preview {
+  position: relative;
+  display: block;
+  height: 680px;
+  overflow: auto;
+  border-right: 1px solid #303843;
+  background: #111419;
+  text-decoration: none;
+}
+
+.admin-customer-clean #drafts .planning-review-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.admin-customer-clean #drafts .planning-review-preview > span {
+  position: sticky;
+  right: 14px;
+  bottom: 14px;
+  float: right;
+  margin: 0 14px 14px 0;
+  padding: 8px 11px;
+  border: 1px solid rgb(255 255 255 / 15%);
+  border-radius: 999px;
+  background: rgb(16 20 25 / 88%);
+  color: #dfe7f5;
+  font-size: 11px;
+  font-weight: 800;
+  backdrop-filter: blur(8px);
+}
+
+.admin-customer-clean #drafts .planning-review-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+}
+
+.admin-customer-clean #drafts .planning-review-facts {
+  display: grid;
+  gap: 7px;
+}
+
+.admin-customer-clean #drafts .planning-review-facts span {
+  padding: 9px 10px;
+  border: 1px solid #343d47;
+  border-radius: 9px;
+  background: #20262d;
+  color: #b8c2cd;
+  font-size: 11px;
+}
+
+.admin-customer-clean #drafts .planning-review-controls label {
+  display: grid;
+  gap: 7px;
+  color: #d8dde4;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-customer-clean #drafts .planning-review-controls textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid #3a434e;
+  border-radius: 10px;
+  background: #15191e;
+  color: #eef1f5;
+  line-height: 1.65;
+}
+
+.admin-customer-clean #drafts .planning-review-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.admin-customer-clean #drafts .planning-review-controls > small {
+  color: #7f8996;
+  line-height: 1.55;
+}
+
 .admin-customer-clean #drafts .workflow-guide {
   border-left-color: #4d83ef;
   background: #1d2229;
@@ -1154,9 +1319,35 @@
   color: #f0f2f5;
 }
 
+.admin-customer-clean #drafts .draft-editor > summary small {
+  margin-left: 6px;
+  color: #7f8996;
+  font-size: 10px;
+  font-weight: 700;
+}
+
 .admin-customer-clean #drafts .draft-editor-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   padding: 0 18px;
+}
+
+.admin-customer-clean #drafts .draft-advanced-options {
+  margin: 12px 18px 0;
+  border-top: 1px solid #343a43;
+  padding-top: 10px;
+}
+
+.admin-customer-clean #drafts .draft-advanced-options > summary {
+  color: #99a4b2;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.admin-customer-clean #drafts .draft-advanced-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding-top: 12px;
 }
 
 .admin-customer-clean #drafts .draft-editor-grid .wide-field,
@@ -1244,7 +1435,7 @@
 
 .admin-customer-clean #drafts .image-draft-studio {
   display: grid;
-  grid-template-columns: minmax(0, 1.42fr) minmax(330px, .78fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   align-items: start;
 }
@@ -1392,9 +1583,21 @@
 }
 
 .admin-customer-clean #drafts .image-draft-inspector {
-  position: sticky;
-  top: 18px;
+  position: static;
   overflow: hidden;
+}
+
+.admin-customer-clean #drafts .image-draft-inspector > details > summary {
+  padding: 14px 16px;
+  color: #cdd4dc;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-customer-clean #drafts .image-draft-inspector-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid #323841;
 }
 
 .admin-customer-clean #drafts .inspector-block {
@@ -1612,14 +1815,22 @@
 }
 
 @media (max-width: 1100px) {
+  .admin-customer-clean #drafts .planning-review-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-customer-clean #drafts .planning-review-preview {
+    height: 560px;
+    border-right: 0;
+    border-bottom: 1px solid #303843;
+  }
+
   .admin-customer-clean #drafts .image-draft-studio {
     grid-template-columns: 1fr;
   }
 
   .admin-customer-clean #drafts .image-draft-inspector {
     position: static;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
   }
 
   .admin-customer-clean #drafts .inspector-block + .inspector-block {
@@ -1642,7 +1853,8 @@
 
 @media (max-width: 760px) {
   .admin-customer-clean #drafts .draft-editor-grid,
-  .admin-customer-clean #drafts .image-draft-inspector,
+  .admin-customer-clean #drafts .image-draft-inspector-body,
+  .admin-customer-clean #drafts .draft-advanced-grid,
   .admin-customer-clean #drafts .production-note-grid {
     grid-template-columns: 1fr;
   }
@@ -1668,6 +1880,14 @@
   .admin-customer-clean #drafts .image-draft-viewport {
     min-height: 480px;
     max-height: 620px;
+  }
+
+  .admin-customer-clean #drafts .planning-review-preview {
+    height: 440px;
+  }
+
+  .admin-customer-clean #drafts .planning-review-actions {
+    grid-template-columns: 1fr;
   }
 }
 
