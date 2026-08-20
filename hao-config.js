@@ -3,11 +3,12 @@ window.HAO_CONFIG = Object.freeze({
   // 관리자 비밀번호와 세션 토큰은 절대로 이 공개 파일에 넣지 않습니다.
   submissionApiEndpoint: "",
   submissionAdminToken: "",
-  // Figma 원본 주소는 공개 배포 파일에 직접 넣지 않습니다.
-  figmaDraftLibraryUrl: "",
-  // 개별 Figma 상세페이지 레퍼런스를 모아둔 로컬 허브입니다.
-  // 공개 배포본에는 원본 Figma URL을 직접 노출하지 않습니다.
-  figmaReferenceIndexUrl: ["", "localhost", "127.0.0.1"].includes(window.location.hostname)
-    ? "figma-reference-index.html"
-    : "",
+  // 사용자 제공 Google Drive 통합 레퍼런스 루트입니다.
+  // 실제 파일 열람은 Google 계정의 Drive 권한을 그대로 따릅니다.
+  googleDriveReferenceRootUrl: "https://drive.google.com/drive/folders/1Z06GingEwMtsjrBNTb0CCfK46IhXKwQS?usp=drive_link",
+  googleDrivePlanningFolderUrl: "https://drive.google.com/drive/folders/1laAhV3yuLhFSqYL2Rwt3gk31jSSq40_6",
+  googleDriveProductionFolderUrl: "https://drive.google.com/drive/folders/1aAStw4Chpvl3zqjF3slsIlS6kEE0PZ7A",
+  googleDriveConnectionStatus: "connected",
+  googleDrivePlanningReferenceCount: 28,
+  googleDriveProductionProjectCount: 22,
 });

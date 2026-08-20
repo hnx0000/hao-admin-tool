@@ -1,33 +1,31 @@
 window.IMPORTED_CUSTOMER_PROJECTS = [
   {
     sourceImportId: "saengjeup-lab-public-project-20260819",
-    sourceImportVersion: "20260819-4-public",
+    sourceImportVersion: "20260820-drive1-public",
     customerInputVersion: "organized-content-v1",
     source: "고객 작성폼 1차 내용정리본 가져오기",
     status: "신규 접수",
     workflow: {
       managerReview: { status: "pending", at: "" },
-      figmaReference: { status: "reference_catalog_ready", at: "2026-08-19T00:00:00+09:00" },
+      driveReference: { status: "connected", at: "2026-08-20T00:00:00+09:00" },
       prompt: { status: "blocked", at: "" },
       imageDraft: { status: "blocked", at: "" },
     },
-    requiresFigmaReference: true,
-    figmaReferenceSet: {
-      registered: 6,
-      browserViewAvailable: 6,
-      apiAccessible: 0,
-      previewCacheAvailable: 0,
-      status: "reference_catalog_ready",
-      previewPaths: [],
-      labels: [
-        "호아비 리치꿀스틱",
-        "제이앤이 통밀칩",
-        "베리피아 버디팟",
-        "심바우 와사비",
-        "카프리나 바디워시",
-        "케이로드",
+    requiresDriveReference: true,
+    driveReferenceSet: {
+      status: "connected",
+      rootFolderUrl: "https://drive.google.com/drive/folders/1Z06GingEwMtsjrBNTb0CCfK46IhXKwQS?usp=drive_link",
+      planningFolderUrl: "https://drive.google.com/drive/folders/1laAhV3yuLhFSqYL2Rwt3gk31jSSq40_6",
+      productionFolderUrl: "https://drive.google.com/drive/folders/1aAStw4Chpvl3zqjF3slsIlS6kEE0PZ7A",
+      planningReferenceCount: 28,
+      productionProjectCount: 22,
+      selectedReferences: [
+        "아침에주스 클렌즈 2종 상세페이지(그린블렌드).jpg",
+        "나비골농협_미숫가루.jpg",
+        "[서울우유] 아침의 주스 2종",
       ],
     },
+    targetDetailPageHeight: { minPx: 17000, maxPx: 20000, axis: "vertical" },
     companyName: "생즙연구소",
     clientName: "생즙연구소",
     contactName: "",
@@ -137,4 +135,3 @@ window.IMPORTED_CUSTOMER_PROJECTS = [
     ],
   },
 ];
-

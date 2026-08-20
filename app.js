@@ -27,16 +27,19 @@ const IMAGE_DRAFT_MODEL = "gpt-image-2";
 const IMAGE_DRAFT_SIZE = "1024x1536";
 const IMAGE_DRAFT_QUALITY = "high";
 const DESIGN_REFERENCE_POLICY = Object.freeze({
-  figmaTeam: "퍼스트마케팅컴퍼니",
-  figmaLibraryUrl: window.HAO_CONFIG?.figmaDraftLibraryUrl || "",
-  figmaReferenceIndexUrl: window.HAO_CONFIG?.figmaReferenceIndexUrl || "",
-  sharedArchiveLabel: "Google Drive 실제 제작 상세페이지 레퍼런스",
-  sharedArchiveUrl: "",
-  sharedArchiveStatus: "폴더 주소 연결 예정",
+  googleDriveRootUrl: window.HAO_CONFIG?.googleDriveReferenceRootUrl || "",
+  googleDrivePlanningUrl: window.HAO_CONFIG?.googleDrivePlanningFolderUrl || "",
+  googleDriveProductionUrl: window.HAO_CONFIG?.googleDriveProductionFolderUrl || "",
+  googleDriveStatus: window.HAO_CONFIG?.googleDriveConnectionStatus || "not_connected",
+  planningReferenceCount: Number(window.HAO_CONFIG?.googleDrivePlanningReferenceCount || 0),
+  productionProjectCount: Number(window.HAO_CONFIG?.googleDriveProductionProjectCount || 0),
+  sharedArchiveLabel: "Google Drive 기획안·실제 제작물 통합 레퍼런스",
+  sharedArchiveUrl: window.HAO_CONFIG?.googleDriveReferenceRootUrl || "",
+  sharedArchiveStatus: "Drive 권한이 있는 계정에서 열람 가능",
   priority: Object.freeze([
     "고객이 작성한 사실 정보와 고객 업로드 제품 원본",
-    "퍼스트마케팅컴퍼니 Figma에서 승인·분류된 상세페이지 프레임",
-    "Google Drive에 정리할 실제 제작 상세페이지에서 승인·선별한 섹션 레퍼런스",
+    "Google Drive 2026(기획안)에서 승인·분류된 제작 전 시안",
+    "Google Drive 2026 실제 제작물에서 승인·선별한 섹션 레퍼런스",
     "쿠팡·컬리·스마트스토어의 판매 흐름 분석",
   ]),
 });
@@ -105,6 +108,10 @@ const DETAIL_PAGE_PRODUCTION_STANDARD = Object.freeze({
   }),
   psdSourceFee: 100000,
   variationDiscountRate: 0.5,
+  longFormProjectRules: Object.freeze({
+    "생즙연구소": Object.freeze({ minHeightPx: 17000, maxHeightPx: 20000 }),
+    "서울우유": Object.freeze({ minHeightPx: 17000, maxHeightPx: 20000 }),
+  }),
 });
 const SECTION_VARIANT_LABELS = {
   auto: "자동 디자인",
@@ -456,7 +463,7 @@ const TEMPLATE_MIX_QUALITY_GATES = [
     check: (html) => html.includes("template-mix-routine-flow") && html.includes("template-mix-purchase-stack") && html.includes("template-mix-final-product"),
   },
   {
-    label: "PNG/Figma 캡처 검수 필요",
+    label: "PNG/전체 미리보기 검수 필요",
     check: () => hasRenderedPreviewEvidence(),
   },
 ];
@@ -736,11 +743,11 @@ function updateReferenceStatus() {
   const auto = window.COMPANY_REFERENCE_AUTO;
   const curated = window.COMPANY_REFERENCE_DATASET;
   const total = auto?.total || curated?.summary?.totalFiles || 0;
-  const figmaConnected = Boolean(DESIGN_REFERENCE_POLICY.figmaLibraryUrl);
+  const driveConnected = DESIGN_REFERENCE_POLICY.googleDriveStatus === "connected" && Boolean(DESIGN_REFERENCE_POLICY.googleDriveRootUrl);
   status.textContent = total
-    ? `참고 상세페이지 ${total}개 분석 데이터 · Figma 시안 기준 주소 연결됨`
-    : figmaConnected
-      ? "Figma 상세페이지 시안 기준 주소 연결됨"
+    ? `참고 상세페이지 ${total}개 분석 데이터 · Google Drive 기획안 ${DESIGN_REFERENCE_POLICY.planningReferenceCount}개 · 제작 프로젝트 ${DESIGN_REFERENCE_POLICY.productionProjectCount}개 연결됨`
+    : driveConnected
+      ? `Google Drive 기획안 ${DESIGN_REFERENCE_POLICY.planningReferenceCount}개 · 제작 프로젝트 ${DESIGN_REFERENCE_POLICY.productionProjectCount}개 연결됨`
       : "참고 상세페이지 자료가 아직 연결되지 않았습니다.";
 }
 
@@ -1013,11 +1020,11 @@ function projectManagerReviewApproved(project = activeCustomerProject()) {
   return project?.workflow?.managerReview?.status === "approved";
 }
 
-function projectFigmaReferenceReady(project = activeCustomerProject()) {
-  if (!project?.requiresFigmaReference) return true;
-  const apiAccessible = Number(project?.figmaReferenceSet?.apiAccessible || 0);
-  const previewCacheAvailable = Number(project?.figmaReferenceSet?.previewCacheAvailable || 0);
-  return apiAccessible > 0 || previewCacheAvailable > 0;
+function projectDriveReferenceReady(project = activeCustomerProject()) {
+  if (project?.requiresDriveReference === false) return true;
+  return DESIGN_REFERENCE_POLICY.googleDriveStatus === "connected"
+    && Boolean(DESIGN_REFERENCE_POLICY.googleDrivePlanningUrl)
+    && Boolean(DESIGN_REFERENCE_POLICY.googleDriveProductionUrl);
 }
 
 function adminReviewChecks(project = activeCustomerProject()) {
@@ -1039,17 +1046,17 @@ function updateGenerateReviewLock(project = activeCustomerProject()) {
   if (!button) return;
   const reviewPending = Boolean(project?.id) && !projectManagerReviewApproved(project);
   const reviewLocked = reviewPending && adminReviewChecks(project).some((item) => !item.ok);
-  const figmaLocked = Boolean(project?.id) && project?.requiresFigmaReference && !projectFigmaReferenceReady(project);
-  const locked = reviewLocked || figmaLocked;
+  const driveLocked = Boolean(project?.id) && !projectDriveReferenceReady(project);
+  const locked = reviewLocked || driveLocked;
   button.classList.toggle("is-review-locked", locked);
   button.setAttribute("aria-disabled", locked ? "true" : "false");
   button.title = reviewLocked
     ? "필수 검수 항목을 보완한 뒤 생성할 수 있습니다."
-    : figmaLocked
-      ? "Figma 시안의 자동분석 권한과 프레임 이미지 연결이 완료되어야 생성할 수 있습니다."
+    : driveLocked
+      ? "Google Drive 기획안과 실제 제작물 레퍼런스가 연결되어야 생성할 수 있습니다."
       : reviewPending
         ? "현재 내용을 검수 완료로 확정하고 프롬프트와 이미지 시안을 생성합니다."
-        : "검수된 내용정리본과 연결된 Figma 시안으로 프롬프트와 이미지 시안을 생성합니다.";
+        : "검수된 내용정리본과 Google Drive 기획안·실제 제작물을 바탕으로 프롬프트와 이미지 시안을 생성합니다.";
 }
 
 function renderProjectReviewGate(project = activeCustomerProject()) {
@@ -1078,20 +1085,20 @@ function renderProjectReviewGate(project = activeCustomerProject()) {
   const checks = adminReviewChecks(project);
   const missing = checks.filter((item) => !item.ok);
   const approved = projectManagerReviewApproved(project);
-  const figmaReady = projectFigmaReferenceReady(project);
+  const driveReady = projectDriveReferenceReady(project);
   gate.classList.add(approved ? "is-approved" : missing.length ? "is-blocked" : "is-pending");
   if (title) title.textContent = approved
     ? `${project.productName || "프로젝트"} 내용 검수 완료`
     : `${project.productName || "프로젝트"} 1차 내용정리본 검수`;
   if (description) description.textContent = approved
-    ? figmaReady
-      ? "승인된 정리본과 연결된 Figma 시안만 이미지 생성 프롬프트의 기준으로 사용합니다. 아래 필드를 수정하면 다시 검수가 필요합니다."
-      : "내용 검수는 완료됐습니다. Figma 시안 자동분석과 프레임 이미지 연결이 완료되면 생성 단계가 열립니다."
+    ? driveReady
+      ? "승인된 정리본과 연결된 Google Drive 기획안·실제 제작물만 구조 참고 기준으로 사용합니다. 아래 필드를 수정하면 다시 검수가 필요합니다."
+      : "내용 검수는 완료됐습니다. Google Drive 레퍼런스 연결이 완료되면 생성 단계가 열립니다."
     : missing.length
       ? `필수 항목 ${missing.length}개를 보완한 뒤 검수를 완료하세요. 미제공 증빙은 확정 문구로 사용하지 않습니다.`
       : "고객 원문과 정리된 관리자 필드를 대조한 뒤 검수 완료를 눌러 생성 단계를 여세요.";
   if (status) status.textContent = approved
-    ? figmaReady ? "✓ 검수 완료 · Figma 연결" : "✓ 검수 완료 · Figma 대기"
+    ? driveReady ? "✓ 검수 완료 · Drive 연결" : "✓ 검수 완료 · Drive 대기"
     : missing.length ? `보완 ${missing.length}개` : "승인 대기";
   if (checksNode) checksNode.innerHTML = checks.map((item) => `<span class="${item.ok ? "ok" : "missing"}">${item.ok ? "✓" : "!"} ${escapeHtml(item.label)}</span>`).join("");
   if (approveButton) {
@@ -1185,12 +1192,12 @@ function approveCurrentProjectReview() {
   reviewed.contentSummary = window.haoWorkflow?.buildContentSummary?.(reviewed) || reviewed.contentSummary;
   reviewed.contentSummaryText = window.haoWorkflow?.buildContentSummaryText?.(reviewed) || reviewed.contentSummaryText;
   reviewed.status = "검수 완료";
-  const figmaReady = projectFigmaReferenceReady(reviewed);
+  const driveReady = projectDriveReferenceReady(reviewed);
   reviewed.workflow = {
     ...(reviewed.workflow || {}),
     managerReview: { status: "approved", at: new Date().toISOString() },
-    prompt: { status: figmaReady ? "ready" : "blocked", at: "" },
-    imageDraft: { status: figmaReady ? "ready" : "blocked", at: "" },
+    prompt: { status: driveReady ? "ready" : "blocked", at: "" },
+    imageDraft: { status: driveReady ? "ready" : "blocked", at: "" },
   };
   persistCustomerProject(reviewed);
   renderCustomerProjects();
@@ -2220,12 +2227,12 @@ function productionRouteConfig(route = value("productionRoute"), customerType = 
   const isExisting = customerType === "existing";
   const configs = {
     figma: {
-      name: "Figma 빠른 협업 라인",
-      shortName: "Figma 라인",
+      name: "Google Drive 시안 협업 라인",
+      shortName: "Drive 시안 라인",
       goal: "빠른 시안, 실시간 수정, 고객 컨펌 효율",
-      result: "Figma 파일 / Export 파일",
-      buttons: ["Figma 초안 생성", "Figma 열기", "컨펌 요청", "최종 확정"],
-      guide: "신규 고객에게 기본 추천됩니다. 시안 확인과 수정이 빠르고, 디자이너가 Figma에서 직접 다듬는 흐름입니다.",
+      result: "시안 이미지 / 작업 패키지 / Export 파일",
+      buttons: ["시안 패키지 생성", "Drive 자료 열기", "컨펌 요청", "최종 확정"],
+      guide: "신규 고객에게 기본 추천됩니다. Drive 기획안과 실제 제작물을 참고해 시안을 만들고, 디자이너가 확정 문구를 조판하는 흐름입니다.",
     },
     psd: {
       name: "PSD 고퀄리티 제작 라인",
@@ -2276,7 +2283,7 @@ function updateRouteSummary() {
   });
   const handoffButton = $("#generateHandoff");
   if (handoffButton) {
-    handoffButton.textContent = value("productionRoute") === "figma" ? "Figma 협업 패키지 생성" : "PSD 작업 지시서 생성";
+    handoffButton.textContent = value("productionRoute") === "figma" ? "Drive 시안 작업 패키지 생성" : "PSD 작업 지시서 생성";
   }
   updateReviewRouteGuide();
 }
@@ -2287,14 +2294,14 @@ function updateReviewRouteGuide() {
   const route = value("productionRoute") || "figma";
   const guide = route === "figma"
     ? {
-        title: "Figma 라인 검수 기준",
+        title: "Google Drive 시안 라인 검수 기준",
         items: [
-          "Figma 프레임이 긴 세로형 상세페이지 구조로 정리됨",
-          "ad_poster / photo_plan / purchase_stack 구간이 프레임 또는 그룹명으로 구분됨",
+          "전체 시안이 긴 세로형 상세페이지 구조로 정리됨",
+          "ad_poster / photo_plan / purchase_stack 구간이 섹션 또는 그룹명으로 구분됨",
           "텍스트와 제품 이미지가 교체 가능한 상태",
           "광고형 포스터 구간이 단순 와이어프레임이 아닌 실제 상세 디자인처럼 보임",
           "고객 컨펌용 PNG/JPG Export 확인",
-          "최종 링크/권한/원본 제공 범위 확인",
+          "Drive 결과 폴더의 링크/권한/원본 제공 범위 확인",
         ],
       }
     : {
@@ -2964,8 +2971,8 @@ function nextWorkflowAction() {
       target: "psd",
       action: "handoff",
       title: "제작 전달 패키지를 생성하세요",
-      detail: "최종 컨펌된 시안을 기준으로 PSD 또는 Figma 작업 지시서를 생성합니다.",
-      button: value("productionRoute") === "figma" ? "Figma 패키지 생성" : "PSD 지시서 생성",
+      detail: "최종 컨펌된 시안을 기준으로 PSD 또는 시안 작업 지시서를 생성합니다.",
+      button: value("productionRoute") === "figma" ? "시안 패키지 생성" : "PSD 지시서 생성",
     };
   }
   if (!flags.hasReview) {
@@ -6440,7 +6447,7 @@ function salesRendererSections(label, template) {
       type: "sales-photo-plan",
       title: isB ? "최종 촬영/합성에 필요한 제품컷 설계" : "초안 이후 완성도를 높일 촬영 무드 설계",
       copy: isB
-        ? "최종 제작 시 필요한 단독컷, 구성컷, 구매 판단컷을 미리 정의해 PSD/Figma 작업자가 동일한 방향으로 제작하도록 합니다."
+        ? "최종 제작 시 필요한 단독컷, 구성컷, 구매 판단컷을 미리 정의해 디자이너와 촬영자가 동일한 방향으로 제작하도록 합니다."
         : "프리미엄 선물 무드, 원료 스토리컷, 패키지컷을 미리 정의해 임시 시안과 최종 제작 방향의 차이를 줄입니다.",
       imageSlot: isB ? "stick" : "giftBag",
       variant: "photo-focus",
@@ -8737,11 +8744,11 @@ function hasRenderedPreviewEvidence() {
   const artifacts = readAiArtifacts();
   const quality = artifacts.qualityReview;
   const resultText = typeof quality?.result === "string" ? quality.result : "";
-  return resultText.includes("rendered_visual_review") || resultText.includes("Figma 렌더 검수 완료") || resultText.includes("PNG 렌더 검수 완료");
+  return resultText.includes("rendered_visual_review") || resultText.includes("시안 렌더 검수 완료") || resultText.includes("Figma 렌더 검수 완료") || resultText.includes("PNG 렌더 검수 완료");
 }
 
 function recordRenderedPreviewReview(type = "PNG") {
-  const label = type === "figma" ? "Figma 렌더 검수 완료" : "PNG 렌더 검수 완료";
+  const label = type === "figma" ? "시안 렌더 검수 완료" : "PNG 렌더 검수 완료";
   const result = `rendered_visual_review\n${label}\nA/B 시안의 실제 출력 화면을 기준으로 제품 이미지 크기, 섹션 여백, CTA 밀도, 텍스트 가독성을 담당자가 확인했습니다.`;
   saveAiArtifact("qualityReview", "rules", result, {
     reviewType: type,
@@ -8775,11 +8782,11 @@ function draftCustomerReadiness(score = draftDesignQualityScore()) {
     renderedChecked,
     isReady,
     tone: isReady ? "ready" : isPolish ? "warning" : "weak",
-    label: isReady ? "고객 발송 가능" : renderedChecked ? "디자인 디테일 보완 필요" : "Figma/PNG 렌더 검수 전",
+    label: isReady ? "고객 발송 가능" : renderedChecked ? "디자인 디테일 보완 필요" : "시안/PNG 렌더 검수 전",
     claudeStatus: renderedChecked ? "Claude/시각 검수 결과 반영 가능" : "Claude API 연결 전. 현재는 로컬 기준으로 1차 검수",
     nextAction: renderedChecked
       ? (score.missing[0] || "실제 화면 기준 여백, 이미지 크기, CTA 밀도를 마지막으로 확인하세요.")
-      : "Figma 또는 PNG로 렌더링된 A/B 시안을 Claude 검수에 넣어야 고객 발송 가능 여부를 확정할 수 있습니다.",
+      : "전체 미리보기 또는 PNG로 렌더링된 시안을 시각 검수해야 고객 발송 가능 여부를 확정할 수 있습니다.",
   };
 }
 
@@ -8821,7 +8828,7 @@ function renderDraftQualityDashboard() {
     <div class="quality-gate-list">
       <span class="${readiness.renderedChecked ? "pass" : "fail"}">
         <b>${readiness.renderedChecked ? "완료" : "필요"}</b>
-        Figma/PNG 렌더 검수
+        시안/PNG 렌더 검수
       </span>
       <span class="${readiness.isReady ? "pass" : "fail"}">
         <b>${readiness.isReady ? "가능" : "대기"}</b>
@@ -8840,7 +8847,7 @@ function renderDraftQualityDashboard() {
       <small>${escapeHtml(readiness.claudeStatus)}</small>
       <div class="render-review-actions">
         <button type="button" data-render-review="png">PNG 검수 완료</button>
-        <button type="button" data-render-review="figma">Figma 검수 완료</button>
+        <button type="button" data-render-review="figma">시안 검수 완료</button>
         <button type="button" data-render-review-clear>초기화</button>
       </div>
     </div>
@@ -9120,8 +9127,11 @@ function buildImageDraftBrief() {
   const mainCopy = value("draftMainCopy") || p.oneLine;
   const goal = value("imageDraftGoal") || "첫 화면의 제품 인지, 고객 자료와의 일치, 디자이너 보정 범위를 확인";
   const production = DETAIL_PAGE_PRODUCTION_STANDARD.planningDesign;
-  const figmaReference = reviewedProject?.figmaReferenceSet || {};
-  const figmaLabels = Array.isArray(figmaReference.labels) ? figmaReference.labels : [];
+  const projectIdentity = `${facts.brand} ${facts.product}`;
+  const matchedLongFormRule = Object.entries(DETAIL_PAGE_PRODUCTION_STANDARD.longFormProjectRules)
+    .find(([keyword]) => projectIdentity.includes(keyword))?.[1];
+  const targetMinHeightPx = matchedLongFormRule?.minHeightPx || production.baseHeightPx;
+  const targetMaxHeightPx = matchedLongFormRule?.maxHeightPx || production.baseHeightPx;
   const directionFocus = direction === "B"
     ? "제품 장점과 구매 이유를 빠르게 이해시키는 정보/구매 판단형"
     : "브랜드 신뢰, 원료 스토리, 선물 가치를 감성적으로 보여주는 브랜드형";
@@ -9160,29 +9170,27 @@ ${AI_DETAIL_PRODUCTION_POLICY.hardRules.map((item) => `- ${item}`).join("\n")}
 
 [레퍼런스 적용 우선순위]
 ${DESIGN_REFERENCE_POLICY.priority.map((item, index) => `${index + 1}. ${item}`).join("\n")}
-- Figma 기준 팀: ${DESIGN_REFERENCE_POLICY.figmaTeam}
-- Figma 개별 시안 등록: ${Number(figmaReference.registered || 0)}건
-- Figma 브라우저 열람 확인: ${Number(figmaReference.browserViewAvailable || 0)}건
-- Figma 자동분석·이미지 참조 가능: ${Number(figmaReference.apiAccessible || 0)}건
-- Figma 공식 미리보기 캐시 참조 가능: ${Number(figmaReference.previewCacheAvailable || 0)}건
-- 연결된 시안 목록: ${figmaLabels.length ? figmaLabels.join(", ") : "프로젝트별 연결 자료 없음"}
-- 편집 API가 없어도 공식 미리보기 캐시가 준비된 시안은 구조·정보 밀도·사진 리듬 참고용 이미지 입력으로 사용
-- 편집 API와 공식 미리보기 캐시가 모두 0건이면 Figma 시안을 실제 이미지 입력으로 사용했다고 간주하지 않음
+- Google Drive 통합 루트: ${DESIGN_REFERENCE_POLICY.googleDriveRootUrl || "미연결"}
+- 제작 전 기획안 폴더: ${DESIGN_REFERENCE_POLICY.googleDrivePlanningUrl || "미연결"}
+- 실제 제작물 폴더: ${DESIGN_REFERENCE_POLICY.googleDriveProductionUrl || "미연결"}
+- 연결 확인 수량: 기획안 ${DESIGN_REFERENCE_POLICY.planningReferenceCount}개 · 실제 제작 프로젝트 ${DESIGN_REFERENCE_POLICY.productionProjectCount}개
+- Drive 원본은 접근 권한이 있는 계정과 Codex 커넥터로만 열람하며 공개 페이지에는 파일 자체를 복제하지 않음
 - 공유 아카이브: ${DESIGN_REFERENCE_POLICY.sharedArchiveLabel}${DESIGN_REFERENCE_POLICY.sharedArchiveUrl ? ` (${DESIGN_REFERENCE_POLICY.sharedArchiveUrl})` : ` (${DESIGN_REFERENCE_POLICY.sharedArchiveStatus})`}
-- Figma와 Google Drive의 실제 제작 자료는 색·카피·레이아웃을 통째로 복제하지 않고 섹션 역할, 정보 밀도, 사진 리듬, 조판 방식만 분석
+- Google Drive의 기획안과 실제 제작 자료는 색·카피·레이아웃을 통째로 복제하지 않고 섹션 역할, 정보 밀도, 사진 리듬, 조판 방식만 분석
 - 제품군과 판매 목적이 맞지 않는 레퍼런스는 사용하지 않으며, 한 시안에는 핵심 레퍼런스 3~5개만 선별
-- 실제 이미지 생성 참조에는 사용 권한이 확인된 고객 자료와 Figma 승인 프레임만 넣고, 출처가 불분명한 이미지는 구조 참고에만 사용
+- 실제 이미지 생성 참조에는 사용 권한이 확인된 고객 자료와 Drive 승인 자료만 넣고, 출처가 불분명한 이미지는 구조 참고에만 사용
 
 [출력물의 정확한 성격]
 - 1024×1536 세로 시안 3장을 상단·중단·하단으로 각각 생성한 뒤 하나의 긴 미리보기로 연결
-- 실제 제작 시 기본 ${production.baseHeightPx.toLocaleString("ko-KR")}px 상세페이지의 설득 흐름을 세 구간으로 검토하는 구성
+- 실제 제작 목표 전체 세로 길이: ${targetMinHeightPx.toLocaleString("ko-KR")}~${targetMaxHeightPx.toLocaleString("ko-KR")}px
+- 생성 이미지는 축소 방향성 미리보기이며 최종 작업은 섹션별 고해상도 원본을 위 목표 길이에 맞춰 조립
 - 바로 판매에 쓰는 완성 상세페이지가 아니라, 디자이너가 첫 화면·장면 흐름·색감·사진 합성 방향을 결정하는 컨셉 시안
 - 각 구간은 독립적으로 수정할 수 있고, 연결했을 때 색·여백·사진 조명이 자연스럽게 이어져야 함
 - 모바일 쇼핑 화면에서 축소해도 제품과 큰 시각 위계가 먼저 읽혀야 함
 
 [내부 제작 범위 규칙 — 이미지 안에 가격이나 견적 문구를 표시하지 않음]
 ${detailPageProductionStandardText()}
-- 이번 시안은 기본 ${production.baseHeightPx.toLocaleString("ko-KR")}px 기획+디자인 범위 안에서 상단 설득·중단 근거·하단 구매 판단의 3개 묶음으로 구성
+- 이번 시안은 ${targetMinHeightPx.toLocaleString("ko-KR")}~${targetMaxHeightPx.toLocaleString("ko-KR")}px 목표 범위에서 상단 설득·중단 근거·하단 구매 판단을 충분한 섹션으로 확장
 - 추가 ${production.additionalUnitPx.toLocaleString("ko-KR")}px가 필요할 때만 별도 콘텐츠 구간을 확장하며, 기본 시안에 불필요한 섹션을 억지로 추가하지 않음
 - 위 금액과 할인 규칙은 내부 분량·견적 계산 기준이며 고객용 상세페이지 이미지의 카피나 배지로 렌더링하지 않음
 
@@ -9527,10 +9535,10 @@ function createImageDraftBrief() {
     return "";
   }
   if (!projectManagerReviewApproved() && !ensureProjectReviewApprovedForGeneration()) return "";
-  if (!projectFigmaReferenceReady()) {
+  if (!projectDriveReferenceReady()) {
     showPanel("projects");
-    alert("연결된 Figma 상세페이지 시안의 편집 권한과 프레임 이미지 준비가 아직 완료되지 않았습니다.");
-    updateAiStatus("Figma 시안 자동분석 0/6 · 연결 계정 편집 권한이 필요합니다.");
+    alert("Google Drive 기획안과 실제 제작물 레퍼런스가 아직 연결되지 않았습니다.");
+    updateAiStatus("Google Drive 통합 레퍼런스 연결 상태를 확인해주세요.");
     return "";
   }
   const brief = buildImageDraftBrief();
@@ -10325,8 +10333,8 @@ PSD production focus:
 
 function productionQaGuide(route = value("productionRoute")) {
   if (route === "figma") {
-    return `[Figma 작업/검수 기준]
-1. 상세페이지 전체는 하나의 긴 세로형 Figma 프레임으로 정리합니다.
+    return `[시안 작업/검수 기준]
+1. 상세페이지 전체는 하나의 긴 세로형 작업 프레임으로 정리합니다.
 2. 섹션은 Hero, Story, Ad_Poster, Benefit, Lifestyle, Photo_Plan, Trust, Info, Purchase_Stack, CTA처럼 실제 시안 순서에 맞춰 이름을 붙입니다.
 3. 텍스트는 모두 수정 가능한 Text Layer로 유지합니다.
 4. 제품 이미지 프레임은 교체 가능한 이미지 프레임으로 유지합니다.
@@ -10334,7 +10342,7 @@ function productionQaGuide(route = value("productionRoute")) {
 6. 촬영/합성 방향 구간은 최종 교체 이미지 슬롯이 명확해야 합니다.
 7. 고객 컨펌 전 PNG/JPG 미리보기 Export를 준비합니다.
 8. 고객 코멘트가 들어오면 해당 섹션 프레임 단위로 수정합니다.
-9. 최종 납품 시 Figma 링크 또는 Export 파일 범위를 명확히 표시합니다.`;
+9. 최종 납품 시 편집 원본 또는 Export 파일 범위를 명확히 표시합니다.`;
   }
   return `[PSD 작업/검수 기준]
 1. PSD는 실제 선택 시안 순서대로 섹션별 그룹을 정리합니다.
@@ -10354,8 +10362,8 @@ function deliveryScopeGuide(route = value("productionRoute")) {
     return `[납품 범위]
 - 기본: 최종 상세페이지 PNG/JPG
 - 요청 시: 분할 이미지
-- 협업 파일: Figma 링크 또는 Export 파일
-- 원본 범위: 계약 조건에 따라 Figma 원본/편집 권한 제공 여부 확인`;
+- 협업 파일: 승인된 시안 링크 또는 Export 파일
+- 원본 범위: 계약 조건에 따라 편집 원본 제공 여부 확인`;
   }
   return `[납품 범위]
 - 기본: 최종 상세페이지 PNG/JPG
@@ -10449,7 +10457,7 @@ function figmaCollaborationBriefText() {
   const template = selectedDraft === "B안" ? $("#templateB").textContent.trim() : $("#templateA").textContent.trim();
   const config = productionRouteConfig("figma", p.customerType);
   const imagePlan = (workflow.imagePlan || []).slice(0, 8).map((item, index) => (
-    `${index + 1}. ${item.role} / ${item.usedFor || "상세페이지 이미지 슬롯"} / ${item.aiTarget || "Figma 이미지 영역"}`
+    `${index + 1}. ${item.role} / ${item.usedFor || "상세페이지 이미지 슬롯"} / ${item.aiTarget || "시안 이미지 영역"}`
   )).join("\n");
   const imageStatus = designerImageStatusSummary();
   const selectedKey = selectedDraft === "B안" ? "B" : "A";
@@ -10461,12 +10469,13 @@ function figmaCollaborationBriefText() {
    - 생성 프롬프트: ${item.prompt}
    - 금지 프롬프트: ${item.negativePrompt}`
   )).join("\n");
-  return `[Figma 협업 패키지]
+  return `[Google Drive 시안 협업 패키지]
 Project: ${p.productName}
 Customer type: ${config.customerLabel}
 Production route: ${config.name}
 Selected draft: ${selectedDraft} ${template}
-Figma detail-page draft library: ${DESIGN_REFERENCE_POLICY.figmaLibraryUrl}
+Planning reference library: ${DESIGN_REFERENCE_POLICY.googleDrivePlanningUrl}
+Production reference library: ${DESIGN_REFERENCE_POLICY.googleDriveProductionUrl}
 
 [목표]
 ${config.goal}
@@ -10477,15 +10486,15 @@ ${confirmSummary}
 [제작 전달 전 체크]
 ${preflight}
 
-[Figma 초안 구성]
+[시안 초안 구성]
 1. A/B 중 고객이 선택한 시안을 기준으로 긴 세로형 상세페이지 프레임을 구성합니다.
 2. 섹션은 메인 비주얼, 원료/스토리, 핵심 장점, 사용 장면, 신뢰 정보, 제품 정보, CTA 순서로 정리합니다.
-3. 텍스트, 이미지, 색상, 섹션 순서는 Figma에서 빠르게 수정할 수 있도록 분리합니다.
+3. 텍스트, 이미지, 색상, 섹션 순서는 디자이너가 편집 원본에서 빠르게 수정할 수 있도록 분리합니다.
 4. 임시 이미지는 교체 가능한 이미지 프레임으로 유지합니다.
 
 [디자이너 수정 기준]
 1. AI 시안의 레이아웃과 정보 위계를 유지합니다.
-2. 고객 피드백은 Figma 코멘트 또는 담당자 메모 기준으로 반영합니다.
+2. 고객 피드백은 프로젝트 피드백 또는 담당자 메모 기준으로 반영합니다.
 3. 제품 이미지는 왜곡하지 않고, 필요 시 배경 합성/마스킹만 조정합니다.
 4. 고객 컨펌 전에는 PNG/JPG 미리보기 Export를 함께 준비합니다.
 
@@ -10506,8 +10515,8 @@ ${sectionImageBrief}
 ${visualPrompts || "이미지 AI 프롬프트는 시안 생성 후 자동 정리됩니다."}
 
 [고객 컨펌 안내]
-Figma 초안 링크를 전달하고, 고객은 수정이 필요한 섹션과 문구를 회신합니다.
-최종 확정 후 Figma 원본 또는 Export 파일 기준으로 납품합니다.`;
+시안 미리보기 링크를 전달하고, 고객은 수정이 필요한 섹션과 문구를 회신합니다.
+최종 확정 후 편집 원본 제공 범위 또는 Export 파일 기준으로 납품합니다.`;
 }
 
 function generateHandoffText() {
@@ -10621,7 +10630,8 @@ async function generateHandoff() {
   const route = productionRouteConfig();
   $("#handoffResult").textContent = fallback;
   try {
-    const aiText = await invokeAiRole("psdHandoff", route.name.includes("Figma") ? "Figma 협업 전달 패키지 생성" : "미얀마 디자이너 바이버 PSD 전달 패키지 생성", {
+    const isDraftCollaborationRoute = value("productionRoute") === "figma";
+    const aiText = await invokeAiRole("psdHandoff", isDraftCollaborationRoute ? "시안 협업 전달 패키지 생성" : "미얀마 디자이너 바이버 PSD 전달 패키지 생성", {
       product: product(),
       productionRoute: route,
       clientChoice: value("clientChoice"),
@@ -10629,8 +10639,8 @@ async function generateHandoff() {
       managerMemo: value("managerMemo"),
       selectedLayoutA: $("#templateA").textContent.trim(),
       selectedLayoutB: $("#templateB").textContent.trim(),
-      instruction: route.name.includes("Figma")
-        ? "Figma에서 수정할 수 있는 협업 패키지, 고객 컨펌 요청 기준, Export 체크리스트를 만든다."
+      instruction: isDraftCollaborationRoute
+        ? "디자이너가 수정할 수 있는 시안 협업 패키지, 고객 컨펌 요청 기준, Export 체크리스트를 만든다."
         : "바이버로 보낼 짧은 영어 작업 요청, 한국어 내부 요약, 첨부 체크리스트를 만든다.",
     }, fallback);
     if (aiText) $("#handoffResult").textContent = aiText;
@@ -10653,13 +10663,13 @@ function generateFinalMailText() {
 1. 최종 상세페이지 PNG/JPG
 2. 요청 시 분할페이지 파일
 3. 제품명, 구성, 문구 등 최종 정보
-4. ${p.productionRoute === "figma" ? "Figma 원본 또는 Export 파일 범위" : "PSD 원본 요청 여부"}
+4. ${p.productionRoute === "figma" ? "편집 원본 또는 Export 파일 범위" : "PSD 원본 요청 여부"}
 
 내부 검수 기준으로 디자인 시안 반영 여부, 문구 오탈자, 이미지 품질, 최종 Export 상태를 확인한 뒤 전달드립니다.
 
 기본 납품은 최종 PNG/JPG 기준이며, 분할페이지는 요청 범위에 따라 함께 제공됩니다.
 ${p.productionRoute === "figma"
-  ? "Figma 원본 공유 및 Export 범위는 선택하신 제작 라인 기준에 따라 안내드립니다."
+  ? "편집 원본 공유 및 Export 범위는 선택하신 제작 라인 기준에 따라 안내드립니다."
   : "상세페이지 원본 PSD 파일은 기본 납품 범위에 포함되지 않으며, 요청 시 별도 추가금 안내 후 제공 가능합니다."}
 
 [제작 라인]
@@ -10677,7 +10687,7 @@ async function generateFinalMail() {
     const aiText = await invokeAiRole("finalMail", "최종 납품 메일 생성", {
       product: product(),
       productionRoute: productionRouteConfig(),
-      instruction: "컨펌 완료 후 최종 납품 메일을 정중하고 간결하게 작성한다. 선택된 제작 라인이 Figma이면 Figma/Export 납품 기준을, PSD이면 PNG/JPG 납품과 PSD 원본 추가금 안내를 포함한다.",
+      instruction: "컨펌 완료 후 최종 납품 메일을 정중하고 간결하게 작성한다. 선택된 제작 라인이 시안 협업형이면 편집 원본/Export 납품 기준을, PSD이면 PNG/JPG 납품과 PSD 원본 추가금 안내를 포함한다.",
     }, fallback);
     if (aiText) $("#finalMail").textContent = aiText;
   } catch {
@@ -11125,13 +11135,13 @@ $("#generateFigmaBrief")?.addEventListener("click", () => {
   updateWorkflowState();
 });
 $("#openFigmaPlaceholder")?.addEventListener("click", () => {
-  const figmaUrl = DESIGN_REFERENCE_POLICY.figmaReferenceIndexUrl || DESIGN_REFERENCE_POLICY.figmaLibraryUrl;
-  if (!figmaUrl) {
-    alert("Figma 상세페이지 시안 기준 주소가 등록되지 않았습니다.");
+  const driveUrl = DESIGN_REFERENCE_POLICY.googleDriveRootUrl;
+  if (!driveUrl) {
+    alert("Google Drive 기획안·실제 제작물 통합 폴더 주소가 등록되지 않았습니다.");
     return;
   }
-  window.open(figmaUrl, "_blank", "noopener,noreferrer");
-  updateAiStatus("Figma 상세페이지 시안 레퍼런스 허브를 열었습니다.");
+  window.open(driveUrl, "_blank", "noopener,noreferrer");
+  updateAiStatus("Google Drive 기획안·실제 제작물 통합 레퍼런스를 열었습니다.");
 });
 $("#confirmRequestFromRoute")?.addEventListener("click", () => {
   if ($("#revisionMailResult")) $("#revisionMailResult").textContent = generateRevisionMailText();

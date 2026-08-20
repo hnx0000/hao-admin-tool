@@ -126,7 +126,7 @@
         </label>
         <label>제작 라인
           <select id="productionRoute">
-            <option value="figma">Figma 빠른 협업 라인</option>
+            <option value="figma">Google Drive 시안 협업 라인</option>
             <option value="psd">PSD 고퀄리티 제작 라인</option>
           </select>
         </label>
@@ -134,7 +134,7 @@
       </div>
       <div class="route-summary" id="routeSummary">
         <strong>제작 라인</strong>
-        <p>신규 고객은 Figma 기반 빠른 수정 라인, 기존 고객은 PSD 기반 고퀄리티 라인을 기본으로 추천합니다.</p>
+        <p>신규 고객은 Google Drive 기반 시안 협업 라인, 기존 고객은 PSD 기반 고퀄리티 라인을 기본으로 추천합니다.</p>
       </div>
       <label>제품 한 줄 설명<textarea id="oneLine" rows="3" placeholder="제품을 한 문장으로 설명하세요."></textarea></label>
       <div class="panel-nav">
@@ -677,7 +677,7 @@
       </div>
       <div class="workflow-guide" id="guide-psd">
         <strong>이 단계에서 할 일</strong>
-        <p>고객 타입과 제작 라인에 따라 Figma 협업 패키지 또는 PSD 작업 지시서를 생성합니다.</p>
+        <p>고객 타입과 제작 라인에 따라 Google Drive 시안 작업 패키지 또는 PSD 작업 지시서를 생성합니다.</p>
       </div>
       <div class="route-action-panel">
         <div>
@@ -686,8 +686,8 @@
           <p id="routeActionText">프로젝트 정보에 따라 필요한 전달 버튼이 표시됩니다.</p>
         </div>
         <div class="route-action-buttons">
-          <button class="secondary small" id="generateFigmaBrief">Figma 초안 생성</button>
-          <button class="secondary small" id="openFigmaPlaceholder">Figma 시안 자료 열기</button>
+          <button class="secondary small" id="generateFigmaBrief">시안 작업 패키지 생성</button>
+          <button class="secondary small" id="openFigmaPlaceholder">Google Drive 레퍼런스 열기</button>
           <button class="secondary small" id="confirmRequestFromRoute">컨펌 요청</button>
           <button class="secondary small" id="finalizeRoute">최종 확정</button>
         </div>
@@ -716,10 +716,10 @@
       </div>
       <div class="review-route-guide" id="reviewRouteGuide">
         <strong>제작 라인 검수 기준</strong>
-        <p>선택한 제작 라인에 따라 PSD/Figma 검수 포인트가 자동으로 정리됩니다.</p>
+        <p>선택한 제작 라인에 따라 PSD/이미지 시안 검수 포인트가 자동으로 정리됩니다.</p>
       </div>
       <div class="checklist">
-        <label><input type="checkbox"> PSD/Figma 작업 파일 열림 확인</label>
+        <label><input type="checkbox"> PSD/이미지 시안 작업 파일 열림 확인</label>
         <label><input type="checkbox"> JPG/PNG 미리보기 수신 확인</label>
         <label><input type="checkbox"> AI 시안과 레이아웃 유사도 확인</label>
         <label><input type="checkbox"> 섹션 순서와 카피 구조 확인</label>
@@ -729,7 +729,7 @@
         <label><input type="checkbox"> 제품명, 30포 구성, 정보 오탈자 확인</label>
         <label><input type="checkbox"> 과장 광고/의약품 오인 표현 없음</label>
         <label><input type="checkbox"> 모바일 가독성 확인</label>
-        <label><input type="checkbox"> PSD 레이어 또는 Figma 프레임 섹션별 정리 확인</label>
+        <label><input type="checkbox"> PSD 레이어 또는 이미지 시안 섹션별 정리 확인</label>
         <label><input type="checkbox"> 최종 PNG/JPG 전체 미리보기와 분할 기준 확인</label>
       </div>
       <div class="panel-nav">
@@ -748,7 +748,7 @@
       </div>
       <div class="workflow-guide" id="guide-delivery">
         <strong>이 단계에서 할 일</strong>
-        <p>컨펌 완료된 제작 라인 기준으로 PNG/JPG, 분할페이지, PSD 원본 또는 Figma/Export 파일 안내를 정리하세요.</p>
+        <p>컨펌 완료된 제작 라인 기준으로 PNG/JPG, 분할페이지, PSD 원본 또는 시안 Export 파일 안내를 정리하세요.</p>
       </div>
       <div class="result" id="finalMail">최종 납품 메일 초안이 여기에 표시됩니다.</div>
       <div class="panel-nav">
@@ -784,13 +784,13 @@
     <div class="customer-assets-list" id="customerAssetsList"></div>
   </dialog>
 
-  <script src="hao-config.js?v=20260819-4"></script>
+  <script src="hao-config.js?v=20260820-drive1"></script>
   <script src="workflow-core.js?v=20260819-4"></script>
   <script src="submission-sync.js?v=20260819-4"></script>
   <script src="data/detail-template-dataset.js"></script>
   <script src="data/company-reference-dataset.js"></script>
   <script src="data/company-reference-auto.js"></script>
-  <script src="data/public-customer-projects.js?v=20260819-4"></script>
+  <script src="data/public-customer-projects.js?v=20260820-drive1"></script>
   <script>
     if (["", "localhost", "127.0.0.1"].includes(location.hostname)
       && new URLSearchParams(location.search).get("mode") !== "public") {
@@ -798,9 +798,9 @@
     }
   </script>
   <script src="customer-file-store.js?v=20260819-4"></script>
-  <script src="app.js?v=20260820-mvp1"></script>
+  <script src="app.js?v=20260820-drive1"></script>
   <script src="packaging-bridge.js?v=20260820-1"></script>
-  <script src="mvp-codex-package.js?v=20260820-mvp1"></script>
+  <script src="mvp-codex-package.js?v=20260820-drive1"></script>
   <script src="pwa-install.js?v=20260820-3"></script>
   <script>
     if (document.documentElement.classList.contains("admin-customer-clean")) {

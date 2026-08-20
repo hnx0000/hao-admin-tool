@@ -134,21 +134,23 @@
   }
 
   function referenceManifest(project) {
-    const figma = project.figmaReferenceSet || {};
+    const drive = project.driveReferenceSet || {};
     return {
       projectReferences: String(elementValue("references") || project.references || project.referenceUrls || "")
         .split(/\r?\n/).map((item) => item.trim()).filter(Boolean),
-      figma: {
-        status: figma.status || "not_connected",
-        registryFile: figma.registryFile || "figma-reference-registry.json",
-        labels: figma.labels || [],
-        previewPaths: figma.previewPaths || [],
-        apiAccessible: Number(figma.apiAccessible || 0),
-        previewCacheAvailable: Number(figma.previewCacheAvailable || 0),
+      googleDrive: {
+        status: drive.status || window.HAO_CONFIG?.googleDriveConnectionStatus || "not_connected",
+        rootFolderUrl: drive.rootFolderUrl || window.HAO_CONFIG?.googleDriveReferenceRootUrl || "",
+        planningFolderUrl: drive.planningFolderUrl || window.HAO_CONFIG?.googleDrivePlanningFolderUrl || "",
+        productionFolderUrl: drive.productionFolderUrl || window.HAO_CONFIG?.googleDriveProductionFolderUrl || "",
+        selectedReferences: drive.selectedReferences || [],
+        planningReferenceCount: Number(drive.planningReferenceCount || window.HAO_CONFIG?.googleDrivePlanningReferenceCount || 0),
+        productionProjectCount: Number(drive.productionProjectCount || window.HAO_CONFIG?.googleDriveProductionProjectCount || 0),
+        accessBoundary: "공개 웹앱은 Drive 링크만 열며 실제 목록·원본 열람은 권한 있는 Google 계정 또는 Codex Drive 커넥터에서 수행",
         useBoundary: "승인된 프레임의 구조·정보 위계·사진 리듬만 분석하며 고유 카피·로고·제품 사진·그래픽은 복제 금지",
       },
       internalLibrary: {
-        index: "figma-reference-index.html",
+        index: "Google Drive 2026(기획안) + 2026 실제 제작물",
         useBoundary: "내부·외부 출처와 공개 가능 여부를 확인한 항목만 사용",
       },
       externalResearch: {
@@ -184,7 +186,8 @@
       + `선정 기준은 고객 요청, 타깃 구매 고민, 제품 정보, 보유 사진, 촬영 필요도, 규제 위험, 모바일 가독성이다. 여러 시안을 형식적으로 나열하지 않는다.\n\n`
       + `## 고객 사실 요약\n\n- 한 줄 설명: ${facts.oneLine?.value || "미기입"}\n- 핵심 제품 정보: ${facts.coreProductInfo?.value || "미기입"}\n- 고객 요청: ${facts.clientRequests?.value || "미기입"}\n- 반드시 포함: ${facts.mustInclude?.value || "미기입"}\n- 금지 표현: ${facts.banWords?.value || "미기입"}\n\n`
       + `## 권장 흐름\n\n1. 제품 인지와 한 줄 구매 이유\n2. 고객이 제공한 핵심 장점\n3. 원료·제조·근거 정보\n4. 실제 사용 또는 섭취 장면\n5. 구성·옵션·정확 정보\n6. 구매 판단을 돕는 차분한 클로징\n\n`
-      + `## 레퍼런스 사용 원칙\n\n${references.figma.useBoundary}\n\n`
+      + `## 레퍼런스 사용 원칙\n\n${references.googleDrive.useBoundary}\n\n`
+      + `## 목표 분량\n\n${String(project.clientName || project.companyName || "").includes("생즙연구소") || String(project.clientName || project.companyName || "").includes("서울우유") ? "전체 세로 17,000~20,000px. 생성 미리보기는 축소본으로 사용하고 섹션별 원본을 조립한다." : "기본 10,000px. 추가 분량은 콘텐츠 필요에 따라 5,000px 단위로 확장한다."}\n\n`
       + `## 제작 원칙\n\n확인되지 않은 효능·옵션·인증·리뷰는 생성하지 않는다. 작은 한글, 표, 영양정보, 법정 고지는 이미지에 굽지 않고 디자이너 조판 안전 영역으로 남긴다.\n`;
   }
 
