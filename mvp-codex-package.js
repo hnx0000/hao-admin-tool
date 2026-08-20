@@ -308,6 +308,7 @@
 
     const references = referenceManifest(project);
     const assets = assetManifest(project);
+    const operatorProfile = window.HAO_OPERATOR_PROFILE || {};
     const approvedSnapshot = canonicalize({ projectId: project.id, facts, references, assets });
     const approvalHash = await sha256(json(approvedSnapshot));
     const jobId = `${safeName(project.id)}-${new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14)}`;
@@ -321,6 +322,14 @@
       approvedAt: project.workflow.managerReview.at,
       executionMode: "codex-manual",
       apiKeyRequired: false,
+      operatorContext: {
+        operatorName: operatorProfile.operatorName || "",
+        projectAlias: operatorProfile.projectAlias || "",
+        customerCta: {
+          text: operatorProfile.ctaText || "",
+          link: operatorProfile.ctaLink || "",
+        },
+      },
       selectedDirection: {
         name: elementValue("templateA"),
         reason: elementValue("templateAReason"),
