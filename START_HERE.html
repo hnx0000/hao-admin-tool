@@ -3,22 +3,100 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HAO 상세페이지 관리자툴</title>
-  <meta http-equiv="refresh" content="0; url=index.html">
+  <meta name="theme-color" content="#11151a">
+  <title>HAO 상세페이지 자동화 시작</title>
+  <link rel="manifest" href="app.webmanifest">
+  <link rel="icon" href="assets/app-icons/hao-192.png" type="image/png">
   <style>
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      background: #171a1f;
-      color: #f4f6f8;
-      font-family: system-ui, sans-serif;
-    }
-    a { color: #76a8ff; }
+    :root { color-scheme: dark; font-family: Pretendard, "Noto Sans KR", system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { min-height: 100vh; margin: 0; background: #0f1318; color: #f5f7fa; }
+    main { width: min(1120px, calc(100% - 40px)); margin: 0 auto; padding: 64px 0 80px; }
+    .brand { display: flex; gap: 16px; align-items: center; }
+    .mark { display: grid; width: 54px; height: 54px; place-items: center; border-radius: 14px; background: #f5f7fa; color: #15191e; font-weight: 950; box-shadow: 0 12px 28px rgba(52,120,239,.22); }
+    .eyebrow { margin: 0 0 7px; color: #ff5b78; font-size: 11px; font-weight: 900; letter-spacing: .14em; }
+    h1 { margin: 0; font-size: clamp(30px, 5vw, 52px); letter-spacing: -.045em; }
+    .intro { max-width: 760px; margin: 22px 0 34px; color: #9eabba; font-size: 15px; line-height: 1.75; }
+    .launch-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .launch-card { min-height: 190px; border: 1px solid #303945; border-radius: 18px; padding: 24px; background: #1a2027; color: inherit; text-decoration: none; transition: .18s ease; }
+    .launch-card:hover { transform: translateY(-3px); border-color: #4e83e6; background: #202833; }
+    .launch-card.primary { border-color: #3b7be9; background: linear-gradient(145deg, #3478ef, #245dc0); }
+    .number { display: block; margin-bottom: 44px; color: #91a0b1; font-size: 12px; font-weight: 900; }
+    .primary .number { color: #dce9ff; }
+    .launch-card strong { display: block; margin-bottom: 9px; font-size: 20px; }
+    .launch-card span:last-child { color: #b7c2ce; font-size: 13px; line-height: 1.55; }
+    .primary span:last-child { color: #e8f0ff; }
+    .tools { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 34px; }
+    button { min-height: 44px; border: 1px solid #35404d; border-radius: 10px; padding: 0 17px; background: #1c232b; color: #f4f7fa; font: inherit; font-weight: 800; cursor: pointer; }
+    button:hover { border-color: #577499; background: #242d37; }
+    #installDesktopApp { border-color: #397be9; background: #2868d8; }
+    .scope { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 28px; }
+    .scope article { border: 1px solid #2b343f; border-radius: 16px; padding: 21px; background: #151a20; }
+    .scope h2 { margin: 0 0 12px; font-size: 15px; }
+    .scope p { margin: 0; color: #99a6b5; font-size: 13px; line-height: 1.65; }
+    .ok { color: #62dda1; }
+    .pending { color: #f2bd58; }
+    .notice { margin-top: 18px; border-left: 3px solid #f2bd58; padding: 4px 0 4px 14px; color: #aab5c2; font-size: 12px; line-height: 1.6; }
+    @media (max-width: 760px) { main { padding-top: 34px; } .launch-grid, .scope { grid-template-columns: 1fr; } .launch-card { min-height: 150px; } .number { margin-bottom: 28px; } }
   </style>
 </head>
 <body>
-  <p>HAO 관리자툴로 이동합니다. <a href="index.html">바로 열기</a></p>
+  <main>
+    <div class="brand">
+      <span class="mark">HAO</span>
+      <div>
+        <p class="eyebrow">DETAIL PAGE AUTOMATION</p>
+        <h1>어디서나 최신 프로그램 실행</h1>
+      </div>
+    </div>
+    <p class="intro">이 주소를 관리자끼리 공유하면 별도 파일 복사 없이 항상 GitHub Pages의 최신 HAO 프로그램을 실행할 수 있습니다. Chrome 또는 Edge에서는 독립 앱으로 설치할 수 있습니다.</p>
+
+    <div class="tools">
+      <button id="installDesktopApp" type="button" hidden>이 컴퓨터에 앱 설치</button>
+      <button id="copyStartLink" type="button">공용 실행 링크 복사</button>
+    </div>
+
+    <section class="launch-grid" aria-label="HAO 실행 메뉴">
+      <a class="launch-card primary" href="index.html">
+        <span class="number">01</span>
+        <strong>관리자툴 실행</strong>
+        <span>프로젝트 검수, 기획 준비, 시안·피드백·납품 관리</span>
+      </a>
+      <a class="launch-card" href="project-form.html">
+        <span class="number">02</span>
+        <strong>고객 작성폼</strong>
+        <span>고객이 제품 정보와 자료를 제출하는 접수 화면</span>
+      </a>
+      <a class="launch-card" href="system-status.html">
+        <span class="number">03</span>
+        <strong>시스템 상태</strong>
+        <span>전체 공정의 연결·부분 연결·미연결 상태 확인</span>
+      </a>
+    </section>
+
+    <section class="scope" aria-label="공유 범위 안내">
+      <article>
+        <h2 class="ok">현재 다른 컴퓨터에서도 공통 사용</h2>
+        <p>프로그램 화면, 최신 기능, 공개 기준 데이터, 고객 작성폼과 시스템 상태 페이지는 같은 주소에서 최신본으로 실행됩니다.</p>
+      </article>
+      <article>
+        <h2 class="pending">업무 서버 연결 후 완전 동기화</h2>
+        <p>각 브라우저의 로컬 수정값, IndexedDB 파일, 관리자별 작업 기록은 아직 자동 공유되지 않습니다. 동일 DB와 고객 원본의 실시간 공유에는 인증·저장 서버가 필요합니다.</p>
+      </article>
+    </section>
+    <p class="notice">현재 관리자 인증 서버 도입 전이므로 관리자툴 주소는 내부 관리자에게만 공유하세요. 고객에게는 고객 작성폼 주소만 전달하는 것이 안전합니다.</p>
+  </main>
+  <script src="pwa-install.js?v=20260820-3"></script>
+  <script>
+    document.getElementById("copyStartLink").addEventListener("click", async (event) => {
+      const url = new URL("START_HERE.html", location.href).href;
+      try {
+        await navigator.clipboard.writeText(url);
+        event.currentTarget.textContent = "링크 복사 완료";
+      } catch {
+        prompt("아래 주소를 복사하세요.", url);
+      }
+    });
+  </script>
 </body>
 </html>

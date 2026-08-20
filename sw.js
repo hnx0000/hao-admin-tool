@@ -1,7 +1,8 @@
-const CACHE_NAME = "hao-detail-automation-v20260820-2";
+const CACHE_NAME = "hao-detail-automation-v20260820-3";
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./START_HERE.html",
   "./project-form.html",
   "./system-status.html",
   "./styles.css",

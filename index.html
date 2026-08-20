@@ -7,7 +7,7 @@
   <title>AI 상세페이지 제작 보조 관리자툴</title>
   <link rel="manifest" href="app.webmanifest">
   <link rel="icon" href="assets/app-icons/hao-192.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=20260819-7">
+  <link rel="stylesheet" href="styles.css?v=20260820-1">
   <script>
     if (new URLSearchParams(location.search).get("variant") !== "original-light") {
       document.documentElement.classList.add("admin-customer-clean");
@@ -43,6 +43,14 @@
       <span>
         <strong>시스템 상태</strong>
         <small>연결 현황 · 오류 점검</small>
+      </span>
+      <span class="system-status-arrow" aria-hidden="true">↗</span>
+    </a>
+    <a class="system-status-link share-access-link" href="START_HERE.html">
+      <span class="system-status-dot" aria-hidden="true"></span>
+      <span>
+        <strong>다른 PC에서 실행</strong>
+        <small>공용 링크 · 앱 설치</small>
       </span>
       <span class="system-status-arrow" aria-hidden="true">↗</span>
     </a>
@@ -793,7 +801,7 @@
   <script src="app.js?v=20260820-mvp1"></script>
   <script src="packaging-bridge.js?v=20260820-1"></script>
   <script src="mvp-codex-package.js?v=20260820-mvp1"></script>
-  <script src="pwa-install.js?v=20260820-2"></script>
+  <script src="pwa-install.js?v=20260820-3"></script>
   <script>
     if (document.documentElement.classList.contains("admin-customer-clean")) {
       const cleanScript = document.createElement("script");

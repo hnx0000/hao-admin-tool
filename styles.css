@@ -594,6 +594,15 @@ body {
   box-shadow: 0 0 0 4px rgba(242, 184, 75, .11);
 }
 
+.share-access-link {
+  margin-top: 10px;
+}
+
+.share-access-link .system-status-dot {
+  background: #4d8ef7;
+  box-shadow: 0 0 0 4px rgba(77, 142, 247, .12);
+}
+
 .system-status-arrow {
   color: #8ea2b8;
   font-size: 13px;
