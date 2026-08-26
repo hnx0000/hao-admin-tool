@@ -1,7 +1,7 @@
 window.HAO_CONFIG = Object.freeze({
   // 상세페이지 툴/접수서버를 배포한 뒤 발급되는 HTTPS 주소를 입력합니다.
   // 관리자 비밀번호와 세션 토큰은 절대로 이 공개 파일에 넣지 않습니다.
-  submissionApiEndpoint: "https://hao-admin.vigo.co.kr/api/submissions",
+  submissionApiEndpoint: "",
   submissionAdminToken: "",
   // 사용자 제공 Google Drive 통합 레퍼런스 루트입니다.
   // 실제 파일 열람은 Google 계정의 Drive 권한을 그대로 따릅니다.
