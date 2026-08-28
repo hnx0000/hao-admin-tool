@@ -31,7 +31,6 @@ window.IMPORTED_CUSTOMER_PROJECTS = [
     contactName: "생즙연구소 담당자",
     contactInfo: "010-0000-0436",
     phone: "010-0000-0436",
-    receiptNo: "HAO-SAENG-260828",
     email: "",
     productName: "생즙연구소 100% 사과주스 (100% 감귤주스 바리에이션)",
     category: "식품/음료 / 과·채주스 / NFC 착즙주스",

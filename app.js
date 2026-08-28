@@ -537,22 +537,13 @@ function readAiSettings() {
 }
 
 function ensureProgressAccess(project = {}) {
-  const identity = [project.clientName, project.companyName, project.productName].filter(Boolean).join(" ");
-  if (identity.includes("호아비")) {
-    return {
-      ...project,
-      receiptNo: project.receiptNo || "HAO-HOABI-260828",
-      phone: project.phone || project.contactInfo || "010-1234-5678",
-      contactInfo: project.contactInfo || project.phone || "010-1234-5678",
-    };
-  }
-  if (identity.includes("생즙연구소")) {
-    return {
-      ...project,
-      receiptNo: project.receiptNo || "HAO-SAENG-260828",
-      phone: project.phone || project.contactInfo || "010-0000-0436",
-      contactInfo: project.contactInfo || project.phone || "010-0000-0436",
-    };
+  const legacyDemoReceipts = new Set(["HAO-HOABI-260828", "HAO-SAENG-260828"]);
+  const serverSynced = project.workflow?.cloudSync?.status === "synced";
+  if (!serverSynced && legacyDemoReceipts.has(String(project.receiptNo || ""))) {
+    const cleaned = { ...project };
+    delete cleaned.receiptNo;
+    delete cleaned.cloudReceiptNo;
+    return cleaned;
   }
   return project;
 }
@@ -1724,9 +1715,7 @@ function renderCustomerProjects() {
     const planningPreview = planningPreviewForProject(project);
     const receipt = planningReceipt(project);
     const verify = planningPhoneLast4(project);
-    const progressUrl = receipt && verify
-      ? `track.html?receipt=${encodeURIComponent(receipt)}&verify=${encodeURIComponent(verify)}`
-      : "track.html";
+    const progressUrl = "https://hao-admin.vigo.co.kr/track.html";
     const cloudStatus = project.workflow?.cloudSync?.status || "local-only";
     const storageText = cloudStatus === "synced"
       ? "브라우저 + 접수 서버 저장 완료"
@@ -2137,7 +2126,6 @@ function addHoabiCustomerTest(silent = false) {
     contactName: "호아비 담당자",
     contactInfo: "010-1234-5678",
     phone: "010-1234-5678",
-    receiptNo: "HAO-HOABI-260828",
     email: "hoabee@example.com",
     dueDate: "2026-08-15",
     heroSentence: "하루 한 포에 담은 달콤한 리치와 프리미엄 꿀",

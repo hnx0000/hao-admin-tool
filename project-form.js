@@ -884,8 +884,13 @@ async function saveProjectForm(event) {
       const syncResult = localSaved && window.haoSubmissionSync.syncStoredProject
         ? await window.haoSubmissionSync.syncStoredProject(project.id)
         : await window.haoSubmissionSync.submitProject(project, customerFiles);
-      project.cloudSubmissionId = syncResult.id || syncResult.submissionId || project.cloudSubmissionId;
-      project.cloudFiles = Array.isArray(syncResult.files) ? syncResult.files : [];
+      const remoteProject = syncResult.project || syncResult.submission || syncResult;
+      project.cloudSubmissionId = remoteProject.id || remoteProject.submissionId || syncResult.id || syncResult.submissionId || project.cloudSubmissionId;
+      project.receiptNo = remoteProject.receiptNo || remoteProject.receipt || remoteProject.reservationNo || syncResult.receiptNo || syncResult.receipt || syncResult.reservationNo || project.receiptNo;
+      project.cloudReceiptNo = project.receiptNo || project.cloudReceiptNo || "";
+      project.cloudFiles = Array.isArray(remoteProject.files)
+        ? remoteProject.files
+        : Array.isArray(syncResult.files) ? syncResult.files : [];
       project.workflow = {
         ...(project.workflow || {}),
         cloudSync: { status: "synced", at: new Date().toISOString(), id: project.cloudSubmissionId || "" },
@@ -921,7 +926,13 @@ async function saveProjectForm(event) {
   $("#submitMessage").innerHTML = `
     <strong>원고 생성 요청이 완료되었습니다.</strong>
     <p>작성 내용은 1차 내용정리본으로 구조화됩니다. ${LOCAL_FLOW_TEST ? "로컬 테스트 프로젝트로만 등록되었습니다." : cloudSyncMessage} 관리자 검수 완료 후 1차 촬영·디자인 시안이 생성됩니다.</p>
+    ${project.receiptNo ? `<p><b>중앙 서버 접수번호: ${escapeHtml(project.receiptNo)}</b><br>제작 진행상황 확인에는 이 번호와 연락처 뒤 4자리가 필요합니다.</p>` : ""}
   `;
+  const receiptPanel = $("#receiptAccessPanel");
+  if (receiptPanel) {
+    receiptPanel.hidden = !project.receiptNo;
+    if (project.receiptNo) $("#issuedReceiptNo").textContent = project.receiptNo;
+  }
   renderResultPlan(data);
   window.setTimeout(() => {
     $("#generatingScreen").classList.remove("active");

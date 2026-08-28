@@ -931,8 +931,8 @@
     <div class="deployment-alert" role="status">
       <span class="alert-icon">!</span>
       <div>
-        <strong>핵심 로컬 흐름은 가동 중이며 중앙 서버 배포는 일시 중지 상태입니다.</strong>
-        <span>Google Drive 통합 폴더의 제작 전 기획안 28개와 실제 제작 프로젝트 22개를 확인했으며, 권한 있는 계정과 Codex 커넥터에서 원본을 분석합니다.</span>
+        <strong>중앙 접수·파일 저장·접수번호 진행조회가 연결되어 실운영 검증 중입니다.</strong>
+        <span>고객 제출 시 중앙 서버가 접수번호를 발급하고, 고객은 서버 진행조회 화면을 사용합니다. 관리자 다크모드 진행 화면과 로컬 안전본은 계속 유지됩니다.</span>
       </div>
       <div class="commit-pair"><span>STATUS PUBLIC</span><span>·</span><span>APP LOCAL LATEST</span></div>
     </div>
@@ -956,15 +956,15 @@
             </defs>
 
             <path class="process-line connected" d="M640 96 C640 125 215 118 215 163"/>
-            <path class="process-line partial" d="M640 96 L640 163"/>
+            <path class="process-line connected" d="M640 96 L640 163"/>
             <path class="process-line connected" d="M640 96 C640 125 1065 118 1065 163"/>
             <text class="process-line-label connected" x="300" y="125">브라우저 원본 보관</text>
-            <text class="process-line-label partial" x="652" y="133">서버 업로드</text>
+            <text class="process-line-label connected" x="652" y="133">서버 업로드·접수번호 발급</text>
 
             <path class="process-line connected" d="M215 241 C215 280 535 268 585 308"/>
-            <path class="process-line partial" d="M640 241 L640 308"/>
+            <path class="process-line connected" d="M640 241 L640 308"/>
             <path class="process-line connected" d="M1065 241 C1065 280 745 268 695 308"/>
-            <text class="process-line-label partial" x="652" y="277">배포 후 타 PC 동기화</text>
+            <text class="process-line-label connected" x="652" y="277">관리자 키로 타 PC 동기화</text>
 
             <path class="process-line connected" d="M640 386 L640 443"/>
             <path class="process-line connected" d="M590 531 C540 550 425 550 375 583"/>
@@ -986,18 +986,18 @@
             <path class="process-line connected" d="M640 1093 C610 1125 470 1115 405 1143"/>
             <path class="process-line partial" d="M640 1093 C670 1125 810 1115 875 1143"/>
 
-            <path class="process-line disconnected" d="M405 1223 C380 1250 225 1240 170 1278"/>
-            <path class="process-line disconnected" d="M170 1358 L300 1358"/>
+            <path class="process-line connected" d="M405 1223 C380 1250 225 1240 170 1278"/>
+            <path class="process-line connected" d="M170 1358 L300 1358"/>
             <path class="process-line partial" d="M405 1223 C405 1250 405 1260 405 1278"/>
             <path class="process-line partial" d="M510 1318 L535 1318"/>
             <path class="process-line partial" d="M745 1318 L770 1318"/>
             <path class="process-line partial" d="M980 1318 L1005 1318"/>
-            <text class="process-line-label disconnected" x="190" y="1260">고객 조회 페이지 필요</text>
+            <text class="process-line-label connected" x="190" y="1260">중앙 서버 접수번호 조회</text>
           </svg>
 
           <article class="process-node customer" data-state="connected"><strong>고객 작성폼</strong><small>5단계 제품 정보와 원본 파일 접수</small><span class="process-state">연결 완료</span></article>
           <article class="process-node browser" data-state="connected"><strong>브라우저 IndexedDB</strong><small>프로젝트·제품·로고·참고자료 선저장</small><span class="process-state">연결 완료</span></article>
-          <article class="process-node server" data-state="connected"><strong>중앙 접수·진행 서버</strong><small>고객 접수·파일 저장·관리자 조회·예약번호 진행조회 응답 확인</small><span class="process-state">연결 완료</span></article>
+          <article class="process-node server" data-state="connected"><strong>중앙 접수·진행 서버</strong><small>고객 접수·파일 저장·관리자 조회·접수번호 발급·진행조회 응답</small><span class="process-state">연결 완료</span></article>
           <article class="process-node summary" data-state="partial"><strong>고객 내용 정리본</strong><small>로컬 원문 정규화·입력 출처 구분, 서버 버전 대기</small><span class="process-state">부분 연결</span></article>
           <article class="process-node admin" data-state="connected"><strong>관리자 프로젝트 목록</strong><small>중앙 접수 서버 프로젝트 조회와 현재 브라우저 안전본 사용</small><span class="process-state">연결 완료</span></article>
           <article class="process-node review is-decision" data-state="partial"><strong>관리자 내용 검수</strong><small>브라우저 승인 잠금 작동, 서버 강제 검증 대기</small><span class="process-state">부분 연결</span></article>
@@ -1012,7 +1012,7 @@
           <article class="process-node combine" data-state="connected"><strong>1차 촬영·디자인 시안</strong><small>Drive 기획안 형식의 촬영 지시·섹션 와이어·조판 계획서 생성</small><span class="process-state">연결 완료</span></article>
           <article class="process-node draftdb" data-state="connected"><strong>IndexedDB 시안 저장</strong><small>현재 브라우저에 생성 결과 보관</small><span class="process-state">연결 완료</span></article>
           <article class="process-node folder" data-state="partial"><strong>고객관리 폴더 저장</strong><small>사용자가 허용한 로컬 폴더에 저장</small><span class="process-state">부분 연결</span></article>
-          <article class="process-node portal" data-state="connected"><strong>고객 진행현황 페이지</strong><small>예약번호·연락처 뒤 4자리 인증 조회 작동</small><span class="process-state">연결 완료</span></article>
+          <article class="process-node portal" data-state="connected"><strong>고객 진행현황 페이지</strong><small>중앙 서버 발급 접수번호·연락처 뒤 4자리 인증 조회 작동</small><span class="process-state">연결 완료</span></article>
           <article class="process-node feedback" data-state="partial"><strong>고객 브러시·코멘트</strong><small>시안 위 표시·코멘트·관리자 표시 토글 작동, 다른 PC 동기화 API 필요</small><span class="process-state">부분 연결</span></article>
           <article class="process-node revision" data-state="partial"><strong>1차 시안 보완·컨펌</strong><small>요청·회수·고객 컨펌·Codex 부분 보완 지시서 작동</small><span class="process-state">부분 연결</span></article>
           <article class="process-node delivery" data-state="partial"><strong>제작 전달·내부 검수</strong><small>전달 문구와 검수 단계 UI 제공</small><span class="process-state">부분 연결</span></article>
@@ -1030,7 +1030,7 @@
         <div class="matrix-row header-row"><span>핵심 공정</span><span>상태</span><span>현재 동작</span><span>남은 연결</span></div>
         <div class="matrix-row" data-status="connected"><strong>1. 고객 작성폼</strong><span class="status-pill connected">연결 완료</span><p>5단계 텍스트·제품·로고·참고자료 접수</p><p>현재 기능 유지</p></div>
         <div class="matrix-row" data-status="connected"><strong>2. 브라우저 IndexedDB</strong><span class="status-pill connected">연결 완료</span><p>고객 원문과 파일 선저장·재전송 대기</p><p>보관기간 정책 추가</p></div>
-        <div class="matrix-row" data-status="connected"><strong>3. 중앙 접수·진행 서버</strong><span class="status-pill connected">연결 완료</span><p>접수·파일·관리자 조회·예약번호 진행조회 API 응답 확인</p><p>피드백 저장 API 추가 필요</p></div>
+        <div class="matrix-row" data-status="connected"><strong>3. 중앙 접수·진행 서버</strong><span class="status-pill connected">연결 완료</span><p>접수·파일·관리자 조회·접수번호 발급·진행조회 API 응답 확인</p><p>실접수·첨부파일 회귀 테스트 유지</p></div>
         <div class="matrix-row" data-status="partial"><strong>4. 고객 내용 정리본</strong><span class="status-pill partial">로컬 작동</span><p>입력값 정규화·출처와 미기입 구분</p><p>서버 원문/정규화본 버전 저장 추가</p></div>
         <div class="matrix-row" data-status="connected"><strong>5. 관리자 프로젝트 목록</strong><span class="status-pill connected">서버 연결</span><p>프로젝트·미기입·첨부자료 상태와 중앙 접수 목록 표시</p><p>역할별 로그인 권한 고도화</p></div>
         <div class="matrix-row" data-status="partial"><strong>6. 관리자 내용 검수</strong><span class="status-pill partial">로컬 승인</span><p>필수값 확인·내용 수정·승인 처리</p><p>서버 감사·승인 스냅샷 강제 검증 추가</p></div>

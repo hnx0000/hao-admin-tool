@@ -3,185 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#11151a">
   <meta name="robots" content="noindex,nofollow">
-  <title>제작 진행 상황 — HAO</title>
+  <title>HAO 고객 제작 진행조회</title>
+  <meta http-equiv="refresh" content="0;url=https://hao-admin.vigo.co.kr/track.html">
   <style>
-    :root { color-scheme:dark; font-family:Pretendard,"Noto Sans KR",system-ui,sans-serif; background:#0f1318; color:#f5f7fa; }
-    * { box-sizing:border-box; }
-    body { min-height:100vh; margin:0; background:radial-gradient(circle at 85% 5%,rgba(50,112,226,.14),transparent 31%),#0f1318; }
-    button,input { font:inherit; }
-    main { width:min(980px,calc(100% - 30px)); margin:0 auto; padding:54px 0 80px; }
-    .eyebrow { margin:0 0 8px; color:#ff5b78; font-size:11px; font-weight:900; letter-spacing:.14em; }
-    h1 { margin:0; font-size:clamp(34px,6vw,58px); letter-spacing:-.055em; }
-    .intro { margin:15px 0 30px; color:#9daaba; line-height:1.7; }
-    .lookup { display:grid; grid-template-columns:1.2fr .8fr auto; gap:12px; padding:20px; border:1px solid #303a46; border-radius:18px; background:#191f26; }
-    label { color:#aeb8c4; font-size:12px; font-weight:800; }
-    input { display:block; width:100%; height:48px; margin-top:8px; border:1px solid #3a4653; border-radius:11px; padding:0 14px; background:#11161c; color:#fff; }
-    input:focus { outline:2px solid rgba(61,126,239,.45); border-color:#4b83e8; }
-    button { align-self:end; min-height:48px; border:1px solid #397be9; border-radius:11px; padding:0 18px; background:#2868d8; color:#fff; font-weight:900; cursor:pointer; }
-    button:hover { background:#3477e8; }
-    .error { min-height:22px; margin:10px 2px 0; color:#ff8296; font-size:13px; }
-    .result[hidden] { display:none; }
-    .summary { position:relative; overflow:hidden; display:grid; grid-template-columns:1fr auto; gap:18px; border:1px solid #33404d; border-radius:20px; padding:26px; background:#1a2027; }
-    .summary::after { content:""; position:absolute; width:190px; height:190px; right:-80px; top:-100px; border-radius:50%; background:rgba(54,119,235,.17); }
-    .summary small { color:#77a9ff; font-weight:900; }
-    .summary h2 { margin:7px 0 6px; font-size:clamp(22px,4vw,34px); letter-spacing:-.04em; }
-    .summary p { margin:0; color:#a8b4c1; }
-    .status { position:relative; z-index:1; align-self:start; border:1px solid rgba(98,221,161,.32); border-radius:999px; padding:8px 12px; background:rgba(98,221,161,.1); color:#70e1a9; font-size:12px; font-weight:900; }
-    .progress-head { display:flex; justify-content:space-between; margin:25px 0 9px; color:#b8c3cf; font-size:13px; }
-    .progress-bar { overflow:hidden; height:10px; border-radius:99px; background:#252e38; }
-    .progress-bar span { display:block; width:0; height:100%; border-radius:inherit; background:linear-gradient(90deg,#3478ef,#62dda1); transition:width .45s ease; }
-    .timeline { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px; margin-top:24px; }
-    .stage { position:relative; min-height:132px; border:1px solid #2c3641; border-radius:14px; padding:15px 12px; background:#151a20; }
-    .stage b { display:grid; width:28px; height:28px; place-items:center; border-radius:50%; background:#2b3440; color:#8795a5; font-size:11px; }
-    .stage strong { display:block; margin:16px 0 6px; font-size:13px; }
-    .stage span { color:#7e8a98; font-size:11px; line-height:1.45; }
-    .stage.done { border-color:rgba(98,221,161,.35); background:rgba(49,119,82,.12); }
-    .stage.done b { background:#2d845d; color:white; }
-    .stage.active { border-color:#4585ed; background:rgba(47,105,211,.16); box-shadow:inset 0 0 0 1px rgba(73,137,244,.2); }
-    .stage.active b { background:#3478ef; color:white; }
-    .stage.active span { color:#a9c7ff; }
-    .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; }
-    .detail { border:1px solid #2c3540; border-radius:14px; padding:18px; background:#151a20; }
-    .detail small { color:#7f8d9d; font-weight:800; }
-    .detail strong { display:block; margin-top:8px; font-size:15px; line-height:1.55; }
-    .notice { margin-top:18px; color:#788696; font-size:12px; line-height:1.6; }
-    @media (max-width:760px) {
-      main { padding-top:30px; }
-      .lookup { grid-template-columns:1fr; }
-      button { width:100%; }
-      .timeline { grid-template-columns:1fr 1fr; }
-      .summary,.detail-grid { grid-template-columns:1fr; }
-      .status { justify-self:start; }
-    }
+    :root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0e131a;color:#eef4ff;font-family:Pretendard,"Noto Sans KR",sans-serif}.card{width:min(560px,calc(100% - 40px));padding:38px;border:1px solid #2b3440;border-radius:24px;background:#171e27;box-shadow:0 24px 80px #0008}.eyebrow{color:#64d39c;font-size:12px;font-weight:800;letter-spacing:.15em}.card h1{margin:12px 0;font-size:28px}.card p{color:#b8c5d6;line-height:1.7}.card a{display:inline-flex;margin-top:12px;padding:14px 18px;border-radius:12px;background:#3478f6;color:white;text-decoration:none;font-weight:800}
   </style>
 </head>
 <body>
-  <main>
-    <p class="eyebrow">HAO CUSTOMER PROGRESS</p>
-    <h1>제작 진행 상황</h1>
-    <p class="intro">접수번호와 접수 시 등록한 연락처 뒤 4자리로 현재 단계만 안전하게 확인합니다.</p>
-
-    <form class="lookup" id="lookupForm">
-      <label>접수번호<input id="receipt" autocomplete="off" placeholder="예: HAO-HOABI-260828" required></label>
-      <label>연락처 뒤 4자리<input id="verify" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="1234" required></label>
-      <button type="submit">진행 상황 확인</button>
-    </form>
-    <p class="error" id="error" role="status"></p>
-    <section class="result" id="result" hidden aria-live="polite">
-      <div class="summary">
-        <div>
-          <small id="receiptLabel"></small>
-          <h2 id="productName"></h2>
-          <p id="companyName"></p>
-        </div>
-        <span class="status" id="statusLabel"></span>
-      </div>
-      <div class="progress-head"><strong>전체 진행률</strong><span id="progressText"></span></div>
-      <div class="progress-bar"><span id="progressBar"></span></div>
-      <div class="timeline" id="timeline"></div>
-      <div class="detail-grid">
-        <article class="detail"><small>현재 진행 내용</small><strong id="currentWork"></strong></article>
-        <article class="detail"><small>다음 예정 단계</small><strong id="nextWork"></strong></article>
-      </div>
-      <p class="notice">고객에게는 제작 단계만 표시되며 관리자 메모, 원본 파일, 내부 검수 내용은 공개되지 않습니다.</p>
-    </section>
+  <main class="card">
+    <div class="eyebrow">CENTRAL SERVER</div>
+    <h1>중앙 서버 진행조회로 이동합니다</h1>
+    <p>고객의 제작 진행상황은 중앙 서버에서 발급한 접수번호와 연락처 뒤 4자리로 확인합니다.</p>
+    <a href="https://hao-admin.vigo.co.kr/track.html">바로 이동하기</a>
   </main>
-  <script>
-    const $ = (id) => document.getElementById(id);
-    const stageNames = ["접수 완료","자료 정리","관리자 검수","1차 시안","고객 컨펌","실제 제작","최종 납품"];
-    const publicProjects = Object.freeze({
-      "HAO-HOABI-260828": {
-        verify:"5678", companyName:"호아비", productName:"호아비 리치꿀스틱 30포",
-        status:"관리자 검수 진행", currentIndex:2, progress:36,
-        currentWork:"고객 자료와 제품 정보를 검수하고 1차 촬영·디자인 기획 시안의 제작 조건을 정리하고 있습니다.",
-        nextWork:"검수 승인 후 1차 촬영·디자인 기획 시안을 생성합니다."
-      },
-      "HAO-SAENG-260828": {
-        verify:"0436", companyName:"생즙연구소", productName:"100% 사과주스 · 100% 감귤주스",
-        status:"1차 시안 검수·수정", currentIndex:3, progress:57,
-        currentWork:"촬영 구도, 섹션 순서, 카피 안전 영역이 담긴 1차 기획 시안을 검수하고 있습니다.",
-        nextWork:"고객 컨펌과 실제 촬영 결과를 반영해 상세페이지 제작 단계로 이동합니다."
-      }
-    });
-
-    function indexFromStatus(value="") {
-      const text=String(value);
-      if (/완료|납품/.test(text)) return 6;
-      if (/내부 검수|실제 제작|PSD/.test(text)) return 5;
-      if (/고객.*(컨펌|회신)/.test(text)) return 4;
-      if (/1차 시안|시안 제작|기획 생성/.test(text)) return 3;
-      if (/검수|확인 중/.test(text)) return 2;
-      if (/자료|정리/.test(text)) return 1;
-      return 0;
-    }
-
-    function normalizeRemote(data, receipt) {
-      const project=data?.project || data?.submission || data || {};
-      const status=project.status || data.status || "접수 완료";
-      const currentIndex=indexFromStatus(status);
-      return {
-        companyName:project.companyName || project.clientName || "고객 프로젝트",
-        productName:project.productName || "상세페이지 제작 프로젝트",
-        status,
-        currentIndex,
-        progress:Math.round(((currentIndex + 1) / stageNames.length) * 100),
-        currentWork:data.currentWork || project.currentWork || `${stageNames[currentIndex]} 단계가 진행 중입니다.`,
-        nextWork:data.nextWork || project.nextWork || (currentIndex < stageNames.length - 1 ? `${stageNames[currentIndex + 1]} 단계로 이동할 예정입니다.` : "최종 납품이 완료되었습니다."),
-        receipt
-      };
-    }
-
-    function render(project, receipt) {
-      $("receiptLabel").textContent=receipt;
-      $("companyName").textContent=project.companyName;
-      $("productName").textContent=project.productName;
-      $("statusLabel").textContent=project.status;
-      $("progressText").textContent=`${project.progress}%`;
-      $("progressBar").style.width=`${project.progress}%`;
-      $("currentWork").textContent=project.currentWork;
-      $("nextWork").textContent=project.nextWork;
-      $("timeline").innerHTML=stageNames.map((name,index)=>{
-        const state=index < project.currentIndex ? "done" : index === project.currentIndex ? "active" : "pending";
-        const description=state === "done" ? "완료" : state === "active" ? "진행 중" : "대기";
-        return `<article class="stage ${state}"><b>${state === "done" ? "✓" : String(index+1).padStart(2,"0")}</b><strong>${name}</strong><span>${description}</span></article>`;
-      }).join("");
-      $("result").hidden=false;
-      $("result").scrollIntoView({behavior:"smooth",block:"start"});
-    }
-
-    async function lookup(receipt, verify) {
-      const normalized=receipt.trim().toUpperCase();
-      const local=publicProjects[normalized];
-      if (local) {
-        if (local.verify !== verify) throw new Error("접수번호 또는 연락처 정보가 일치하지 않습니다.");
-        return {...local,receipt:normalized};
-      }
-      const response=await fetch(`https://hao-admin.vigo.co.kr/api/track/${encodeURIComponent(receipt.trim())}?verify=${encodeURIComponent(verify)}`,{headers:{Accept:"application/json"},cache:"no-store"});
-      const data=await response.json().catch(()=>({}));
-      if (!response.ok) throw new Error(data.message || "접수번호 또는 연락처 정보가 일치하지 않습니다.");
-      return normalizeRemote(data,receipt.trim());
-    }
-
-    $("lookupForm").addEventListener("submit",async(event)=>{
-      event.preventDefault();
-      $("error").textContent="확인 중입니다…";
-      $("result").hidden=true;
-      try {
-        const receipt=$("receipt").value;
-        const project=await lookup(receipt,$("verify").value.replace(/\D/g,""));
-        $("error").textContent="";
-        render(project,project.receipt || receipt);
-      } catch(error) {
-        $("error").textContent=error?.message || "진행 상황을 불러오지 못했습니다.";
-      }
-    });
-
-    const params=new URLSearchParams(location.search);
-    if (params.get("receipt")) $("receipt").value=params.get("receipt");
-    if (params.get("verify")) $("verify").value=params.get("verify").replace(/\D/g,"").slice(-4);
-    if ($("receipt").value && $("verify").value.length === 4) $("lookupForm").requestSubmit();
-  </script>
+  <script>location.replace("https://hao-admin.vigo.co.kr/track.html");</script>
 </body>
 </html>
