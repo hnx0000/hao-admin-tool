@@ -570,16 +570,23 @@ function writeCustomerProjects(projects) {
 }
 
 function removeRequestedTestProjects() {
-  const cleanupKey = "customerProjectCleanup:20260724:asdasd-345drg";
+  const cleanupKey = "customerProjectCleanup:20260828:asdasd-345drg-a7r3";
   if (localStorage.getItem(cleanupKey)) return;
 
-  const removalNames = new Set(["asdasd", "345drg"]);
+  const removalNames = new Set(["asdasd", "345drg", "a7r3"]);
+  const removalIds = new Set([
+    "customer-project-1787807677121",
+    "sub_01M10T8E94CH8SX9H9H26VANSM",
+    "HAO-260827-0001",
+  ]);
   const matchesRemovalName = (project) => [
     project?.productName,
     project?.projectName,
     project?.clientName,
     project?.companyName,
-  ].some((name) => removalNames.has(String(name || "").trim()));
+  ].some((name) => removalNames.has(String(name || "").trim().toLowerCase()))
+    || [project?.id, project?.cloudSubmissionId, project?.receiptNo]
+      .some((id) => removalIds.has(String(id || "").trim()));
 
   const projects = readCustomerProjects();
   const remaining = projects.filter((project) => !matchesRemovalName(project));
@@ -1203,14 +1210,62 @@ function projectFromAdminFields(project = activeCustomerProject()) {
   };
 }
 
+function customerProgressForStatus(status = "신규 접수") {
+  const normalized = String(status || "신규 접수").trim();
+  const stages = {
+    "신규 접수": [1, "접수 완료", "작성해주신 내용이 정상적으로 접수되었습니다. 담당자가 곧 확인합니다."],
+    "확인 중": [2, "자료 확인 중", "담당 관리자가 작성 내용과 첨부 자료를 확인하고 있습니다."],
+    "검수 완료": [3, "내용 검수 완료", "고객 작성 내용 검수가 완료되어 1차 시안을 준비합니다."],
+    "기획 생성": [4, "1차 시안 제작 중", "검수된 내용을 바탕으로 촬영·디자인 기획 시안을 제작하고 있습니다."],
+    "시안 제작": [4, "1차 시안 제작 중", "검수된 내용을 바탕으로 촬영·디자인 기획 시안을 제작하고 있습니다."],
+    "1차 시안 완료": [5, "1차 시안 검수·수정", "1차 촬영·디자인 시안이 준비되어 관리자 검수와 보완을 진행하고 있습니다."],
+    "1차 시안 보완 중": [5, "1차 시안 검수·수정", "전달된 의견을 반영해 1차 촬영·디자인 시안을 보완하고 있습니다."],
+    "고객 회신 대기": [6, "고객 확인·피드백", "1차 시안 확인과 고객 피드백을 기다리고 있습니다."],
+    "고객 컨펌 대기": [6, "고객 확인·피드백", "1차 시안 확인과 고객 피드백을 기다리고 있습니다."],
+    "실제 제작": [7, "실제 제작", "확정된 1차 시안과 촬영 결과를 바탕으로 상세페이지를 제작하고 있습니다."],
+    "내부 검수": [8, "내부 검수", "완성된 상세페이지의 문구·이미지·규격을 최종 검수하고 있습니다."],
+    "완료": [9, "최종 납품", "모든 제작과 검수가 완료되어 최종 결과물이 납품되었습니다."],
+    "최종 납품": [9, "최종 납품", "모든 제작과 검수가 완료되어 최종 결과물이 납품되었습니다."],
+  };
+  const [currentStep, stepLabel, customerMessage] = stages[normalized] || stages["신규 접수"];
+  return { currentStep, totalSteps: 9, stepLabel, customerMessage, updatedAt: new Date().toISOString() };
+}
+
+function projectWithCustomerProgress(project = {}, status = project.status || "신규 접수") {
+  return {
+    ...project,
+    status,
+    workflow: {
+      ...(project.workflow || {}),
+      customerProgress: customerProgressForStatus(status),
+    },
+  };
+}
+
+async function syncCustomerProjectState(project, successMessage = "프로젝트 진행 상태를 중앙 서버에 저장했습니다.") {
+  if (!project?.cloudSubmissionId || !window.haoSubmissionSync?.updateProjectState) return;
+  try {
+    await window.haoSubmissionSync.updateProjectState(project);
+    if (successMessage) updateAiStatus(successMessage);
+  } catch (error) {
+    if (error?.status === 401 && window.haoSubmissionSync?.setAdminToken) {
+      requestServerAdminAuth("프로젝트 진행 상태를 서버에 저장하려면 관리자 인증이 필요합니다.", () => syncCustomerProjectState(project, successMessage));
+      return;
+    }
+    updateAiStatus(error?.message || "중앙 서버 상태 저장에 실패했습니다. 로컬 변경은 유지됩니다.");
+  }
+}
+
 function persistCustomerProject(project) {
-  if (!project?.id) return;
+  if (!project?.id) return null;
+  const storedProject = projectWithCustomerProgress(project);
   const projects = readCustomerProjects();
-  const index = projects.findIndex((item) => item.id === project.id);
-  if (index >= 0) projects[index] = project;
-  else projects.unshift(project);
+  const index = projects.findIndex((item) => item.id === storedProject.id);
+  if (index >= 0) projects[index] = storedProject;
+  else projects.unshift(storedProject);
   writeCustomerProjects(projects);
-  localStorage.setItem(CUSTOMER_PROJECT_KEY, JSON.stringify(project));
+  localStorage.setItem(CUSTOMER_PROJECT_KEY, JSON.stringify(storedProject));
+  return storedProject;
 }
 
 function approveCurrentProjectReview() {
@@ -1236,10 +1291,11 @@ function approveCurrentProjectReview() {
     prompt: { status: driveReady ? "ready" : "blocked", at: "" },
     imageDraft: { status: driveReady ? "ready" : "blocked", at: "" },
   };
-  persistCustomerProject(reviewed);
+  const stored = persistCustomerProject(reviewed);
   renderCustomerProjects();
-  renderProjectReviewGate(reviewed);
+  renderProjectReviewGate(stored);
   updateWorkflowState();
+  syncCustomerProjectState(stored, "검수 완료 상태를 중앙 서버에 저장했습니다.");
   updateAiStatus("관리자 내용 검수가 완료되었습니다. 이제 기획/시안 자동 생성을 실행할 수 있습니다.");
 }
 
@@ -1254,9 +1310,10 @@ function invalidateCurrentProjectReview() {
     prompt: { status: "blocked", at: "" },
     imageDraft: { status: "blocked", at: "" },
   };
-  persistCustomerProject(changed);
+  const stored = persistCustomerProject(changed);
   renderCustomerProjects();
-  renderProjectReviewGate(changed);
+  renderProjectReviewGate(stored);
+  syncCustomerProjectState(stored, "재검수 상태를 중앙 서버에 저장했습니다.");
 }
 
 function safeDownloadName(valueText = "프로젝트") {
@@ -1433,11 +1490,43 @@ function planningPreviewForProject(project = {}) {
   return PROJECT_PLANNING_PREVIEWS.find((item) => identity.includes(item.clientToken)) || null;
 }
 
+function genericPlanningPreviewForProject(project = {}) {
+  const productName = String(project.productName || project.projectName || "").trim();
+  const clientName = String(project.clientName || project.companyName || project.brandName || "브랜드").trim();
+  if (!productName) return null;
+  const projectId = String(project.id || `${clientName}-${productName}`).trim();
+  const query = new URLSearchParams({
+    projectId,
+    product: productName,
+    client: clientName,
+    category: String(project.category || "").trim(),
+  });
+  return {
+    id: `generic-first-draft-${projectId.replace(/[^a-zA-Z0-9가-힣_-]+/g, "-")}`,
+    clientToken: productName,
+    title: `${productName} · 1차 촬영 및 디자인 시안`,
+    imageUrl: "assets/planning/generic-planning-v1.svg",
+    viewerUrl: `planning/project-first-draft.html?${query.toString()}`,
+    dimensions: "3,000 × 18,000px 기획 보드",
+    targetLength: "기본 10,000px · 프로젝트 제작 범위에 따라 조정",
+    structure: "촬영 지시 · 섹션 와이어 · 디자인 조판 영역 · 고객 피드백 기준",
+    referenceBasis: "고객 검수 정보와 Google Drive 2026 기획안 구조를 적용한 범용 1차 시안",
+  };
+}
+
+function currentPlanningProject() {
+  const active = activeCustomerProject() || {};
+  return {
+    ...active,
+    clientName: value("clientName") || active.clientName || active.companyName || "",
+    productName: value("productName") || active.productName || active.projectName || "",
+    category: value("category") || active.category || "",
+  };
+}
+
 function currentPlanningPreview() {
-  return planningPreviewForProject({
-    clientName: value("clientName"),
-    productName: value("productName"),
-  }) || planningPreviewForProject(activeCustomerProject() || {});
+  const project = currentPlanningProject();
+  return planningPreviewForProject(project) || genericPlanningPreviewForProject(project);
 }
 
 function planningReviewStorageKey(preview = currentPlanningPreview()) {
@@ -1607,7 +1696,8 @@ function requestPlanningConfirmation() {
   const project = activeCustomerProject();
   if (project) {
     const updated = { ...project, status: "고객 컨펌 대기", workflow: { ...(project.workflow || {}), firstDraftConfirmation: { status: "requested", at: new Date().toISOString() } } };
-    persistCustomerProject(updated);
+    const stored = persistCustomerProject(updated);
+    syncCustomerProjectState(stored, "고객 컨펌 대기 상태를 중앙 서버에 저장했습니다.");
   }
   updateAiStatus("고객 컨펌 요청 상태로 변경했습니다. 고객 화면 링크와 접수번호를 전달하세요.");
 }
@@ -1620,7 +1710,8 @@ function recallPlanningConfirmation() {
   const project = activeCustomerProject();
   if (project) {
     const updated = { ...project, status: "1차 시안 보완 중", workflow: { ...(project.workflow || {}), firstDraftConfirmation: { status: "recalled", at: new Date().toISOString() } } };
-    persistCustomerProject(updated);
+    const stored = persistCustomerProject(updated);
+    syncCustomerProjectState(stored, "1차 시안 보완 상태를 중앙 서버에 저장했습니다.");
   }
   updateAiStatus("고객 컨펌 요청을 회수했습니다. 관리자 코멘트와 고객 피드백을 보완한 뒤 다시 요청할 수 있습니다.");
 }
@@ -1652,7 +1743,8 @@ function prepareFirstPlanningDraft() {
   const project = activeCustomerProject();
   if (project) {
     const updated = { ...project, status: "1차 시안 완료", workflow: { ...(project.workflow || {}), firstDraft: { status: "generated", at: new Date().toISOString(), previewId: preview.id } } };
-    persistCustomerProject(updated);
+    const stored = persistCustomerProject(updated);
+    syncCustomerProjectState(stored, "1차 시안 완료 상태를 중앙 서버에 저장했습니다.");
   }
   renderPlanningReviewCard();
   window.open(preview.viewerUrl, "_blank", "noopener,noreferrer");
@@ -1710,10 +1802,10 @@ function renderCustomerProjects() {
   currentCustomerProjectPage = Math.min(Math.max(1, currentCustomerProjectPage), totalPages);
   const pageStart = (currentCustomerProjectPage - 1) * CUSTOMER_PROJECTS_PER_PAGE;
   const visibleProjects = projects.slice(pageStart, pageStart + CUSTOMER_PROJECTS_PER_PAGE);
-  const statuses = ["신규 접수", "확인 중", "검수 완료", "기획 생성", "시안 제작", "고객 회신 대기", "완료"];
+  const statuses = ["신규 접수", "확인 중", "검수 완료", "기획 생성", "시안 제작", "고객 회신 대기", "실제 제작", "내부 검수", "최종 납품"];
   const projectCards = visibleProjects.map((project) => {
     const readiness = customerProjectReadiness(project);
-    const planningPreview = planningPreviewForProject(project);
+    const planningPreview = planningPreviewForProject(project) || genericPlanningPreviewForProject(project);
     const receipt = planningReceipt(project);
     const verify = planningPhoneLast4(project);
     const progressUrl = "https://hao-admin.vigo.co.kr/track.html";
@@ -1815,11 +1907,11 @@ function renderCustomerProjects() {
 }
 
 async function updateCustomerProjectStatus(id, status) {
-  const projects = readCustomerProjects().map((project) => project.id === id ? { ...project, status } : project);
+  const projects = readCustomerProjects().map((project) => project.id === id ? projectWithCustomerProgress(project, status) : project);
   writeCustomerProjects(projects);
   const active = readCustomerProject();
   if (active?.id === id) {
-    localStorage.setItem(CUSTOMER_PROJECT_KEY, JSON.stringify({ ...active, status }));
+    localStorage.setItem(CUSTOMER_PROJECT_KEY, JSON.stringify(projectWithCustomerProgress(active, status)));
   }
   renderCustomerProjects();
   renderProjectReviewGate();
@@ -1933,7 +2025,7 @@ function handleProjectManagement(event) {
     const project = readCustomerProjects().find((item) => item.id === id);
     downloadCurrentContentSummary(project);
   }
-  if (action === "complete") updateCustomerProjectStatus(id, "완료");
+  if (action === "complete") updateCustomerProjectStatus(id, "최종 납품");
   if (action === "reopen") updateCustomerProjectStatus(id, "신규 접수");
   if (action === "delete") requestCustomerProjectDeletion(id);
 }

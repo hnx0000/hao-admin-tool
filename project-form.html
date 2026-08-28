@@ -7,7 +7,7 @@
   <title>AI 상세페이지 원고 생성</title>
   <link rel="manifest" href="app.webmanifest">
   <link rel="icon" href="assets/app-icons/hao-192.png" type="image/png">
-  <link rel="stylesheet" href="customer-form-v11.css?v=20260819-4">
+  <link rel="stylesheet" href="customer-form-v11.css?v=20260828-review1">
 </head>
 <body class="public-page wizard-page">
   <main class="ai-wizard-shell">
@@ -288,7 +288,25 @@
             <dd>접수 시 입력한 연락처 뒤 4자리</dd>
           </div>
         </dl>
-        <p><a id="customerTrackLink" class="wizard-home-link" href="https://hao-admin.vigo.co.kr/track.html" target="_blank" rel="noopener">중앙 서버에서 제작 진행상황 확인하기</a></p>
+        <div class="result-customer-actions">
+          <a id="customerTrackLink" class="wizard-home-link" href="https://hao-admin.vigo.co.kr/track.html" target="_blank" rel="noopener">중앙 서버에서 제작 진행상황 확인하기</a>
+        </div>
+      </section>
+
+      <section class="result-card result-summary-card">
+        <div>
+          <span>확인</span>
+          <h2>제출 내용 다시 보기</h2>
+        </div>
+        <p>담당자에게 전달된 내용을 바로 확인하고 잘못 입력한 부분이 없는지 점검하세요.</p>
+        <div class="result-customer-actions">
+          <button id="toggleSubmittedContent" type="button" aria-expanded="false">내가 작성한 내용 확인</button>
+        </div>
+        <section class="submitted-content-review" id="submittedContentReview" hidden>
+          <h3>제출한 내용</h3>
+          <p>고객이 실제로 입력한 값과 첨부 파일명을 다시 확인할 수 있습니다.</p>
+          <pre id="submittedContentText"></pre>
+        </section>
       </section>
 
       <section class="result-card result-summary-card">
@@ -388,10 +406,10 @@
   </main>
 
   <script src="hao-config.js?v=20260819-4"></script>
-  <script src="workflow-core.js?v=20260819-4"></script>
+  <script src="workflow-core.js?v=20260828-progress1"></script>
   <script src="submission-sync.js?v=20260819-4"></script>
   <script src="customer-file-store.js?v=20260819-4"></script>
-  <script src="project-form.js?v=20260828-central-receipt2"></script>
+  <script src="project-form.js?v=20260828-review1"></script>
   <script src="pwa-install.js?v=20260820-3"></script>
 </body>
 </html>

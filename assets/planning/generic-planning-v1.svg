@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200" role="img" aria-labelledby="title desc">
+  <title id="title">범용 1차 촬영 및 디자인 시안</title>
+  <desc id="desc">촬영 지시, 상세페이지 와이어프레임, 디자인 참고 영역으로 나뉜 기획 보드</desc>
+  <rect width="900" height="1200" fill="#f4f1ec"/>
+  <rect x="32" y="32" width="836" height="1136" rx="26" fill="#fff" stroke="#d8d1c7" stroke-width="2"/>
+  <text x="70" y="92" fill="#e24b5d" font-family="Arial, sans-serif" font-size="16" font-weight="700">FIRST DRAFT · SHOOTING &amp; DESIGN PLAN</text>
+  <text x="70" y="136" fill="#171717" font-family="Arial, sans-serif" font-size="31" font-weight="800">1차 촬영·디자인 시안</text>
+  <text x="70" y="168" fill="#6c665f" font-family="Arial, sans-serif" font-size="15">고객 검수 정보로 자동 구성되는 제작 전 기획 템플릿</text>
+  <line x1="70" y1="198" x2="830" y2="198" stroke="#ded8d0"/>
+  <text x="72" y="235" fill="#171717" font-family="Arial, sans-serif" font-size="15" font-weight="700">촬영 지시</text>
+  <text x="332" y="235" fill="#171717" font-family="Arial, sans-serif" font-size="15" font-weight="700">상세페이지 흐름</text>
+  <text x="652" y="235" fill="#171717" font-family="Arial, sans-serif" font-size="15" font-weight="700">디자인 기준</text>
+  <rect x="70" y="258" width="220" height="240" rx="16" fill="#fff4f1" stroke="#f0cbc4"/>
+  <circle cx="180" cy="350" r="62" fill="#f1ddd7"/>
+  <rect x="145" y="295" width="70" height="130" rx="30" fill="#fff" stroke="#cbbdb4" stroke-width="3"/>
+  <text x="91" y="466" fill="#6f4b42" font-family="Arial, sans-serif" font-size="13">제품 정면 · 원료 · 사용 장면</text>
+  <rect x="320" y="258" width="292" height="160" rx="16" fill="#eceae7"/>
+  <rect x="350" y="282" width="232" height="20" rx="10" fill="#c9c5bf"/>
+  <rect x="350" y="318" width="180" height="12" rx="6" fill="#d7d3cd"/>
+  <rect x="350" y="345" width="232" height="50" rx="10" fill="#fff"/>
+  <rect x="320" y="436" width="292" height="220" rx="16" fill="#f5f2ee"/>
+  <circle cx="386" cy="508" r="36" fill="#d7d2ca"/>
+  <circle cx="466" cy="508" r="36" fill="#d7d2ca"/>
+  <circle cx="546" cy="508" r="36" fill="#d7d2ca"/>
+  <rect x="350" y="570" width="232" height="12" rx="6" fill="#cbc6bf"/>
+  <rect x="350" y="594" width="190" height="10" rx="5" fill="#ddd8d1"/>
+  <rect x="642" y="258" width="188" height="116" rx="16" fill="#f8ead0"/>
+  <rect x="666" y="286" width="140" height="16" rx="8" fill="#d9b977"/>
+  <rect x="666" y="318" width="86" height="32" rx="8" fill="#fff"/>
+  <rect x="642" y="392" width="188" height="116" rx="16" fill="#e7f0e8"/>
+  <rect x="666" y="420" width="140" height="16" rx="8" fill="#8eb495"/>
+  <rect x="666" y="452" width="112" height="32" rx="8" fill="#fff"/>
+  <text x="70" y="724" fill="#171717" font-family="Arial, sans-serif" font-size="18" font-weight="800">9단계 제작 흐름</text>
+  <g font-family="Arial, sans-serif" font-size="13" fill="#333">
+    <rect x="70" y="754" width="760" height="54" rx="12" fill="#f0eeeb"/><text x="94" y="787">01  히어로 · 첫 구매 이유</text>
+    <rect x="70" y="820" width="760" height="54" rx="12" fill="#f7f4f0"/><text x="94" y="853">02  고객 고민 · 핵심 차별점</text>
+    <rect x="70" y="886" width="760" height="54" rx="12" fill="#f0eeeb"/><text x="94" y="919">03  원료·소재 · 제조 신뢰</text>
+    <rect x="70" y="952" width="760" height="54" rx="12" fill="#f7f4f0"/><text x="94" y="985">04–07  사용 장면 · 상세 정보 · 구성</text>
+    <rect x="70" y="1018" width="760" height="54" rx="12" fill="#f0eeeb"/><text x="94" y="1051">08–09  구매 판단 · 클로징</text>
+  </g>
+  <text x="70" y="1120" fill="#8a837a" font-family="Arial, sans-serif" font-size="13">완성 디자인이 아닌 촬영·구성·조판을 합의하기 위한 1차 시안입니다.</text>
+</svg>

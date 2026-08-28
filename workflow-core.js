@@ -246,6 +246,13 @@ ${summary.customerNotes || "미기입"}
       prompt: { status: "blocked", at: "" },
       imageDraft: { status: "blocked", at: "" },
       foldering: { status: "waiting", at: "" },
+      customerProgress: {
+        currentStep: 1,
+        totalSteps: 9,
+        stepLabel: "접수 완료",
+        customerMessage: "작성해주신 내용이 정상적으로 접수되었습니다. 담당자가 곧 확인합니다.",
+        updatedAt: new Date().toISOString(),
+      },
     };
     return project;
   }

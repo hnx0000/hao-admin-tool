@@ -6,6 +6,7 @@ const LOCAL_FLOW_TEST = new URLSearchParams(location.search).get("test") === "1"
   && ["localhost", "127.0.0.1"].includes(location.hostname);
 
 let currentStep = 1;
+let submittedProjectForReview = null;
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
@@ -264,6 +265,66 @@ function renderResultPlan(data) {
       </div>
     </li>
   `).join("");
+}
+
+function submittedContentReviewText(project = {}) {
+  const files = (group) => Array.isArray(project[group]) && project[group].length
+    ? project[group].join(", ")
+    : "자료없음";
+  const options = Array.isArray(project.options) && project.options.length
+    ? project.options.map((item, index) => `${index + 1}. ${[item.name, item.volume, item.price].filter(Boolean).join(" · ")}`).join("\n")
+    : "자료없음";
+  return [
+    `[고객·브랜드]`,
+    `고객사명: ${project.companyName || "미기입"}`,
+    `브랜드명: ${project.clientName || project.brandName || "미기입"}`,
+    `담당자명: ${project.managerName || project.contactName || "미기입"}`,
+    `연락처: ${project.phone || project.contactInfo || "미기입"}`,
+    `이메일: ${project.email || "미기입"}`,
+    ``,
+    `[제품 정보]`,
+    `제품명: ${project.productName || "미기입"}`,
+    `카테고리: ${project.category || "미기입"}`,
+    `판매 채널: ${project.channel || "미기입"}`,
+    `타깃 고객: ${project.targetCustomer || "미기입"}`,
+    `한 줄 설명: ${project.heroSentence || project.oneLine || "미기입"}`,
+    `핵심 장점: ${project.coreStrength || project.features || "미기입"}`,
+    `구매 혜택: ${project.purchaseBenefit || "미기입"}`,
+    ``,
+    `[옵션·구성]`,
+    options,
+    ``,
+    `[제작 요청]`,
+    `디자인 무드: ${project.styleTone || "미기입"}`,
+    `제조·품질 근거: ${project.productionTrust || "미기입"}`,
+    `반드시 포함할 내용: ${project.mustInclude || "미기입"}`,
+    `추가 요청사항: ${project.additionalNotes || project.clientRequests || "미기입"}`,
+    `참고 링크: ${project.referenceUrls || project.references || "자료없음"}`,
+    ``,
+    `[첨부 파일]`,
+    `제품 이미지: ${files("productImages")}`,
+    `브랜드·로고: ${files("brandLogo")}`,
+    `참고 자료: ${files("referenceFiles")}`,
+  ].join("\n");
+}
+
+function renderSubmittedContentReview(project = submittedProjectForReview || {}) {
+  submittedProjectForReview = project;
+  const output = $("#submittedContentText");
+  if (output) output.textContent = submittedContentReviewText(project);
+}
+
+function toggleSubmittedContentReview() {
+  const panel = $("#submittedContentReview");
+  const button = $("#toggleSubmittedContent");
+  if (!panel || !button) return;
+  if (!submittedProjectForReview) {
+    try { submittedProjectForReview = JSON.parse(localStorage.getItem(CUSTOMER_PROJECT_KEY) || "{}"); } catch { submittedProjectForReview = {}; }
+  }
+  renderSubmittedContentReview(submittedProjectForReview);
+  panel.hidden = !panel.hidden;
+  button.setAttribute("aria-expanded", String(!panel.hidden));
+  button.textContent = panel.hidden ? "내가 작성한 내용 확인" : "작성내용 닫기";
 }
 
 function categoryPlanningProfile(category = "") {
@@ -931,8 +992,16 @@ async function saveProjectForm(event) {
   const receiptPanel = $("#receiptAccessPanel");
   if (receiptPanel) {
     receiptPanel.hidden = !project.receiptNo;
-    if (project.receiptNo) $("#issuedReceiptNo").textContent = project.receiptNo;
+    if (project.receiptNo) {
+      $("#issuedReceiptNo").textContent = project.receiptNo;
+      const verify = String(project.phone || project.contactInfo || "").replace(/\D/g, "").slice(-4);
+      const trackUrl = new URL("https://hao-admin.vigo.co.kr/track.html");
+      trackUrl.searchParams.set("receipt", project.receiptNo);
+      if (verify) trackUrl.searchParams.set("verify", verify);
+      $("#customerTrackLink").href = trackUrl.toString();
+    }
   }
+  renderSubmittedContentReview(project);
   renderResultPlan(data);
   window.setTimeout(() => {
     $("#generatingScreen").classList.remove("active");
@@ -986,6 +1055,7 @@ $("#prevStep")?.addEventListener("click", goPrev);
 $("#addOption")?.addEventListener("click", addOptionRow);
 $("#optionBuilder")?.addEventListener("click", handleOptionRemove);
 $("#projectWizard")?.addEventListener("submit", saveProjectForm);
+$("#toggleSubmittedContent")?.addEventListener("click", toggleSubmittedContentReview);
 $$("[data-field], [data-group], [data-file-group]").forEach((field) => {
   const rememberTouch = () => {
     const key = field.dataset.field || field.dataset.group || field.dataset.fileGroup;

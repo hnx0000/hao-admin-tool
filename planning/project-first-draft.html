@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>1차 촬영·디자인 시안</title>
+  <style>
+    :root{color-scheme:light;--ink:#181818;--sub:#6d6861;--line:#ddd7ce;--paper:#fff;--bg:#ece9e4;--accent:#ef5264;--shoot:#fff3ef;--wire:#efefed;--ref:#f7ecd6}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Pretendard,"Noto Sans KR",Arial,sans-serif}.board{width:min(1500px,calc(100% - 32px));margin:24px auto;background:var(--paper);box-shadow:0 28px 90px #554c4030}.head{padding:42px 50px 30px;border-bottom:1px solid var(--line)}.head small{color:var(--accent);font-weight:900;letter-spacing:.12em}.head h1{margin:10px 0 8px;font-size:clamp(28px,4vw,54px)}.head p{margin:0;color:var(--sub);line-height:1.7}.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border-bottom:1px solid var(--line)}.facts div{padding:20px 24px;background:#fff}.facts b,.facts span{display:block}.facts b{font-size:12px;color:var(--accent);margin-bottom:8px}.facts span{font-weight:800;line-height:1.45}.columns{display:grid;grid-template-columns:1fr 1.34fr 1fr;min-height:1150px}.column{padding:34px;border-right:1px solid var(--line)}.column:last-child{border-right:0}.column h2{font-size:20px;margin:0 0 8px}.column>.intro{color:var(--sub);font-size:13px;line-height:1.65;margin:0 0 26px}.card{border:1px solid var(--line);border-radius:16px;padding:20px;margin:0 0 16px;background:#fff}.shoot .card{background:var(--shoot)}.wire .card{background:var(--wire)}.ref .card{background:var(--ref)}.card small{color:var(--accent);font-weight:900}.card h3{margin:8px 0 9px;font-size:17px}.card p,.card li{color:#4f4a45;font-size:13px;line-height:1.7}.card p{margin:0}.card ul{margin:10px 0 0;padding-left:18px}.shot-box{height:150px;border-radius:13px;margin-top:14px;background:linear-gradient(140deg,#fff,#e1dad0);display:grid;place-items:center;color:#7d746c;font-weight:800;text-align:center}.wireframe{height:190px;border-radius:13px;margin-top:14px;background:#fff;display:grid;grid-template-rows:1.4fr .7fr .8fr;gap:8px;padding:12px}.wireframe i{display:block;border-radius:8px;background:#d9d6d1}.warning{margin:0;padding:30px 50px;background:#171717;color:#fff}.warning b{color:#ff7585}.warning p{margin:8px 0 0;color:#d8d4cf;line-height:1.7}.footer{padding:26px 50px;color:var(--sub);font-size:13px}.empty{color:#9b3e48!important}@media(max-width:900px){.facts{grid-template-columns:1fr 1fr}.columns{grid-template-columns:1fr}.column{border-right:0;border-bottom:1px solid var(--line)}}
+  </style>
+</head>
+<body>
+  <main class="board">
+    <header class="head">
+      <small>FIRST DRAFT · SHOOTING &amp; DESIGN PLAN</small>
+      <h1 id="title">1차 촬영·디자인 시안</h1>
+      <p>이 문서는 완성 상세페이지가 아니라, 고객과 관리자가 촬영 방향·정보 순서·디자인 조판 방식을 확정하는 제작 전 기획서입니다.</p>
+    </header>
+    <section class="facts" id="facts"></section>
+    <section class="columns">
+      <div class="column shoot">
+        <h2>촬영 기획</h2><p class="intro">실제 촬영자가 바로 이해할 수 있는 필수 컷과 안전 여백 기준입니다.</p>
+        <div id="shots"></div>
+      </div>
+      <div class="column wire">
+        <h2>상세페이지 구성</h2><p class="intro">검수된 고객 사실을 어떤 순서로 설득할지 보여주는 롱페이지 와이어입니다.</p>
+        <div id="sections"></div>
+      </div>
+      <div class="column ref">
+        <h2>디자인·조판 기준</h2><p class="intro">고유 디자인을 복제하지 않고 정보 위계와 사진의 역할만 적용합니다.</p>
+        <div id="design"></div>
+      </div>
+    </section>
+    <section class="warning"><b>제작 전 확인</b><p id="warningText">미기입·미확인 정보는 임의로 채우지 않습니다. 정확한 문구, 표, 인증·법정 정보는 촬영 후 실제 제작 단계에서 텍스트 레이어로 조판합니다.</p></section>
+    <footer class="footer">Google Drive 2026 기획안의 3열 제작 지시 구조를 기준으로 자동 생성 · 고객 피드백과 관리자 코멘트는 관리자툴 3번째 페이지에서 반영</footer>
+  </main>
+  <script>
+    const params=new URLSearchParams(location.search);const esc=(v)=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+    const list=()=>{try{return JSON.parse(localStorage.getItem("customerProjectList")||"[]")}catch{return[]}};
+    const active=()=>{try{return JSON.parse(localStorage.getItem("customerProjectInput")||"{}")}catch{return{}}};
+    const pid=params.get("projectId")||"";const project=list().find(p=>String(p.id||"")===pid)||active()||{};
+    const product=project.productName||params.get("product")||"제품명 미기입";const client=project.clientName||project.companyName||params.get("client")||"브랜드 미기입";const category=project.category||params.get("category")||"카테고리 확인 필요";
+    document.title=`${product} · 1차 시안`;document.getElementById("title").textContent=`${product} · 1차 촬영 및 디자인 시안`;
+    const oneLine=project.oneLine||project.heroSentence||project.coreStrength||"한 줄 제품 설명 확인 필요";const target=project.targetCustomer||"타깃 고객 확인 필요";const features=project.features||project.coreStrength||"핵심 장점 확인 필요";
+    document.getElementById("facts").innerHTML=[["고객/브랜드",client],["제품",product],["카테고리",category],["핵심 방향",oneLine]].map(([k,v])=>`<div><b>${esc(k)}</b><span>${esc(v)}</span></div>`).join("");
+    const shots=[
+      ["SHOT 01","히어로 제품 컷","제품 정면과 대표 원료·소재를 함께 보여주고 상단 카피를 위한 여백을 확보","정면 또는 15° · 세로 중심 · 확산광"],
+      ["SHOT 02","핵심 차별점 컷",features,"디테일 매크로 · 비교 설명 안전 영역"],
+      ["SHOT 03","사용 장면",`${target}이 실제로 사용하는 자연스러운 상황`,`제품 식별 가능 · 손·소품 과잉 연출 금지`],
+      ["SHOT 04","구성·정보 컷",project.options?.length?project.options.map(o=>[o.name,o.volume].filter(Boolean).join(" ")).join(", "):"옵션·구성 자료 확인 필요","정면·측면·후면 · 누끼 가능 배경"],
+    ];
+    document.getElementById("shots").innerHTML=shots.map(s=>`<article class="card"><small>${esc(s[0])}</small><h3>${esc(s[1])}</h3><p>${esc(s[2])}</p><div class="shot-box">${esc(s[3])}</div></article>`).join("");
+    const sectionNames=["히어로 · 제품과 한 줄 가치","고객 고민 · 구매 맥락","핵심 차별점 3가지","원료·소재·제조 근거","사용 장면과 방법","옵션·구성·용량","인증·정확 정보 조판","구매 전 확인 사항","클로징 · 제품 재인지"];
+    document.getElementById("sections").innerHTML=sectionNames.map((name,i)=>`<article class="card"><small>SECTION ${String(i+1).padStart(2,"0")}</small><h3>${esc(name)}</h3><p>${i===0?esc(oneLine):"고객 검수 정보와 촬영 결과를 배치하고, 정확한 한글 문구는 디자인 단계에서 조판합니다."}</p><div class="wireframe"><i></i><i></i><i></i></div></article>`).join("");
+    const design=[
+      ["정보 위계","모바일에서 제품 → 핵심 카피 → 근거 순으로 먼저 읽히게 구성"],
+      ["사진 리듬","전경·매크로·사용 장면·정확 정보 컷을 반복 없이 교차 배치"],
+      ["조판 안전","작은 한글·표·영양·인증 정보는 이미지에 굽지 않고 편집 가능한 텍스트 영역으로 유지"],
+      ["레퍼런스 적용","고유 카피·로고·제품 사진은 복제하지 않고 설득 순서와 여백 구조만 분석해 적용"],
+      ["확인 필요",project.banWords||project.mustInclude||"필수 문구·금지 표현·인증 근거를 관리자 검수 단계에서 최종 확인"],
+    ];
+    document.getElementById("design").innerHTML=design.map((d,i)=>`<article class="card"><small>RULE ${String(i+1).padStart(2,"0")}</small><h3>${esc(d[0])}</h3><p class="${i===4&&!project.banWords&&!project.mustInclude?"empty":""}">${esc(d[1])}</p></article>`).join("");
+  </script>
+</body>
+</html>

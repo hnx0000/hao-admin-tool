@@ -17086,6 +17086,55 @@ fieldset input,
   background: #fffaf4;
 }
 
+.wizard-page .result-customer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.wizard-page .result-customer-actions .wizard-home-link {
+  margin-top: 0;
+}
+
+.wizard-page .result-customer-actions button {
+  min-height: 42px;
+  border: 1px solid #171412;
+  border-radius: 10px;
+  padding: 0 16px;
+  background: #171412;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.wizard-page .submitted-content-review {
+  margin-top: 18px;
+  border-top: 1px solid #eadfd5;
+  padding-top: 18px;
+}
+
+.wizard-page .submitted-content-review h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+}
+
+.wizard-page .submitted-content-review pre {
+  max-height: 520px;
+  overflow: auto;
+  margin: 14px 0 0;
+  border-radius: 12px;
+  padding: 18px;
+  background: #f3eee8;
+  color: #2f2924;
+  font: 700 13px/1.75 Pretendard, "Noto Sans KR", sans-serif;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .wizard-page .result-card > div:first-child {
   display: flex;
   align-items: center;
