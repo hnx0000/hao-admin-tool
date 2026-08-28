@@ -105,12 +105,29 @@
   </main>
   <script src="pwa-install.js?v=20260820-3"></script>
   <script>
+    async function copyProgramLink(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        try { await navigator.clipboard.writeText(text); return true; } catch {}
+      }
+      const field = document.createElement("textarea");
+      field.value = text;
+      field.setAttribute("readonly", "");
+      field.style.cssText = "position:fixed;left:-9999px;top:0";
+      document.body.appendChild(field);
+      field.select();
+      field.setSelectionRange(0, field.value.length);
+      let copied = false;
+      try { copied = document.execCommand("copy"); } catch {}
+      field.remove();
+      return copied;
+    }
     document.getElementById("copyStartLink").addEventListener("click", async (event) => {
+      const button = event.currentTarget;
       const url = new URL("START_HERE.html", location.href).href;
-      try {
-        await navigator.clipboard.writeText(url);
-        event.currentTarget.textContent = "링크 복사 완료";
-      } catch {
+      if (await copyProgramLink(url)) {
+        button.textContent = "링크 복사 완료";
+        setTimeout(() => { button.textContent = "공용 실행 링크 복사"; }, 1800);
+      } else {
         prompt("아래 주소를 복사하세요.", url);
       }
     });
