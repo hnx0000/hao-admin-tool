@@ -7,13 +7,13 @@
   <title>AI 상세페이지 제작 보조 관리자툴</title>
   <link rel="manifest" href="app.webmanifest">
   <link rel="icon" href="assets/app-icons/hao-192.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=20260820-1">
+  <link rel="stylesheet" href="styles.css?v=20260828-first-draft1">
   <script>
     if (new URLSearchParams(location.search).get("variant") !== "original-light") {
       document.documentElement.classList.add("admin-customer-clean");
       const cleanStyle = document.createElement("link");
       cleanStyle.rel = "stylesheet";
-      cleanStyle.href = "admin-dark.css?v=20260820-planning1";
+      cleanStyle.href = "admin-dark.css?v=20260828-first-draft1";
       document.head.appendChild(cleanStyle);
     }
   </script>
@@ -31,12 +31,12 @@
       <button class="step active" data-target="projects">1. 프로젝트</button>
       <button class="step" data-target="brief">2. 상담/자료</button>
       <button class="step internal-step" data-target="planning">3. AI 기획</button>
-      <button class="step" data-target="drafts">3. 기획안·시안 검수</button>
-      <button class="step" data-target="feedback">4. 고객 피드백</button>
-      <button class="step" data-target="revision">5. 수정 시안/컨펌</button>
-      <button class="step" data-target="psd">6. 제작 전달</button>
-      <button class="step" data-target="review">7. 내부 검수</button>
-      <button class="step" data-target="delivery">8. 최종 납품</button>
+      <button class="step" data-target="drafts">3. 1차 시안 검수·수정</button>
+      <button class="step" data-target="feedback" hidden aria-hidden="true">4. 고객 피드백</button>
+      <button class="step" data-target="revision" hidden aria-hidden="true">5. 수정 시안/컨펌</button>
+      <button class="step" data-target="psd">4. 실제 제작 전달</button>
+      <button class="step" data-target="review">5. 내부 검수</button>
+      <button class="step" data-target="delivery">6. 최종 납품</button>
     </nav>
     <a class="system-status-link" href="system-status.html">
       <span class="system-status-dot" aria-hidden="true"></span>
@@ -67,7 +67,7 @@
         <button class="secondary" id="installDesktopApp" type="button" hidden>데스크톱 앱 설치</button>
         <a class="link-button" href="project-form.html">고객 작성폼 열기</a>
         <button class="secondary" id="importCustomerProject">고객 작성 내용 불러오기</button>
-        <button class="primary" id="generateAll">기획/시안 자동 생성</button>
+        <button class="primary" id="generateAll">1차 시안 자동 생성</button>
       </div>
     </header>
 
@@ -266,26 +266,26 @@
       <div class="result" id="planResult">기획 결과가 여기에 표시됩니다.</div>
       <div class="panel-nav">
         <button class="secondary" data-go-panel="brief">이전: 상담/자료</button>
-        <button class="primary" data-go-panel="drafts" data-run-before="drafts">다음: 최적 단일 시안</button>
+        <button class="primary" data-go-panel="drafts" data-run-before="drafts">다음: 1차 촬영·디자인 시안</button>
       </div>
     </section>
 
     <section class="panel" id="drafts">
       <div class="section-head">
         <div>
-          <p class="eyebrow">Step 4</p>
-        <h2>기획안·시안 검수</h2>
+          <p class="eyebrow">Step 3 · FIRST DRAFT</p>
+        <h2>1차 시안 검수·수정</h2>
         </div>
-        <button class="primary small" id="generateDrafts">Codex 작업 패키지 준비</button>
+        <button class="primary small" id="generateDrafts">1차 시안 생성</button>
       </div>
       <div class="workflow-guide" id="guide-drafts">
-        <strong>이 단계에서 할 일</strong>
-        <p>제작 전 기획안을 먼저 확인하고 수정 메모 또는 검수 완료를 남기세요. 승인 후에만 이미지 시안 작업 패키지를 준비합니다.</p>
+        <strong>1차 시안은 최종 디자인이 아닙니다</strong>
+        <p>고객과 정리한 내용을 바탕으로 촬영 구도, 섹션 순서, 카피 위치와 디자인 방향을 보여주는 제작 전 기획서입니다. 실제 촬영본과 확정 문구를 반영한 상세페이지는 다음 제작 단계에서 만듭니다.</p>
       </div>
       <section class="planning-review-card" id="planningReviewCard" hidden>
         <div class="planning-review-head">
           <div>
-            <span class="planning-review-label">제작 전 기획안</span>
+            <span class="planning-review-label">1차 시안 · 촬영 및 디자인 기획서</span>
             <h3 id="planningReviewTitle">등록된 기획안</h3>
             <p id="planningReviewMeta">프로젝트 기획안 정보를 확인 중입니다.</p>
           </div>
@@ -293,22 +293,56 @@
         </div>
         <div class="planning-review-layout">
           <a class="planning-review-preview" id="planningReviewOpen" href="#" target="_blank" rel="noopener noreferrer">
-            <img id="planningReviewImage" alt="제작 전 상세페이지 기획안 미리보기">
-            <span>클릭해서 전체 기획안 보기</span>
+            <img id="planningReviewImage" alt="1차 촬영 및 디자인 기획서 미리보기">
+            <span>클릭해서 1차 시안 전체 보기</span>
           </a>
           <div class="planning-review-controls">
             <div class="planning-review-facts" id="planningReviewFacts"></div>
-            <label>수정 메모
-              <textarea id="planningRevisionNote" rows="5" placeholder="예: 03번 섹션의 사용 장면을 직장인 아침 루틴 중심으로 변경하고, 04번 근거 영역은 증빙 확인 후 노출"></textarea>
+            <label>관리자 추가 코멘트 <small>전화·메신저로 받은 내용도 여기에 기록</small>
+              <textarea id="planningRevisionNote" rows="5" placeholder="예: 고객과 통화 완료. 03번 사용 장면은 출근 전 아침 루틴으로 변경하고, 효능처럼 보이는 문구는 모두 제외"></textarea>
             </label>
             <div class="planning-review-actions">
-              <button class="secondary small" id="savePlanningRevision" type="button">수정 메모 저장</button>
-              <button class="primary small" id="approvePlanningReview" type="button">기획안 검수 완료</button>
+              <button class="secondary small" id="savePlanningRevision" type="button">보완 코멘트 저장</button>
+              <button class="primary small" id="approvePlanningReview" type="button">관리자 검수 완료</button>
             </div>
-            <small>검수 상태와 수정 메모는 현재 프로젝트 기준으로 저장됩니다.</small>
+            <small>코멘트 저장 시 해당 부분만 보완하는 Codex 작업 지시서를 만들 수 있습니다.</small>
           </div>
         </div>
       </section>
+      <section class="planning-collaboration" id="planningCollaboration" hidden>
+        <div class="planning-collaboration-head">
+          <div>
+            <span>고객 피드백·컨펌</span>
+            <h3>시안 위 코멘트와 유선 요청을 한곳에서 확인</h3>
+          </div>
+          <label class="comment-toggle"><input id="toggleCustomerComments" type="checkbox" checked> 고객 코멘트 표시</label>
+        </div>
+        <div class="planning-collaboration-grid">
+          <div class="planning-comment-panel">
+            <div class="planning-comment-summary">
+              <strong id="planningCommentCount">고객 코멘트 0개</strong>
+              <button class="secondary small" id="refreshPlanningComments" type="button">새로고침</button>
+            </div>
+            <ol id="planningCommentList" class="planning-comment-list">
+              <li class="empty">아직 고객이 남긴 코멘트가 없습니다.</li>
+            </ol>
+          </div>
+          <div class="planning-confirm-panel">
+            <p id="planningConfirmStatus">아직 고객 컨펌을 요청하지 않았습니다.</p>
+            <div class="planning-review-actions">
+              <button class="primary small" id="requestPlanningConfirm" type="button">고객 컨펌 요청</button>
+              <button class="secondary small" id="recallPlanningConfirm" type="button">컨펌 회수</button>
+              <a class="secondary small button-link" id="openCustomerReview" href="customer-review.html" target="_blank" rel="noopener">고객 화면 열기</a>
+            </div>
+            <label>고객 전달용 접수번호·전화 뒤 4자리
+              <input id="planningAccessGuide" readonly value="프로젝트를 불러오면 안내 정보가 표시됩니다.">
+            </label>
+            <button class="secondary small" id="createPlanningRevisionJob" type="button">Codex 부분 보완 지시서 만들기</button>
+            <p class="planning-sync-note" id="planningSyncNote">브러시 코멘트는 현재 브라우저에서 즉시 연동됩니다. 중앙 피드백 서버 연결 전에는 다른 PC의 코멘트가 자동 동기화되지 않습니다.</p>
+          </div>
+        </div>
+      </section>
+      <div class="legacy-draft-controls" hidden aria-hidden="true">
       <details class="ai-orchestration-box">
         <summary>AI 품질 검수 결과</summary>
         <div class="result compact-result" id="aiQualityReview">Codex 결과 manifest를 불러오면 이미지·프롬프트·QA 상태가 표시됩니다.</div>
@@ -628,6 +662,11 @@
           </div>
         </div>
       </div>
+      </div>
+      <div class="panel-nav">
+        <button class="secondary" data-go-panel="brief">이전: 상담/자료 확인</button>
+        <button class="primary" data-go-panel="psd">다음: 실제 상세페이지 제작 전달</button>
+      </div>
     </section>
 
     <section class="panel" id="feedback">
@@ -837,7 +876,7 @@
   <script src="customer-file-store.js?v=20260819-4"></script>
   <script src="detailpage-render.js?v=20260826-m5"></script>
   <script src="comms-output.js?v=20260826-m5b"></script>
-  <script src="app.js?v=20260826-m5b"></script>
+  <script src="app.js?v=20260828-first-draft1"></script>
   <script src="packaging-bridge.js?v=20260820-1"></script>
   <script src="mvp-codex-package.js?v=20260820-drive1"></script>
   <script src="pwa-install.js?v=20260820-3"></script>

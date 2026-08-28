@@ -2,6 +2,8 @@ const CUSTOMER_PROJECT_KEY = "customerProjectInput";
 const CUSTOMER_PROJECT_LIST_KEY = "customerProjectList";
 const TOTAL_STEPS = 5;
 const customerTouchedFields = new Set();
+const LOCAL_FLOW_TEST = new URLSearchParams(location.search).get("test") === "1"
+  && ["localhost", "127.0.0.1"].includes(location.hostname);
 
 let currentStep = 1;
 
@@ -876,7 +878,7 @@ async function saveProjectForm(event) {
   localStorage.setItem(CUSTOMER_PROJECT_KEY, JSON.stringify(project));
 
   let cloudSyncMessage = "현재 브라우저의 관리자 프로젝트에 등록되었습니다.";
-  if (window.haoSubmissionSync?.isConfigured?.()) {
+  if (!LOCAL_FLOW_TEST && window.haoSubmissionSync?.isConfigured?.()) {
     try {
       renderDualStorageStatus(localSaved ? "saved" : "failed", "uploading", "접수 서버로 전송 중입니다.");
       const syncResult = localSaved && window.haoSubmissionSync.syncStoredProject
@@ -906,7 +908,9 @@ async function saveProjectForm(event) {
       ...(project.workflow || {}),
       cloudSync: { status: "local-only", at: new Date().toISOString() },
     };
-    renderDualStorageStatus(localSaved ? "saved" : "failed", "unconfigured", "서버 주소를 연결하면 대기 중인 접수건도 자동으로 재전송됩니다.");
+    renderDualStorageStatus(localSaved ? "saved" : "failed", "unconfigured", LOCAL_FLOW_TEST
+      ? "로컬 흐름 테스트 모드입니다. 실제 접수 서버에는 전송하지 않았습니다."
+      : "서버 주소를 연결하면 대기 중인 접수건도 자동으로 재전송됩니다.");
   }
   projectList[0] = project;
   localStorage.setItem(CUSTOMER_PROJECT_LIST_KEY, JSON.stringify(projectList));
@@ -916,7 +920,7 @@ async function saveProjectForm(event) {
   $("#generatingScreen").classList.add("active");
   $("#submitMessage").innerHTML = `
     <strong>원고 생성 요청이 완료되었습니다.</strong>
-    <p>작성 내용은 1차 내용정리본으로 구조화됩니다. ${cloudSyncMessage} 관리자 검수 완료 후 기획 프롬프트와 이미지 방향성 시안이 생성됩니다.</p>
+    <p>작성 내용은 1차 내용정리본으로 구조화됩니다. ${LOCAL_FLOW_TEST ? "로컬 테스트 프로젝트로만 등록되었습니다." : cloudSyncMessage} 관리자 검수 완료 후 1차 촬영·디자인 시안이 생성됩니다.</p>
   `;
   renderResultPlan(data);
   window.setTimeout(() => {

@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f5f1e9">
+  <meta name="robots" content="noindex,nofollow">
+  <title>1차 시안 확인·코멘트 — HAO</title>
+  <style>
+    :root { font-family: "Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; color:#24211d; background:#f5f1e9; }
+    * { box-sizing:border-box; }
+    body { margin:0; }
+    button,input,textarea { font:inherit; }
+    .access { width:min(520px,calc(100% - 28px)); margin:48px auto; padding:28px; border:1px solid #e2d8c7; border-radius:20px; background:#fffdf8; box-shadow:0 22px 60px rgba(74,54,28,.1); }
+    .eyebrow { color:#a34f22; font-size:12px; font-weight:900; letter-spacing:.12em; }
+    h1 { margin:8px 0 10px; font-size:26px; letter-spacing:-.04em; }
+    p { color:#6e665b; }
+    label { display:block; margin-top:15px; font-size:13px; font-weight:800; }
+    input,textarea { width:100%; margin-top:7px; padding:12px 13px; border:1px solid #d9cfbf; border-radius:10px; background:white; }
+    button,.button { display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:0 15px; border:1px solid #d3c8b8; border-radius:10px; background:white; color:#25211c; font-weight:800; text-decoration:none; cursor:pointer; }
+    button.primary { border-color:#b85f2c; background:#b85f2c; color:white; }
+    .access button { width:100%; margin-top:18px; }
+    .error { color:#a43e2c; font-size:13px; }
+    .workspace[hidden],.access[hidden] { display:none; }
+    .toolbar { position:sticky; top:0; z-index:30; display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:11px 14px; border-bottom:1px solid #d7ccba; background:rgba(255,253,248,.96); backdrop-filter:blur(12px); }
+    .toolbar strong { margin-right:auto; }
+    .toolbar button.active { border-color:#b85f2c; background:#fff2e8; color:#9d471c; }
+    .review-layout { display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:18px; width:min(1320px,calc(100% - 28px)); margin:18px auto 60px; }
+    .board { position:relative; min-width:0; background:white; box-shadow:0 18px 55px rgba(55,40,23,.1); }
+    .board img { display:block; width:100%; height:auto; }
+    #drawCanvas { position:absolute; inset:0; width:100%; height:100%; touch-action:none; cursor:crosshair; }
+    #drawCanvas.off { pointer-events:none; opacity:0; }
+    aside { align-self:start; position:sticky; top:74px; padding:18px; border:1px solid #e0d5c4; border-radius:16px; background:#fffdf8; }
+    aside h2 { margin:0 0 7px; font-size:18px; }
+    .comment-list { display:grid; gap:8px; margin:16px 0; padding:0; list-style:none; }
+    .comment-list li { padding:10px 11px; border:1px solid #e6ddcf; border-radius:10px; background:white; font-size:13px; }
+    .comment-list small { display:block; margin-top:3px; color:#8a8175; }
+    .save-actions { display:flex; gap:8px; margin-top:9px; }
+    .save-actions button { flex:1; }
+    .confirm-box { margin-top:18px; padding-top:16px; border-top:1px solid #e1d8ca; }
+    .status { padding:9px 11px; border-radius:9px; background:#f3ede4; color:#655d52; font-size:13px; }
+    .status.confirmed { background:#e6f4eb; color:#286040; }
+    @media (max-width:900px) { .review-layout { grid-template-columns:1fr; } aside { position:static; } }
+  </style>
+</head>
+<body>
+  <section class="access" id="accessPanel">
+    <span class="eyebrow">HAO FIRST DRAFT REVIEW</span>
+    <h1>1차 시안 확인</h1>
+    <p>접수번호와 작성폼에 입력한 연락처 뒤 4자리로 시안을 열 수 있습니다.</p>
+    <form id="accessForm">
+      <label>접수번호<input id="receiptNo" autocomplete="off" required></label>
+      <label>연락처 뒤 4자리<input id="verify" inputmode="numeric" maxlength="4" autocomplete="off" required></label>
+      <button class="primary" type="submit">시안 열기</button>
+    </form>
+    <p class="error" id="accessError" role="alert"></p>
+  </section>
+
+  <section class="workspace" id="workspace" hidden>
+    <header class="toolbar">
+      <strong>1차 시안 · 촬영 및 디자인 기획서</strong>
+      <button id="brushToggle" class="active" type="button">브러시 켜짐</button>
+      <button id="undoStroke" type="button">한 획 취소</button>
+      <button id="clearStrokes" type="button">표시 지우기</button>
+      <button id="toggleMarks" type="button">표시 숨기기</button>
+    </header>
+    <div class="review-layout">
+      <div class="board" id="board">
+        <img id="draftImage" src="assets/planning/saengjeup-planning-v1.png" alt="1차 촬영 및 디자인 기획서">
+        <canvas id="drawCanvas" aria-label="시안 브러시 코멘트 영역"></canvas>
+      </div>
+      <aside>
+        <span class="eyebrow">COMMENT</span>
+        <h2>수정할 부분을 표시해주세요</h2>
+        <p>브러시로 위치를 표시한 뒤, 원하는 수정 내용을 간단히 적어주세요.</p>
+        <textarea id="commentText" rows="5" placeholder="예: 이 구간의 제품 사진을 실제 촬영한 정면컷으로 바꿔주세요."></textarea>
+        <div class="save-actions"><button class="primary" id="saveComment" type="button">코멘트 저장</button></div>
+        <ol class="comment-list" id="commentList"><li>아직 저장된 코멘트가 없습니다.</li></ol>
+        <div class="confirm-box">
+          <p class="status" id="confirmStatus">관리자가 컨펌을 요청하면 여기에서 확정할 수 있습니다.</p>
+          <button class="primary" id="confirmDraft" type="button">이 1차 시안 컨펌</button>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <script>
+  (() => {
+    "use strict";
+    const params = new URLSearchParams(location.search);
+    const projectId = params.get("projectId") || "";
+    const previewId = params.get("previewId") || "saengjeup-planning-v1";
+    const receiptParam = params.get("receipt") || "";
+    const storageKey = `planningFeedback:${previewId}:${projectId || "unsaved-project"}`;
+    const $ = (id) => document.getElementById(id);
+    const canvas = $("drawCanvas");
+    const image = $("draftImage");
+    const ctx = canvas.getContext("2d");
+    let drawing = false;
+    let currentStroke = null;
+    let feedback = readFeedback();
+
+    $("receiptNo").value = receiptParam;
+
+    function localProject() {
+      try {
+        const projects = JSON.parse(localStorage.getItem("customerProjectList") || "[]");
+        return projects.find((item) => item.id === projectId || item.receiptNo === $("receiptNo").value.trim() || item.cloudSubmissionId === $("receiptNo").value.trim()) || null;
+      } catch { return null; }
+    }
+    function phoneLast4(project) { return String(project?.phone || project?.contactInfo || "").replace(/\D/g, "").slice(-4); }
+    function readFeedback() {
+      try {
+        const value = JSON.parse(localStorage.getItem(storageKey) || "{}");
+        return { comments:Array.isArray(value.comments)?value.comments:[], strokes:Array.isArray(value.strokes)?value.strokes:[], confirmation:value.confirmation||{status:"idle"} };
+      } catch { return { comments:[], strokes:[], confirmation:{status:"idle"} }; }
+    }
+    function saveFeedback() { feedback.updatedAt = new Date().toISOString(); localStorage.setItem(storageKey, JSON.stringify(feedback)); renderComments(); renderStatus(); }
+    function openWorkspace() { $("accessPanel").hidden = true; $("workspace").hidden = false; requestAnimationFrame(resizeCanvas); }
+    async function verifyAccess(receipt, verify) {
+      const project = localProject();
+      if (project && phoneLast4(project) === verify) return true;
+      if (project && !phoneLast4(project) && verify === "0000") return true;
+      try {
+        const response = await fetch(`https://hao-admin.vigo.co.kr/api/track/${encodeURIComponent(receipt)}?verify=${encodeURIComponent(verify)}`, { headers:{Accept:"application/json"}, cache:"no-store" });
+        return response.ok;
+      } catch { return false; }
+    }
+    $("accessForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const receipt = $("receiptNo").value.trim(); const verify = $("verify").value.replace(/\D/g, "");
+      if (!receipt || verify.length !== 4) { $("accessError").textContent = "접수번호와 연락처 뒤 4자리를 확인해주세요."; return; }
+      $("accessError").textContent = "확인 중…";
+      if (await verifyAccess(receipt, verify)) { $("accessError").textContent = ""; openWorkspace(); }
+      else $("accessError").textContent = "정보가 일치하지 않습니다. 담당자에게 접수번호를 확인해주세요.";
+    });
+    function resizeCanvas() {
+      const ratio = window.devicePixelRatio || 1; const width = image.clientWidth; const height = image.clientHeight;
+      canvas.width = Math.max(1, Math.round(width * ratio)); canvas.height = Math.max(1, Math.round(height * ratio));
+      ctx.setTransform(ratio,0,0,ratio,0,0); redraw();
+    }
+    function point(event) { const rect=canvas.getBoundingClientRect(); return { x:(event.clientX-rect.left)/rect.width, y:(event.clientY-rect.top)/rect.height }; }
+    function drawStroke(stroke) {
+      if (!stroke?.points?.length) return; ctx.strokeStyle=stroke.color||"#ff315f"; ctx.lineWidth=4; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.beginPath();
+      stroke.points.forEach((p,i) => { const x=p.x*image.clientWidth, y=p.y*image.clientHeight; if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y); }); ctx.stroke();
+    }
+    function redraw() { ctx.clearRect(0,0,image.clientWidth,image.clientHeight); feedback.strokes.forEach(drawStroke); if(currentStroke)drawStroke(currentStroke); }
+    canvas.addEventListener("pointerdown", (event) => { if(canvas.classList.contains("off"))return; drawing=true; currentStroke={color:"#ff315f",points:[point(event)]}; canvas.setPointerCapture(event.pointerId); });
+    canvas.addEventListener("pointermove", (event) => { if(!drawing)return; currentStroke.points.push(point(event)); redraw(); });
+    canvas.addEventListener("pointerup", () => { if(!drawing)return; drawing=false; if(currentStroke?.points.length>1)feedback.strokes.push(currentStroke); currentStroke=null; redraw(); saveFeedback(); });
+    $("brushToggle").addEventListener("click", () => { canvas.classList.toggle("off"); const on=!canvas.classList.contains("off"); $("brushToggle").classList.toggle("active",on); $("brushToggle").textContent=on?"브러시 켜짐":"브러시 꺼짐"; });
+    $("toggleMarks").addEventListener("click", () => { canvas.style.opacity=canvas.style.opacity==="0"?"1":"0"; $("toggleMarks").textContent=canvas.style.opacity==="0"?"표시 보이기":"표시 숨기기"; });
+    $("undoStroke").addEventListener("click", () => { feedback.strokes.pop(); saveFeedback(); redraw(); });
+    $("clearStrokes").addEventListener("click", () => { if(confirm("브러시 표시를 모두 지울까요?")){ feedback.strokes=[]; saveFeedback(); redraw(); } });
+    $("saveComment").addEventListener("click", () => { const text=$("commentText").value.trim(); if(!text){alert("수정할 내용을 입력해주세요.");return;} feedback.comments.push({id:`comment-${Date.now()}`,text,createdAt:new Date().toLocaleString("ko-KR")}); $("commentText").value=""; saveFeedback(); });
+    $("confirmDraft").addEventListener("click", () => { feedback.confirmation={status:"confirmed",updatedAt:new Date().toLocaleString("ko-KR")}; saveFeedback(); });
+    function renderComments() { $("commentList").innerHTML=feedback.comments.length?feedback.comments.map((item,index)=>`<li><b>${index+1}. ${escapeHtml(item.text)}</b><small>${escapeHtml(item.createdAt||"")}</small></li>`).join(""):"<li>아직 저장된 코멘트가 없습니다.</li>"; }
+    function renderStatus() { const c=feedback.confirmation||{}; const status=$("confirmStatus"); status.classList.toggle("confirmed",c.status==="confirmed"); status.textContent=c.status==="confirmed"?`✓ 1차 시안 컨펌 완료 · ${c.updatedAt||""}`:c.status==="requested"?"관리자가 1차 시안 컨펌을 요청했습니다.":"관리자가 컨펌을 요청하면 여기에서 확정할 수 있습니다."; }
+    function escapeHtml(value="") { const node=document.createElement("span"); node.textContent=String(value); return node.innerHTML; }
+    image.addEventListener("load", resizeCanvas); window.addEventListener("resize", resizeCanvas); window.addEventListener("storage", () => { feedback=readFeedback(); renderComments(); renderStatus(); redraw(); });
+    renderComments(); renderStatus();
+  })();
+  </script>
+</body>
+</html>

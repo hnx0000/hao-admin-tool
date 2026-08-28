@@ -1,9 +1,10 @@
-const CACHE_NAME = "hao-detail-automation-v20260820-planning2";
+const CACHE_NAME = "hao-detail-automation-v20260828-first-draft1";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./START_HERE.html",
   "./project-form.html",
+  "./customer-review.html",
   "./system-status.html",
   "./styles.css",
   "./admin-dark.css",
@@ -19,7 +20,10 @@ const APP_SHELL = [
   "./hao-config.js",
   "./data/public-customer-projects.js",
   "./assets/app-icons/hao-192.png",
-  "./assets/app-icons/hao-512.png"
+  "./assets/app-icons/hao-512.png",
+  "./planning/saengjeup-v1.html",
+  "./planning/test-connection-v1.html",
+  "./assets/planning/saengjeup-planning-v1.png"
 ];
 
 self.addEventListener("install", (event) => {

@@ -55,6 +55,17 @@ const PROJECT_PLANNING_PREVIEWS = Object.freeze([
     structure: "왼쪽 촬영 지시 · 중앙 롱페이지 와이어 · 오른쪽 구성 레퍼런스",
     referenceBasis: "Google Drive 2026(기획안) 28개 · 실제 제작 프로젝트 22개 분석",
   }),
+  Object.freeze({
+    id: "test-connection-planning-v1",
+    clientToken: "TEST",
+    title: "TEST 이미지 업로드 연결검증 제품 · 1차 촬영 및 디자인 시안 v1",
+    imageUrl: "assets/planning/saengjeup-planning-v1.png",
+    viewerUrl: "planning/test-connection-v1.html",
+    dimensions: "3,000 × 18,000px",
+    targetLength: "1차 시안 · 실제 제작 17,000~20,000px 기준",
+    structure: "촬영 지시 · 섹션별 와이어 · 참고 구도 · 조판 안전 영역",
+    referenceBasis: "Google Drive 2026(기획안) 28개 구조 분석 · 고객 업로드 패키지 도면 연결",
+  }),
 ]);
 const AI_DETAIL_PRODUCTION_POLICY = Object.freeze({
   guideFile: "AI_TOOL_GUIDELINES.md",
@@ -782,7 +793,7 @@ function renderLeads() {
       </div>
       <div class="lead-actions">
         <select class="status-select lead-status" data-id="${escapeHtml(lead.id)}">
-          ${["신규 접수", "검토 중", "AI 기획 완료", "A/B 시안 완료", "고객 회신 대기", "수정 시안 컨펌 대기", "PSD 제작 중", "내부 검수 중", "최종 납품 준비", "완료"].map((status) => `<option ${status === lead.status ? "selected" : ""}>${status}</option>`).join("")}
+          ${["신규 접수", "검토 중", "1차 기획 완료", "1차 시안 완료", "고객 컨펌 대기", "1차 시안 보완 중", "실제 제작 중", "내부 검수 중", "최종 납품 준비", "완료"].map((status) => `<option ${status === lead.status ? "selected" : ""}>${status}</option>`).join("")}
         </select>
         <button class="secondary small import-lead" data-id="${escapeHtml(lead.id)}">불러오기</button>
       </div>
@@ -1446,6 +1457,8 @@ function renderPlanningReviewCard() {
   if (!card) return;
   const preview = currentPlanningPreview();
   card.hidden = !preview;
+  const collaboration = $("#planningCollaboration");
+  if (collaboration) collaboration.hidden = !preview;
   if (!preview) return;
 
   const review = readPlanningReview(preview);
@@ -1479,7 +1492,158 @@ function renderPlanningReviewCard() {
     }
     if (review.updatedAt) statusNode.title = `최근 저장 ${review.updatedAt}`;
   }
-  if (approveButton) approveButton.textContent = review.status === "approved" ? "검수 완료됨" : "기획안 검수 완료";
+  if (approveButton) approveButton.textContent = review.status === "approved" ? "관리자 검수 완료됨" : "관리자 검수 완료";
+  renderPlanningCollaboration(preview);
+}
+
+function planningFeedbackStorageKey(preview = currentPlanningPreview()) {
+  const project = activeCustomerProject();
+  const projectId = project?.id || currentProjectKey();
+  return preview ? `planningFeedback:${preview.id}:${projectId}` : "";
+}
+
+function readPlanningFeedback(preview = currentPlanningPreview()) {
+  const key = planningFeedbackStorageKey(preview);
+  if (!key) return { comments: [], strokes: [], confirmation: { status: "idle", updatedAt: "" } };
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || "{}");
+    return {
+      comments: Array.isArray(value.comments) ? value.comments : [],
+      strokes: Array.isArray(value.strokes) ? value.strokes : [],
+      confirmation: value.confirmation || { status: "idle", updatedAt: "" },
+      updatedAt: value.updatedAt || "",
+    };
+  } catch {
+    return { comments: [], strokes: [], confirmation: { status: "idle", updatedAt: "" } };
+  }
+}
+
+function writePlanningFeedback(patch = {}, preview = currentPlanningPreview()) {
+  const key = planningFeedbackStorageKey(preview);
+  if (!key) return null;
+  const current = readPlanningFeedback(preview);
+  const next = { ...current, ...patch, updatedAt: new Date().toISOString() };
+  localStorage.setItem(key, JSON.stringify(next));
+  renderPlanningCollaboration(preview);
+  return next;
+}
+
+function planningPhoneLast4(project = activeCustomerProject()) {
+  return String(project?.phone || project?.contactInfo || "").replace(/\D/g, "").slice(-4);
+}
+
+function planningReceipt(project = activeCustomerProject()) {
+  return String(project?.receiptNo || project?.cloudReceiptNo || project?.cloudSubmissionId || project?.id || "").trim();
+}
+
+function planningCustomerReviewUrl(preview = currentPlanningPreview()) {
+  const project = activeCustomerProject();
+  if (!preview || !project) return "customer-review.html";
+  const query = new URLSearchParams({
+    projectId: project.id,
+    previewId: preview.id,
+    draft: preview.viewerUrl,
+    receipt: planningReceipt(project),
+  });
+  return `customer-review.html?${query.toString()}`;
+}
+
+function renderPlanningCollaboration(preview = currentPlanningPreview()) {
+  const target = $("#planningCollaboration");
+  if (!target) return;
+  target.hidden = !preview;
+  if (!preview) return;
+  const feedback = readPlanningFeedback(preview);
+  const showComments = $("#toggleCustomerComments")?.checked !== false;
+  const comments = showComments ? feedback.comments : [];
+  const list = $("#planningCommentList");
+  const count = $("#planningCommentCount");
+  if (count) count.textContent = showComments
+    ? `고객 코멘트 ${feedback.comments.length}개 · 브러시 ${feedback.strokes.length}개`
+    : "고객 코멘트 숨김";
+  if (list) list.innerHTML = comments.length
+    ? comments.map((item, index) => `<li><b>${String(index + 1).padStart(2, "0")}</b><div><strong>${escapeHtml(item.text || "브러시 표시")}</strong><span>${escapeHtml(item.createdAt || "")}</span></div></li>`).join("")
+    : `<li class="empty">${showComments ? "아직 고객이 남긴 코멘트가 없습니다." : "고객 코멘트 표시가 꺼져 있습니다."}</li>`;
+
+  const confirmation = feedback.confirmation || {};
+  const statusText = {
+    requested: "고객 컨펌 요청 중",
+    confirmed: "✓ 고객 컨펌 완료",
+    recalled: "컨펌 요청 회수됨",
+    idle: "아직 고객 컨펌을 요청하지 않았습니다.",
+  }[confirmation.status || "idle"];
+  const statusNode = $("#planningConfirmStatus");
+  if (statusNode) {
+    statusNode.textContent = `${statusText}${confirmation.updatedAt ? ` · ${confirmation.updatedAt}` : ""}`;
+    statusNode.dataset.status = confirmation.status || "idle";
+  }
+  const reviewLink = $("#openCustomerReview");
+  if (reviewLink) reviewLink.href = planningCustomerReviewUrl(preview);
+  const project = activeCustomerProject();
+  const receipt = planningReceipt(project) || "접수번호 미발급";
+  const last4 = planningPhoneLast4(project) || "전화번호 확인 필요";
+  const guide = $("#planningAccessGuide");
+  if (guide) guide.value = `${receipt} / 연락처 뒤 4자리 ${last4}`;
+}
+
+function requestPlanningConfirmation() {
+  const preview = currentPlanningPreview();
+  if (!preview) return;
+  const now = new Date().toLocaleString("ko-KR");
+  writePlanningFeedback({ confirmation: { status: "requested", updatedAt: now } }, preview);
+  const project = activeCustomerProject();
+  if (project) {
+    const updated = { ...project, status: "고객 컨펌 대기", workflow: { ...(project.workflow || {}), firstDraftConfirmation: { status: "requested", at: new Date().toISOString() } } };
+    persistCustomerProject(updated);
+  }
+  updateAiStatus("고객 컨펌 요청 상태로 변경했습니다. 고객 화면 링크와 접수번호를 전달하세요.");
+}
+
+function recallPlanningConfirmation() {
+  const preview = currentPlanningPreview();
+  if (!preview) return;
+  const now = new Date().toLocaleString("ko-KR");
+  writePlanningFeedback({ confirmation: { status: "recalled", updatedAt: now } }, preview);
+  const project = activeCustomerProject();
+  if (project) {
+    const updated = { ...project, status: "1차 시안 보완 중", workflow: { ...(project.workflow || {}), firstDraftConfirmation: { status: "recalled", at: new Date().toISOString() } } };
+    persistCustomerProject(updated);
+  }
+  updateAiStatus("고객 컨펌 요청을 회수했습니다. 관리자 코멘트와 고객 피드백을 보완한 뒤 다시 요청할 수 있습니다.");
+}
+
+function createPlanningRevisionJob() {
+  const preview = currentPlanningPreview();
+  const project = activeCustomerProject();
+  if (!preview || !project) {
+    alert("프로젝트와 1차 시안을 먼저 불러와주세요.");
+    return;
+  }
+  const feedback = readPlanningFeedback(preview);
+  const managerNote = $("#planningRevisionNote")?.value.trim() || "없음";
+  const customerNotes = feedback.comments.length
+    ? feedback.comments.map((item, index) => `${index + 1}. ${item.text || "브러시 표시"}`).join("\n")
+    : "없음";
+  const contents = `# 1차 시안 부분 보완 지시서\n\n- 프로젝트: ${project.productName || "미기입"}\n- 시안: ${preview.title}\n- 원칙: 완성 상세페이지를 만들지 말고 촬영·구성·조판 기획서만 부분 보완한다.\n- 유지: 고객이 수정 요청하지 않은 섹션, 고객 원본 사실, 제품 패키지 형태\n- 금지: 임의 효능·인증·수치·후기 추가, 완성 디자인으로 변경\n\n## 고객 브러시·코멘트\n\n${customerNotes}\n\n## 관리자 통화·메신저 코멘트\n\n${managerNote}\n\n## 실행\n\n위 요청이 연결된 섹션만 수정하고, 변경 전후와 수정 근거를 기록한 뒤 같은 1차 시안 형식으로 새 버전을 저장한다.\n`;
+  downloadTextFile(`${project.productName || "프로젝트"}_1차시안_부분보완.md`, contents, "text/markdown;charset=utf-8");
+  updateAiStatus("고객·관리자 코멘트를 합친 Codex 부분 보완 지시서를 만들었습니다.");
+}
+
+function prepareFirstPlanningDraft() {
+  if (!ensureProjectReviewApprovedForGeneration()) return;
+  const preview = currentPlanningPreview();
+  if (!preview) {
+    alert("이 프로젝트의 1차 촬영·디자인 시안 템플릿이 아직 등록되지 않았습니다.");
+    return;
+  }
+  const project = activeCustomerProject();
+  if (project) {
+    const updated = { ...project, status: "1차 시안 완료", workflow: { ...(project.workflow || {}), firstDraft: { status: "generated", at: new Date().toISOString(), previewId: preview.id } } };
+    persistCustomerProject(updated);
+  }
+  renderPlanningReviewCard();
+  window.open(preview.viewerUrl, "_blank", "noopener,noreferrer");
+  updateAiStatus("1차 시안은 촬영·구성·디자인 기획서로 생성했습니다. 실제 촬영 결과를 반영한 완성 상세페이지는 다음 단계에서 제작합니다.");
 }
 
 function savePlanningRevision() {
@@ -1499,7 +1663,7 @@ function approvePlanningReview() {
   if (!preview) return;
   const note = $("#planningRevisionNote")?.value.trim() || "";
   writePlanningReview({ status: "approved", note }, preview);
-  updateAiStatus("기획안 검수 완료 상태를 저장했습니다. 이미지 시안 작업을 진행할 수 있습니다.");
+  updateAiStatus("1차 촬영·디자인 시안의 관리자 검수를 완료했습니다. 고객 컨펌을 요청하거나 실제 제작 단계로 이동할 수 있습니다.");
 }
 
 function planningReviewApproved() {
@@ -1516,7 +1680,7 @@ function ensurePlanningReviewApproved() {
   card?.scrollIntoView({ behavior: "smooth", block: "start" });
   card?.classList.add("needs-attention");
   window.setTimeout(() => card?.classList.remove("needs-attention"), 1600);
-  alert("등록된 제작 전 기획안을 먼저 확인하고 ‘기획안 검수 완료’를 눌러주세요.");
+  alert("등록된 1차 촬영·디자인 시안을 먼저 확인하고 ‘관리자 검수 완료’를 눌러주세요.");
   return false;
 }
 
@@ -2225,7 +2389,7 @@ function renderProjects() {
       </div>
       <div class="lead-actions">
         <select class="status-select project-status" data-id="${escapeHtml(project.id)}">
-          ${["AI 기획 완료", "A/B 시안 완료", "고객 회신 대기", "수정 시안 컨펌 대기", "PSD 제작 중", "내부 검수 중", "최종 납품 준비", "완료"].map((status) => `<option ${status === project.status ? "selected" : ""}>${status}</option>`).join("")}
+          ${["1차 기획 완료", "1차 시안 완료", "고객 컨펌 대기", "1차 시안 보완 중", "실제 제작 중", "내부 검수 중", "최종 납품 준비", "완료"].map((status) => `<option ${status === project.status ? "selected" : ""}>${status}</option>`).join("")}
         </select>
         <button class="secondary small load-project" data-id="${escapeHtml(project.id)}">열기</button>
       </div>
@@ -3076,8 +3240,8 @@ function nextWorkflowAction() {
     return {
       target: "drafts",
       action: "drafts",
-      title: "제작 전 기획안을 검수하세요",
-      detail: "등록된 기획안의 구성과 촬영 방향을 확인한 뒤 최적 단일 시안 작업 패키지를 준비합니다.",
+      title: "1차 촬영·디자인 기획 시안을 검수하세요",
+      detail: "고객과 정리한 내용을 바탕으로 촬영 구도·섹션 순서·카피 안전 영역을 확인하고 고객 컨펌을 진행합니다.",
       button: "기획안 검수",
     };
   }
@@ -6594,7 +6758,7 @@ async function loadSample() {
 }
 
 async function generateAll() {
-  await generateDrafts();
+  prepareFirstPlanningDraft();
 }
 
 async function generateAllFromTopbar() {
@@ -6607,34 +6771,19 @@ async function generateAllFromTopbar() {
     return;
   }
   if (!ensureProjectReviewApprovedForGeneration()) return;
-  if (currentImageGenerationController) {
-    showPanel("drafts");
-    setImageGenerationNotice("working", "이미지 시안 생성 중", "현재 진행 중인 상단·중단·하단 이미지 생성을 이어서 보여드립니다.");
-    return;
-  }
-
-  if (!productionRootDirectoryHandle && "showDirectoryPicker" in window) {
-    await connectProductionFolder({ quietCancel: true });
-  }
-
   const originalText = button?.textContent || "기획/시안 자동 생성";
   if (button) {
     button.disabled = true;
     button.classList.add("is-preparing");
-    button.textContent = "3페이지 이동 · 시안 생성 중…";
+    button.textContent = "3페이지 이동 · 1차 시안 생성 중…";
   }
   showPanel("drafts");
-  setImageGenerationNotice(
-    "working",
-    "원클릭 자동 생성 시작",
-    "불러온 프로젝트 정보와 승인된 기획안으로 최적 단일 시안 브리프를 준비하고 있습니다.",
-  );
+  updateAiStatus("고객 사실과 Google Drive 2026(기획안) 구조를 기준으로 1차 촬영·디자인 시안을 준비합니다.");
 
   try {
     await generateAll();
   } catch (error) {
     const message = error?.message || "기획/시안 자동 생성 중 오류가 발생했습니다.";
-    setImageGenerationNotice("error", "자동 생성 실패", message);
     updateAiStatus(message);
   } finally {
     if (button) {
@@ -6920,9 +7069,7 @@ $("#generateAll")?.addEventListener("click", (event) => {
 });
 $("#generatePlan")?.addEventListener("click", () => generatePlan());
 $("#generateDrafts")?.addEventListener("click", async () => {
-  if (!ensurePlanningReviewApproved()) return;
-  if (!productionRootDirectoryHandle && "showDirectoryPicker" in window) await connectProductionFolder({ quietCancel: true });
-  generateDrafts();
+  prepareFirstPlanningDraft();
 });
 $("#toggleGuideMode")?.addEventListener("click", () => toggleGuideMode());
 $("#generateClientMail")?.addEventListener("click", () => generateClientMail());
@@ -6937,6 +7084,11 @@ $("#applyDraftEdits")?.addEventListener("click", async (event) => {
 });
 $("#savePlanningRevision")?.addEventListener("click", savePlanningRevision);
 $("#approvePlanningReview")?.addEventListener("click", approvePlanningReview);
+$("#toggleCustomerComments")?.addEventListener("change", () => renderPlanningCollaboration());
+$("#refreshPlanningComments")?.addEventListener("click", () => renderPlanningCollaboration());
+$("#requestPlanningConfirm")?.addEventListener("click", requestPlanningConfirmation);
+$("#recallPlanningConfirm")?.addEventListener("click", recallPlanningConfirmation);
+$("#createPlanningRevisionJob")?.addEventListener("click", createPlanningRevisionJob);
 $("#copyImagePrompt")?.addEventListener("click", () => {
   const brief = $("#imageDraftBrief")?.value.trim() || createImageDraftBrief();
   copyPlainText(brief, "이미지 생성 프롬프트를 복사했습니다.");

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>TEST 이미지 업로드 연결검증 제품 · 1차 촬영 및 디자인 시안 v1</title>
+  <style>
+    :root { color-scheme: dark; font-family: Pretendard, "Noto Sans KR", system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #101318; color: #edf1f7; }
+    header { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px 20px; border-bottom: 1px solid #303844; background: rgba(19,23,29,.95); backdrop-filter: blur(14px); }
+    .title { min-width: 0; }
+    .title small { display: block; color: #71d69a; font-weight: 800; letter-spacing: .08em; }
+    .title h1 { margin: 4px 0 0; overflow: hidden; font-size: 17px; text-overflow: ellipsis; white-space: nowrap; }
+    .actions { display: flex; flex: 0 0 auto; gap: 8px; }
+    button, a.button { min-height: 38px; padding: 0 13px; border: 1px solid #3b4654; border-radius: 9px; background: #222933; color: #e6ebf2; font: inherit; font-size: 12px; font-weight: 800; line-height: 36px; text-decoration: none; cursor: pointer; }
+    a.primary { border-color: #3976ea; background: #3976ea; color: white; }
+    .definition { padding: 12px 18px; border-bottom: 1px solid #2c3440; background: #171c23; color: #c9d2dd; text-align: center; font-size: 13px; }
+    .definition b { color: #71d69a; }
+    .meta { display: flex; justify-content: center; gap: 8px; padding: 11px 16px; border-bottom: 1px solid #272e38; color: #9ba6b5; font-size: 12px; }
+    .meta span { padding: 5px 9px; border: 1px solid #323b47; border-radius: 999px; background: #191e25; }
+    main { padding: 22px 14px 80px; overflow: auto; }
+    .canvas { width: min(100%, 1120px); margin: 0 auto; transition: width .2s ease; }
+    .canvas img { display: block; width: 100%; height: auto; border-radius: 6px; box-shadow: 0 20px 70px rgba(0,0,0,.4); }
+    @media (max-width:720px) { header { align-items:flex-start; padding:12px; } .actions button { display:none; } .meta { justify-content:flex-start; overflow-x:auto; } main { padding:12px 6px 60px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title"><small>FIRST DRAFT · SHOOTING & DESIGN PLAN</small><h1>TEST 이미지 업로드 연결검증 제품 · 1차 시안 v1</h1></div>
+    <div class="actions">
+      <button type="button" id="zoomOut" aria-label="축소">−</button><button type="button" id="zoomReset">화면 맞춤</button><button type="button" id="zoomIn" aria-label="확대">＋</button>
+      <a class="button" href="../index.html">관리자툴</a>
+      <a class="button primary" href="../customer-review.html" id="customerReview">고객 코멘트 화면</a>
+    </div>
+  </header>
+  <div class="definition"><b>1차 시안</b>은 완성 디자인이 아니라 촬영 구도·섹션 순서·카피 위치·디자인 방향을 확인하는 제작 전 기획서입니다.</div>
+  <div class="meta"><span>3,000 × 18,000px</span><span>최종 제작 17,000~20,000px 기준</span><span>촬영 지시 · 롱페이지 구성 · 조판 안전 영역</span></div>
+  <main><div class="canvas" id="canvas"><img src="../assets/planning/saengjeup-planning-v1.png" alt="제품 업로드 연결검증용 1차 촬영 및 디자인 기획서"></div></main>
+  <script>
+    const canvas = document.getElementById("canvas"); let width = 1120;
+    const resize = (next) => { width = Math.max(520, Math.min(1800, next)); canvas.style.width = `min(100%, ${width}px)`; };
+    document.getElementById("zoomOut").addEventListener("click", () => resize(width - 160));
+    document.getElementById("zoomIn").addEventListener("click", () => resize(width + 160));
+    document.getElementById("zoomReset").addEventListener("click", () => resize(1120));
+    document.getElementById("customerReview").href = `../customer-review.html${location.search}`;
+  </script>
+</body>
+</html>
