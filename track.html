@@ -22,9 +22,6 @@
     button { align-self:end; min-height:48px; border:1px solid #397be9; border-radius:11px; padding:0 18px; background:#2868d8; color:#fff; font-weight:900; cursor:pointer; }
     button:hover { background:#3477e8; }
     .error { min-height:22px; margin:10px 2px 0; color:#ff8296; font-size:13px; }
-    .samples { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 26px; }
-    .samples button { min-height:36px; border-color:#34404d; padding:0 12px; background:#171d24; color:#bcc7d3; font-size:12px; }
-    .samples span { align-self:center; color:#718092; font-size:12px; }
     .result[hidden] { display:none; }
     .summary { position:relative; overflow:hidden; display:grid; grid-template-columns:1fr auto; gap:18px; border:1px solid #33404d; border-radius:20px; padding:26px; background:#1a2027; }
     .summary::after { content:""; position:absolute; width:190px; height:190px; right:-80px; top:-100px; border-radius:50%; background:rgba(54,119,235,.17); }
@@ -72,12 +69,6 @@
       <button type="submit">진행 상황 확인</button>
     </form>
     <p class="error" id="error" role="status"></p>
-    <div class="samples" aria-label="등록 프로젝트 빠른 확인">
-      <span>등록 프로젝트 테스트:</span>
-      <button type="button" data-receipt="HAO-HOABI-260828" data-verify="5678">호아비</button>
-      <button type="button" data-receipt="HAO-SAENG-260828" data-verify="0436">생즙연구소</button>
-    </div>
-
     <section class="result" id="result" hidden aria-live="polite">
       <div class="summary">
         <div>
@@ -186,12 +177,6 @@
         $("error").textContent=error?.message || "진행 상황을 불러오지 못했습니다.";
       }
     });
-
-    document.querySelectorAll("[data-receipt]").forEach((button)=>button.addEventListener("click",()=>{
-      $("receipt").value=button.dataset.receipt;
-      $("verify").value=button.dataset.verify;
-      $("lookupForm").requestSubmit();
-    }));
 
     const params=new URLSearchParams(location.search);
     if (params.get("receipt")) $("receipt").value=params.get("receipt");
