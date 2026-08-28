@@ -85,14 +85,7 @@
   async function downloadRemoteFile(file) {
     const url = remoteFileUrl(file);
     if (!url) throw new Error("서버 파일 주소가 없습니다.");
-    let response = await fetch(url, { headers: adminHeaders(), cache: "no-store" });
-    if (response.status === 401) {
-      const supplied = window.prompt("접수 서버 관리자 비밀번호를 입력해주세요.", "") || "";
-      if (supplied.trim()) {
-        setAdminToken(supplied);
-        response = await fetch(url, { headers: adminHeaders(), cache: "no-store" });
-      }
-    }
+    const response = await fetch(url, { headers: adminHeaders(), cache: "no-store" });
     if (!response.ok) await responseJson(response, "서버 파일 다운로드 오류");
     return response.blob();
   }

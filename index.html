@@ -13,7 +13,7 @@
       document.documentElement.classList.add("admin-customer-clean");
       const cleanStyle = document.createElement("link");
       cleanStyle.rel = "stylesheet";
-      cleanStyle.href = "admin-dark.css?v=20260828-first-draft1";
+      cleanStyle.href = "admin-dark.css?v=20260828-server-auth4";
       document.head.appendChild(cleanStyle);
     }
   </script>
@@ -105,6 +105,13 @@
           <div class="actions">
             <button class="secondary small" id="refreshCustomerProjects">새로고침</button>
           </div>
+        </div>
+        <div class="server-auth-panel" id="serverAuthPanel" hidden>
+          <label for="serverAdminToken">중앙 서버 관리자 키</label>
+          <input id="serverAdminToken" type="password" autocomplete="off" placeholder="관리자 키를 입력하세요">
+          <button class="primary small" id="connectServerAdmin" type="button">인증하고 서버 불러오기</button>
+          <button class="secondary small" id="cancelServerAdmin" type="button">닫기</button>
+          <small id="serverAuthMessage">키는 현재 탭의 세션에만 보관되며 GitHub·HTML·로컬 프로젝트에는 저장되지 않습니다.</small>
         </div>
         <div class="lead-list" id="customerProjectList">아직 접수된 고객 작성 내용이 없습니다.</div>
       </div>
@@ -870,7 +877,7 @@
 
   <script src="hao-config.js?v=20260820-drive1"></script>
   <script src="workflow-core.js?v=20260819-4"></script>
-  <script src="submission-sync.js?v=20260819-4"></script>
+  <script src="submission-sync.js?v=20260828-server-auth4"></script>
   <script src="data/detail-template-dataset.js"></script>
   <script src="data/company-reference-dataset.js"></script>
   <script src="data/company-reference-auto.js"></script>
@@ -884,7 +891,7 @@
   <script src="customer-file-store.js?v=20260819-4"></script>
   <script src="detailpage-render.js?v=20260826-m5"></script>
   <script src="comms-output.js?v=20260826-m5b"></script>
-  <script src="app.js?v=20260828-central-receipt3"></script>
+  <script src="app.js?v=20260828-server-auth4"></script>
   <script src="packaging-bridge.js?v=20260820-1"></script>
   <script src="mvp-codex-package.js?v=20260820-drive1"></script>
   <script src="pwa-install.js?v=20260820-3"></script>

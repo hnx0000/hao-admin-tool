@@ -22,6 +22,7 @@ let currentImageDraftObjectUrl = "";
 let currentImageGenerationController = null;
 let productionRootDirectoryHandle = null;
 let currentGeneratedImageDraftFile = null;
+let pendingServerAuthAction = null;
 const IMAGE_DRAFT_GROUP = "adminImageDraft";
 const IMAGE_DRAFT_MODEL = "gpt-image-2";
 const IMAGE_DRAFT_SIZE = "1024x1536";
@@ -1829,11 +1830,8 @@ async function updateCustomerProjectStatus(id, status) {
       updateAiStatus("프로젝트 진행 상태를 중앙 서버에 저장했습니다.");
     } catch (error) {
       if (error?.status === 401 && window.haoSubmissionSync?.setAdminToken) {
-        const supplied = window.prompt("중앙 서버 관리자 비밀번호를 입력해주세요.", "") || "";
-        if (supplied.trim()) {
-          window.haoSubmissionSync.setAdminToken(supplied);
-          return updateCustomerProjectStatus(id, status);
-        }
+        requestServerAdminAuth("프로젝트 상태를 서버에 저장하려면 관리자 인증이 필요합니다.", () => updateCustomerProjectStatus(id, status));
+        return;
       }
       updateAiStatus(error?.message || "중앙 서버 상태 저장에 실패했습니다. 로컬 변경은 유지됩니다.");
     }
@@ -1989,6 +1987,41 @@ function closeCustomerAssetsDialog() {
   $("#customerAssetsDialog")?.close();
 }
 
+function requestServerAdminAuth(message = "중앙 서버 관리자 인증이 필요합니다.", retryAction = null) {
+  pendingServerAuthAction = typeof retryAction === "function" ? retryAction : null;
+  const panel = $("#serverAuthPanel");
+  if (!panel) return;
+  panel.hidden = false;
+  if ($("#serverAuthMessage")) $("#serverAuthMessage").textContent = `${message} 키는 현재 탭의 세션에만 보관됩니다.`;
+  $("#serverAdminToken")?.focus();
+  panel.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function closeServerAdminAuth() {
+  pendingServerAuthAction = null;
+  if ($("#serverAdminToken")) $("#serverAdminToken").value = "";
+  if ($("#serverAuthPanel")) $("#serverAuthPanel").hidden = true;
+}
+
+async function connectServerAdmin() {
+  const input = $("#serverAdminToken");
+  const token = String(input?.value || "").trim();
+  if (!token || !window.haoSubmissionSync?.setAdminToken) {
+    if ($("#serverAuthMessage")) $("#serverAuthMessage").textContent = "관리자 키를 입력해주세요.";
+    return;
+  }
+  window.haoSubmissionSync.setAdminToken(token);
+  if (input) input.value = "";
+  if ($("#serverAuthPanel")) $("#serverAuthPanel").hidden = true;
+  const retryAction = pendingServerAuthAction;
+  pendingServerAuthAction = null;
+  try {
+    await (retryAction ? retryAction() : syncCustomerProjectsFromCloud({ notify: true }));
+  } catch (error) {
+    requestServerAdminAuth(error?.message || "관리자 인증에 실패했습니다.", retryAction);
+  }
+}
+
 function resolveCustomerFolderFileUrl(project, group, name, folderPath) {
   const configuredUrl = project?.assetWebPaths?.[group]?.[name];
   if (configuredUrl) return configuredUrl;
@@ -2069,13 +2102,24 @@ function openCustomerAssetsDialog(group) {
           const blob = await window.haoSubmissionSync.downloadRemoteFile(file);
           const url = URL.createObjectURL(blob);
           customerAssetObjectUrls.push(url);
-          const link = document.createElement("a");
-          link.href = url;
-          link.download = file.name;
-          link.click();
-          downloadButton.textContent = "다운로드 완료";
+          const isImageFile = String(file.type || "").startsWith("image/") || /\.(png|jpe?g|jfif|webp|gif)$/i.test(file.name || "");
+          if (isImageFile) {
+            const preview = downloadButton.closest(".customer-asset-item")?.querySelector(".file-type-preview");
+            const image = document.createElement("img");
+            image.src = url;
+            image.alt = file.name || "고객 업로드 이미지";
+            preview?.replaceWith(image);
+            downloadButton.textContent = "이미지 열림";
+          } else {
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = file.name;
+            link.click();
+            downloadButton.textContent = "다운로드 완료";
+          }
         } catch (error) {
           downloadButton.textContent = error?.status === 401 ? "관리자 인증 필요" : "다시 시도";
+          if (error?.status === 401) requestServerAdminAuth("첨부파일을 열려면 중앙 서버 관리자 인증이 필요합니다.", () => downloadButton.click());
           console.warn("서버 파일 다운로드에 실패했습니다.", error);
         } finally {
           window.setTimeout(() => {
@@ -2312,11 +2356,8 @@ async function syncCustomerProjectsFromCloud({ notify = false } = {}) {
     return remoteProjects;
   } catch (error) {
     if (notify && error?.status === 401 && window.haoSubmissionSync?.setAdminToken) {
-      const supplied = window.prompt("접수 서버 관리자 비밀번호를 입력해주세요.", "") || "";
-      if (supplied.trim()) {
-        window.haoSubmissionSync.setAdminToken(supplied);
-        return syncCustomerProjectsFromCloud({ notify: true });
-      }
+      requestServerAdminAuth("다른 PC의 중앙 서버 접수 목록을 불러오려면 관리자 인증이 필요합니다.", () => syncCustomerProjectsFromCloud({ notify: true }));
+      return [];
     }
     renderCustomerProjects();
     if (notify) updateAiStatus(error?.message || "온라인 고객 접수를 불러오지 못했습니다.");
@@ -7218,6 +7259,11 @@ document.addEventListener("click", (event) => {
 $("#refreshLeads")?.addEventListener("click", renderLeads);
 $("#refreshProjects")?.addEventListener("click", renderProjects);
 $("#refreshCustomerProjects")?.addEventListener("click", () => syncCustomerProjectsFromCloud({ notify: true }));
+$("#connectServerAdmin")?.addEventListener("click", connectServerAdmin);
+$("#cancelServerAdmin")?.addEventListener("click", closeServerAdminAuth);
+$("#serverAdminToken")?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") connectServerAdmin();
+});
 $("#approveProjectReview")?.addEventListener("click", approveCurrentProjectReview);
 $("#downloadContentSummary")?.addEventListener("click", () => downloadCurrentContentSummary());
 $("#cancelProjectDelete")?.addEventListener("click", () => {
