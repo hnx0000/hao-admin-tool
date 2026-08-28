@@ -1545,7 +1545,7 @@ function planningPhoneLast4(project = activeCustomerProject()) {
 }
 
 function planningReceipt(project = activeCustomerProject()) {
-  return String(project?.receiptNo || project?.cloudReceiptNo || project?.cloudSubmissionId || project?.id || "").trim();
+  return String(project?.receiptNo || project?.cloudReceiptNo || "").trim();
 }
 
 function planningCustomerReviewUrl(preview = currentPlanningPreview()) {
@@ -2293,6 +2293,8 @@ async function syncCustomerProjectsFromCloud({ notify = false } = {}) {
         ...normalized,
         id: existingIndex >= 0 ? projects[existingIndex].id : `customer-project-cloud-${remoteId}`,
         cloudSubmissionId: remoteId,
+        receiptNo: remote.receiptNo || normalized.receiptNo || "",
+        cloudReceiptNo: remote.receiptNo || normalized.cloudReceiptNo || "",
         savedAt: remote.savedAt || new Date().toLocaleString("ko-KR"),
       };
       if (existingIndex >= 0) {
