@@ -1,7 +1,7 @@
 window.IMPORTED_CUSTOMER_PROJECTS = [
   {
     sourceImportId: "saengjeup-lab-public-project-20260819",
-    sourceImportVersion: "20260820-drive1-public",
+    sourceImportVersion: "20260828-progress1-public",
     customerInputVersion: "organized-content-v1",
     source: "고객 작성폼 1차 내용정리본 가져오기",
     status: "신규 접수",
@@ -28,9 +28,10 @@ window.IMPORTED_CUSTOMER_PROJECTS = [
     targetDetailPageHeight: { minPx: 17000, maxPx: 20000, axis: "vertical" },
     companyName: "생즙연구소",
     clientName: "생즙연구소",
-    contactName: "",
-    contactInfo: "",
-    phone: "",
+    contactName: "생즙연구소 담당자",
+    contactInfo: "010-0000-0436",
+    phone: "010-0000-0436",
+    receiptNo: "HAO-SAENG-260828",
     email: "",
     productName: "생즙연구소 100% 사과주스 (100% 감귤주스 바리에이션)",
     category: "식품/음료 / 과·채주스 / NFC 착즙주스",

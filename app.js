@@ -536,9 +536,30 @@ function readAiSettings() {
   }
 }
 
+function ensureProgressAccess(project = {}) {
+  const identity = [project.clientName, project.companyName, project.productName].filter(Boolean).join(" ");
+  if (identity.includes("호아비")) {
+    return {
+      ...project,
+      receiptNo: project.receiptNo || "HAO-HOABI-260828",
+      phone: project.phone || project.contactInfo || "010-1234-5678",
+      contactInfo: project.contactInfo || project.phone || "010-1234-5678",
+    };
+  }
+  if (identity.includes("생즙연구소")) {
+    return {
+      ...project,
+      receiptNo: project.receiptNo || "HAO-SAENG-260828",
+      phone: project.phone || project.contactInfo || "010-0000-0436",
+      contactInfo: project.contactInfo || project.phone || "010-0000-0436",
+    };
+  }
+  return project;
+}
+
 function readCustomerProject() {
   try {
-    return JSON.parse(localStorage.getItem(CUSTOMER_PROJECT_KEY) || "{}");
+    return ensureProgressAccess(JSON.parse(localStorage.getItem(CUSTOMER_PROJECT_KEY) || "{}"));
   } catch {
     return {};
   }
@@ -546,7 +567,7 @@ function readCustomerProject() {
 
 function readCustomerProjects() {
   try {
-    return JSON.parse(localStorage.getItem(CUSTOMER_PROJECT_LIST_KEY) || "[]");
+    return JSON.parse(localStorage.getItem(CUSTOMER_PROJECT_LIST_KEY) || "[]").map(ensureProgressAccess);
   } catch {
     return [];
   }
@@ -1701,6 +1722,11 @@ function renderCustomerProjects() {
   const projectCards = visibleProjects.map((project) => {
     const readiness = customerProjectReadiness(project);
     const planningPreview = planningPreviewForProject(project);
+    const receipt = planningReceipt(project);
+    const verify = planningPhoneLast4(project);
+    const progressUrl = receipt && verify
+      ? `track.html?receipt=${encodeURIComponent(receipt)}&verify=${encodeURIComponent(verify)}`
+      : "track.html";
     const cloudStatus = project.workflow?.cloudSync?.status || "local-only";
     const storageText = cloudStatus === "synced"
       ? "브라우저 + 접수 서버 저장 완료"
@@ -1725,6 +1751,7 @@ function renderCustomerProjects() {
           <strong>${escapeHtml(project.productName || "제품명 미입력")}</strong>
           <p>${escapeHtml(project.clientName || "브랜드명 미입력")} · ${escapeHtml(project.category || "카테고리 미선택")} · ${escapeHtml(project.savedAt || "")}</p>
           <p>상태: ${escapeHtml(project.status || "신규 접수")}</p>
+          <p class="project-progress-access">접수번호 <b>${escapeHtml(receipt || "미발급")}</b> · 연락처 뒤 4자리 <b>${escapeHtml(verify || "미등록")}</b> · <a href="${escapeHtml(progressUrl)}" target="_blank" rel="noopener">고객 진행조회</a></p>
           <p class="project-storage-line ${escapeHtml(cloudStatus)}"><i aria-hidden="true"></i>${storageText}</p>
           <p class="readiness-line"><b>시안 준비도 ${readiness.score}%</b> · ${readinessText}</p>
           ${planningPreview ? `<p class="planning-available-line">✓ 제작 전 기획안 등록 · ${escapeHtml(planningPreview.dimensions)}</p>` : ""}
@@ -1978,7 +2005,7 @@ function resolveCustomerFolderFileUrl(project, group, name, folderPath) {
   if (configuredUrl) return configuredUrl;
 
   const isHoabiProject =
-    project?.seedVersion === "hoabi-complete-v5" ||
+    String(project?.seedVersion || "").startsWith("hoabi-complete-") ||
     String(project?.productName || "").includes("호아비 리치꿀스틱");
   if (isHoabiProject) {
     const hoabiWebAssets = {
@@ -2097,7 +2124,7 @@ function addHoabiCustomerTest(silent = false) {
   const projects = readCustomerProjects();
   const project = {
     id: `customer-project-${Date.now()}`,
-    seedVersion: "hoabi-complete-v5",
+    seedVersion: "hoabi-complete-v6-progress",
     customerInputVersion: "wizard-intake-v1",
     source: "고객 작성폼 완성 예시",
     status: "신규 접수",
@@ -2110,6 +2137,7 @@ function addHoabiCustomerTest(silent = false) {
     contactName: "호아비 담당자",
     contactInfo: "010-1234-5678",
     phone: "010-1234-5678",
+    receiptNo: "HAO-HOABI-260828",
     email: "hoabee@example.com",
     dueDate: "2026-08-15",
     heroSentence: "하루 한 포에 담은 달콤한 리치와 프리미엄 꿀",
@@ -2178,7 +2206,7 @@ function addHoabiCustomerTest(silent = false) {
     ],
   };
   const existingIndex = projects.findIndex((item) =>
-    item.seedVersion === "hoabi-complete-v5" ||
+    String(item.seedVersion || "").startsWith("hoabi-complete-") ||
     item.productName === "호아비 리치꿀스틱 30포"
   );
   if (existingIndex >= 0) {
@@ -2194,7 +2222,7 @@ function addHoabiCustomerTest(silent = false) {
 }
 
 function restoreHoabiCompleteExampleOnce() {
-  const restoreKey = "customerProjectRestore:hoabi-complete-v5";
+  const restoreKey = "customerProjectRestore:hoabi-complete-v6-progress";
   if (localStorage.getItem(restoreKey)) return;
   addHoabiCustomerTest(true);
   localStorage.setItem(restoreKey, "done");

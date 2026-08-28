@@ -1,10 +1,11 @@
-const CACHE_NAME = "hao-detail-automation-v20260828-first-draft1";
+const CACHE_NAME = "hao-detail-automation-v20260828-progress1";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./START_HERE.html",
   "./project-form.html",
   "./customer-review.html",
+  "./track.html",
   "./system-status.html",
   "./styles.css",
   "./admin-dark.css",

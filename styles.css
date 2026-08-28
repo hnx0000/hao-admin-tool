@@ -17410,3 +17410,6 @@ fieldset input,
 .admin-page label:has(.textarea-expand-trigger) > .customer-field-status {
   right: 25px;
 }
+.project-progress-access { color:#66768a; font-size:12px; }
+.project-progress-access b { color:#26374b; }
+.project-progress-access a { color:#2868d8; font-weight:850; }
