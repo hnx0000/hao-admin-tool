@@ -1,9 +1,9 @@
 {
-  "name": "HAO 상세페이지 자동화",
-  "short_name": "HAO 자동화",
+  "name": "HAO 상세페이지 자동화 통합",
+  "short_name": "HAO 통합",
   "description": "고객 접수, 관리자 검수, Codex 작업 패키지, 피드백과 납품을 관리하는 HAO 상세페이지 자동화 도구",
-  "id": "./?source=pwa",
-  "start_url": "./?source=pwa",
+  "id": "./START_HERE.html",
+  "start_url": "./START_HERE.html?source=pwa",
   "scope": "./",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
@@ -17,7 +17,9 @@
   ],
   "shortcuts": [
     { "name": "관리자툴", "url": "./?source=pwa-shortcut", "icons": [{ "src": "assets/app-icons/hao-192.png", "sizes": "192x192" }] },
+    { "name": "관리자 진행조회", "url": "./track.html?source=pwa-shortcut", "icons": [{ "src": "assets/app-icons/hao-192.png", "sizes": "192x192" }] },
     { "name": "고객 작성폼", "url": "./project-form.html?source=pwa-shortcut", "icons": [{ "src": "assets/app-icons/hao-192.png", "sizes": "192x192" }] },
+    { "name": "고객 작성내용", "url": "./customer-submissions.html?source=pwa-shortcut", "icons": [{ "src": "assets/app-icons/hao-192.png", "sizes": "192x192" }] },
     { "name": "시스템 상태", "url": "./system-status.html?source=pwa-shortcut", "icons": [{ "src": "assets/app-icons/hao-192.png", "sizes": "192x192" }] }
   ]
 }

@@ -41,6 +41,15 @@
     .status { padding:9px 11px; border-radius:9px; background:#f3ede4; color:#655d52; font-size:13px; }
     .status.confirmed { background:#e6f4eb; color:#286040; }
     @media (max-width:900px) { .review-layout { grid-template-columns:1fr; } aside { position:static; } }
+    @media (max-width:600px) {
+      .access { width:calc(100% - 20px); margin:20px auto; padding:20px 16px; }
+      .toolbar { display:grid; grid-template-columns:1fr 1fr; padding:10px; }
+      .toolbar strong { grid-column:1/-1; margin:0 0 3px; }
+      .toolbar button { width:100%; min-height:44px; padding:0 8px; font-size:12px; }
+      .review-layout { width:calc(100% - 12px); margin:8px auto 40px; gap:10px; }
+      aside { padding:15px; }
+      .save-actions { display:grid; }
+    }
   </style>
 </head>
 <body>

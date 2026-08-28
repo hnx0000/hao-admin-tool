@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#11151a">
-  <title>HAO 상세페이지 자동화 시작</title>
+  <title>프로그램 관리 — HAO 상세페이지 자동화 통합</title>
   <link rel="manifest" href="app.webmanifest">
   <link rel="icon" href="assets/app-icons/hao-192.png" type="image/png">
   <style>
@@ -38,6 +38,7 @@
     .pending { color: #f2bd58; }
     .notice { margin-top: 18px; border-left: 3px solid #f2bd58; padding: 4px 0 4px 14px; color: #aab5c2; font-size: 12px; line-height: 1.6; }
     @media (max-width: 760px) { main { padding-top: 34px; } .launch-grid, .scope { grid-template-columns: 1fr; } .launch-card { min-height: 150px; } .number { margin-bottom: 28px; } }
+    @media (max-width: 430px) { main { width:calc(100% - 20px); padding-top:24px; } .brand { align-items:flex-start; } .mark { width:46px; height:46px; border-radius:12px; flex:0 0 auto; } h1 { font-size:32px; line-height:1.12; } .tools { display:grid; } .tools button { width:100%; } .launch-card { min-height:138px; padding:20px; } .scope article { padding:18px; } }
   </style>
 </head>
 <body>
@@ -46,10 +47,10 @@
       <span class="mark">HAO</span>
       <div>
         <p class="eyebrow">DETAIL PAGE AUTOMATION</p>
-        <h1>어디서나 최신 프로그램 실행</h1>
+        <h1>HAO 상세페이지 자동화 통합</h1>
       </div>
     </div>
-    <p class="intro">이 주소를 관리자끼리 공유하면 별도 파일 복사 없이 항상 GitHub Pages의 최신 HAO 프로그램을 실행할 수 있습니다. Chrome 또는 Edge에서는 독립 앱으로 설치할 수 있습니다.</p>
+    <p class="intro"><b>프로그램 관리</b> 화면입니다. 이 주소를 관리자끼리 공유하면 별도 파일 복사 없이 항상 GitHub Pages의 최신 HAO 프로그램을 실행할 수 있습니다. Chrome 또는 Edge에서는 독립 앱으로 설치할 수 있습니다.</p>
 
     <div class="tools">
       <button id="installDesktopApp" type="button" hidden>이 컴퓨터에 앱 설치</button>
@@ -62,20 +63,30 @@
         <strong>관리자툴 실행</strong>
         <span>프로젝트 검수, 기획 준비, 시안·피드백·납품 관리</span>
       </a>
-      <a class="launch-card" href="project-form.html">
+      <a class="launch-card" href="track.html">
         <span class="number">02</span>
-        <strong>고객 작성폼</strong>
-        <span>고객이 제품 정보와 자료를 제출하는 접수 화면</span>
+        <strong>관리자 진행조회</strong>
+        <span>다크 화면에서 접수번호별 제작 단계와 상태를 점검</span>
       </a>
-      <a class="launch-card" href="system-status.html">
+      <a class="launch-card" href="project-form.html">
         <span class="number">03</span>
-        <strong>시스템 상태</strong>
-        <span>전체 공정의 연결·부분 연결·미연결 상태 확인</span>
+        <strong>고객 작성폼</strong>
+        <span>고객이 제품 정보와 원본 자료를 서버로 제출하는 접수 화면</span>
       </a>
       <a class="launch-card" href="https://hao-admin.vigo.co.kr/track.html" target="_blank" rel="noopener">
         <span class="number">04</span>
-        <strong>고객 진행조회</strong>
-        <span>접수번호와 연락처 뒤 4자리로 제작 단계만 확인</span>
+        <strong>고객용 진행조회</strong>
+        <span>고객이 접수번호와 연락처 뒤 4자리로 서버 진행단계를 확인</span>
+      </a>
+      <a class="launch-card" href="customer-submissions.html">
+        <span class="number">05</span>
+        <strong>고객 작성내용</strong>
+        <span>서버에 접수된 고객 작성내용과 첨부자료 전체목록 조회·관리</span>
+      </a>
+      <a class="launch-card" href="system-status.html">
+        <span class="number">06</span>
+        <strong>시스템 상태</strong>
+        <span>전체 공정의 연결·부분 연결·미연결 상태 확인</span>
       </a>
     </section>
 
@@ -85,11 +96,11 @@
         <p>프로그램 화면, 최신 기능, 공개 기준 데이터, 고객 작성폼과 시스템 상태 페이지는 같은 주소에서 최신본으로 실행됩니다.</p>
       </article>
       <article>
-        <h2 class="pending">업무 서버 연결 후 완전 동기화</h2>
-        <p>각 브라우저의 로컬 수정값, IndexedDB 파일, 관리자별 작업 기록은 아직 자동 공유되지 않습니다. 동일 DB와 고객 원본의 실시간 공유에는 인증·저장 서버가 필요합니다.</p>
+        <h2 class="pending">브라우저 안전본과 서버본 구분</h2>
+        <p>고객 접수 원문과 첨부파일은 중앙 서버에서 공통 조회하며, IndexedDB는 제출한 브라우저의 임시 안전본으로 유지됩니다. 서버 관리 화면은 관리자 키 인증이 필요합니다.</p>
       </article>
     </section>
-    <p class="notice">현재 관리자 인증 서버 도입 전이므로 관리자툴 주소는 내부 관리자에게만 공유하세요. 고객에게는 고객 작성폼과 고객 진행조회 주소만 전달하는 것이 안전합니다.</p>
+    <p class="notice">관리자툴·관리자 진행조회·고객 작성내용 주소는 내부 관리자에게만 공유하세요. 고객에게는 고객 작성폼과 고객용 진행조회 주소만 전달하는 것이 안전합니다.</p>
   </main>
   <script src="pwa-install.js?v=20260820-3"></script>
   <script>

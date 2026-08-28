@@ -1,10 +1,11 @@
-const CACHE_NAME = "hao-detail-automation-v20260828-server-auth4";
+const CACHE_NAME = "hao-detail-automation-v20260828-program-management1";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./START_HERE.html",
   "./project-form.html",
   "./customer-review.html",
+  "./customer-submissions.html",
   "./track.html",
   "./system-status.html",
   "./styles.css",
@@ -24,6 +25,8 @@ const APP_SHELL = [
   "./assets/app-icons/hao-512.png",
   "./planning/saengjeup-v1.html",
   "./planning/test-connection-v1.html",
+  "./planning/project-first-draft.html",
+  "./assets/planning/generic-planning-v1.svg",
   "./assets/planning/saengjeup-planning-v1.png"
 ];
 

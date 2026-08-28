@@ -1808,7 +1808,8 @@ function renderCustomerProjects() {
     const planningPreview = planningPreviewForProject(project) || genericPlanningPreviewForProject(project);
     const receipt = planningReceipt(project);
     const verify = planningPhoneLast4(project);
-    const progressUrl = "https://hao-admin.vigo.co.kr/track.html";
+    const progressUrl = "track.html";
+    const submissionId = project.cloudSubmissionId || project.submissionId || project.id;
     const cloudStatus = project.workflow?.cloudSync?.status || "local-only";
     const storageText = cloudStatus === "synced"
       ? "브라우저 + 접수 서버 저장 완료"
@@ -1833,7 +1834,7 @@ function renderCustomerProjects() {
           <strong>${escapeHtml(project.productName || "제품명 미입력")}</strong>
           <p>${escapeHtml(project.clientName || "브랜드명 미입력")} · ${escapeHtml(project.category || "카테고리 미선택")} · ${escapeHtml(project.savedAt || "")}</p>
           <p>상태: ${escapeHtml(project.status || "신규 접수")}</p>
-          <p class="project-progress-access">접수번호 <b>${escapeHtml(receipt || "미발급")}</b> · 연락처 뒤 4자리 <b>${escapeHtml(verify || "미등록")}</b> · <a href="${escapeHtml(progressUrl)}" target="_blank" rel="noopener">고객 진행조회</a></p>
+          <p class="project-progress-access">접수번호 <b>${escapeHtml(receipt || "미발급")}</b> · 연락처 뒤 4자리 <b>${escapeHtml(verify || "미등록")}</b> · <a href="${escapeHtml(progressUrl)}">관리자 진행조회</a></p>
           <p class="project-storage-line ${escapeHtml(cloudStatus)}"><i aria-hidden="true"></i>${storageText}</p>
           <p class="readiness-line"><b>시안 준비도 ${readiness.score}%</b> · ${readinessText}</p>
           ${planningPreview ? `<p class="planning-available-line">✓ 제작 전 기획안 등록 · ${escapeHtml(planningPreview.dimensions)}</p>` : ""}
@@ -1844,6 +1845,7 @@ function renderCustomerProjects() {
             ${statuses.map((status) => `<option ${status === project.status ? "selected" : ""}>${status}</option>`).join("")}
           </select>
           <button class="secondary small import-customer-project" data-id="${escapeHtml(project.id)}">불러오기</button>
+          <button class="secondary small open-customer-submission" data-submission-id="${escapeHtml(submissionId)}">고객 작성내용 확인</button>
           ${planningPreview ? `<button class="secondary small open-project-planning" data-id="${escapeHtml(project.id)}">기획안 확인</button>` : ""}
           <div class="project-manage">
             <button class="secondary small project-manage-toggle" type="button" data-id="${escapeHtml(project.id)}" aria-expanded="false">프로젝트 관리</button>
@@ -1875,6 +1877,12 @@ function renderCustomerProjects() {
   });
   $$(".import-customer-project").forEach((button) => {
     button.addEventListener("click", () => importCustomerProjectById(button.dataset.id));
+  });
+  $$(".open-customer-submission").forEach((button) => {
+    button.addEventListener("click", () => {
+      const query = new URLSearchParams({ projectId: button.dataset.submissionId || "" });
+      window.location.href = `customer-submissions.html?${query.toString()}`;
+    });
   });
   $$(".open-project-planning").forEach((button) => {
     button.addEventListener("click", () => {
