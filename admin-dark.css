@@ -2253,4 +2253,11 @@
   .admin-customer-clean .sidebar,.admin-customer-clean .app{min-width:0;max-width:100%}
   .admin-customer-clean .app{padding-right:16px;padding-left:16px}
   .admin-customer-clean .reference-status,.admin-customer-clean .operator-next-panel p,.admin-customer-clean .project-card p{overflow-wrap:anywhere}
+  .admin-customer-clean .lead-box,.admin-customer-clean .lead-list,.admin-customer-clean .lead-item,.admin-customer-clean .customer-project-pagination{width:100%;min-width:0;max-width:100%}
+  .admin-customer-clean .lead-item{grid-template-columns:minmax(0,1fr);align-items:stretch}
+  .admin-customer-clean .lead-item>*{min-width:0;max-width:100%}
+  .admin-customer-clean .lead-actions{display:grid;width:100%;min-width:0;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+  .admin-customer-clean .lead-actions>select{grid-column:1/-1;width:100%;min-width:0}
+  .admin-customer-clean .lead-actions>button,.admin-customer-clean .lead-actions>.project-manage,.admin-customer-clean .lead-actions>.button-link{width:100%;min-width:0}
+  .admin-customer-clean .lead-actions .project-manage-toggle{width:100%;min-width:0;padding-right:8px;padding-left:8px;font-size:11px;white-space:normal}
 }
