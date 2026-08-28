@@ -278,6 +278,13 @@
   box-shadow: 0 8px 20px rgba(52, 120, 239, .28);
 }
 
+@media (min-width: 721px) {
+  .admin-customer-clean .topbar > .actions #generateAll {
+    grid-column: 3;
+    justify-self: end;
+  }
+}
+
 .admin-customer-clean .operator-next-panel {
   max-width: 1220px;
   margin: 0 auto 16px;
@@ -1223,6 +1230,33 @@
   color: #8fcfa8 !important;
   font-size: 11px;
   font-weight: 800;
+}
+
+/* Step 3 · 다크 모드 누락 보정 */
+.admin-customer-clean #drafts .planning-collaboration {
+  border-color: #323841;
+  background: #1b2026;
+  color: #edf0f3;
+}
+
+.admin-customer-clean #drafts .planning-comment-panel,
+.admin-customer-clean #drafts .planning-confirm-panel {
+  border-color: #323841;
+  background: #20262d;
+  color: #edf0f3;
+}
+
+.admin-customer-clean #drafts .planning-comment-list li,
+.admin-customer-clean #drafts .planning-comment-list li.empty {
+  border-color: #323841;
+  background: #171b20;
+  color: #b8c2cd;
+}
+
+.admin-customer-clean #drafts .planning-collaboration h3,
+.admin-customer-clean #drafts .planning-collaboration strong,
+.admin-customer-clean #drafts .planning-confirm-panel label {
+  color: #edf0f3;
 }
 
 .admin-customer-clean #drafts .planning-review-card {

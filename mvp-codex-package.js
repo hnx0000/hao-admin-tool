@@ -193,13 +193,20 @@
 
   function imageTasks(project, prompt) {
     const segments = [
-      ["01_opening", "상단 설득", "제품 인지·한 줄 가치·즉시 판단 근거"],
-      ["02_story", "중단 근거", "원료·제품 차이·사용 장면"],
-      ["03_decision", "하단 판단", "구성·정보 안전 영역·클로징"],
+      ["01_hero_reference", "히어로 촬영 레퍼런스", "제품 대표 구도·카피 안전 여백·조명 방향"],
+      ["02_ingredient_reference", "원료 촬영 레퍼런스", "검수된 원료의 질감·매크로 구도·소품 범위"],
+      ["03_usage_reference", "사용 장면 레퍼런스", "타깃의 실제 사용 맥락·손동작·생활 소품"],
+      ["04_detail_reference", "디테일 촬영 레퍼런스", "패키지 정면·측면·구성품·정보 조판 안전 영역"],
     ];
-    return `# ${project.productName || "프로젝트"} 이미지 작업\n\n`
-      + `각 섹션은 방향성 시안과 촬영 레퍼런스를 구분해 생성한다. 실패 시 해당 taskId만 재실행한다.\n\n`
-      + segments.map(([id, label, goal]) => `## ${id} · ${label}\n\n- 목적: ${goal}\n- 출력: outputs/${id}.png\n- 상태 기록: result-manifest.json\n- 제품 원본이 없으면 확정 패키지처럼 만들지 말고 촬영 가이드임을 표시\n- 정확한 텍스트 조판을 위한 안전 영역 확보\n\n${prompt}\n`).join("\n");
+    return `# ${project.productName || "프로젝트"} 1차 시안용 이미지 작업\n\n`
+      + `이 이미지들은 판매용 상세페이지 완성본이 아니라 촬영·디자인 기획서 안에 배치할 레퍼런스다. 실패 시 해당 taskId만 재실행한다.\n\n`
+      + segments.map(([id, label, goal]) => `## ${id} · ${label}\n\n- 목적: ${goal}\n- 출력: outputs/references/${id}.png\n- 상태 기록: result-manifest.json\n- 화면 안에 반드시 '촬영 레퍼런스'를 표시하거나 동등한 메타데이터를 기록\n- 제품 원본이 없으면 확정 패키지처럼 만들지 말고 촬영 가이드임을 표시\n- 정확한 한글·표·법정 정보는 이미지에 굽지 않고 조판 안전 영역 확보\n- 다른 고객의 제품·로고·고유 그래픽을 복제하지 않음\n\n${prompt}\n`).join("\n");
+  }
+
+  function firstDraftSpec(project) {
+    const longFormat = String(project.clientName || project.companyName || "").includes("생즙연구소")
+      || String(project.clientName || project.companyName || "").includes("서울우유");
+    return `# 1차 촬영·디자인 시안 제작 규격\n\n- 프로젝트: ${project.productName || "미기입"}\n- 산출물 성격: 최종 상세페이지가 아닌 촬영 및 디자인 기획서\n- 기본 보드: 3,000 × ${longFormat ? "18,000~20,000" : "10,000"}px\n- 출력 HTML: outputs/first-draft/index.html\n- 전체 미리보기: outputs/first-draft/first-draft-preview.png\n\n## 필수 구성\n\n1. 고객 제공 사실·필수 문구·금지 표현 요약\n2. 섹션별 목적과 구매 설득 순서\n3. 가운데 상세페이지 와이어프레임\n4. 왼쪽 고객 확인 메모\n5. 오른쪽 포토그래퍼 촬영 지시\n6. 생성한 촬영 레퍼런스 이미지와 컷 번호 연결\n7. 디자이너 조판 영역·카피 안전 여백 표시\n8. 미기입·미확인 정보와 실제 촬영 후 교체할 영역 표시\n\n## 금지\n\n- 판매 가능한 최종 상세페이지처럼 완성 디자인을 입히지 않음\n- 검수되지 않은 효능·인증·수치·후기·구성품을 추가하지 않음\n- 작은 한글과 법정 정보를 이미지 픽셀에 확정 문구로 굽지 않음\n- 레퍼런스의 고유 카피·로고·제품 사진·그래픽을 복제하지 않음\n\nGoogle Drive 2026(기획안)의 정보 구조와 주석 방식은 면밀히 분석하되, 새 프로젝트의 고객 사실·제품 형태·촬영 필요에 맞게 재구성한다.\n`;
   }
 
   function finalPageSpec(project) {
@@ -207,7 +214,7 @@
   }
 
   function masterInstruction(project, job) {
-    return `# Codex 실행 지시\n\n이 폴더는 ${project.productName || "프로젝트"}의 승인된 작업 패키지입니다.\n\n## 실행 원칙\n\n1. job.json과 package-manifest.json의 승인 해시·파일 해시를 먼저 검증합니다.\n2. customer_facts.json의 verified=true 사실만 확정 정보로 사용합니다.\n3. missing_and_unverified.json의 항목은 추정하지 않습니다.\n4. references.json의 출처·사용 범위를 지키며 고유 디자인을 복제하지 않습니다.\n5. planning_brief.md와 shot_list.csv를 기준으로 섹션별 이미지와 촬영 레퍼런스를 구분해 생성합니다.\n6. 작은 한글·표·법정 고지는 이미지에 굽지 않고 조판 안전 영역으로 남깁니다.\n7. 실패한 task만 다시 실행할 수 있도록 taskId별 결과를 저장합니다.\n8. outputs/에 PNG·전체 미리보기·프롬프트·QA 보고서·README를 저장합니다.\n9. result-manifest.template.json을 복사해 result-manifest.json을 작성합니다.\n10. 관리자툴에서 검증할 수 있도록 jobId=${job.jobId}, projectId=${job.projectId}, approvalHash=${job.approvalHash}를 변경하지 않습니다.\n\n이 작업은 OpenAI API 키를 사용하지 않습니다. 현재 Codex 작업 안에서 파일 분석, 필요한 웹 검색, 이미지 생성, 결과 저장을 수행합니다.\n`;
+    return `# Codex 실행 지시\n\n이 폴더는 ${project.productName || "프로젝트"}의 승인된 1차 시안 작업 패키지입니다.\n\n## 목표\n\n최종 판매용 상세페이지가 아니라 고객·관리자·포토그래퍼·디자이너가 함께 검수할 **1차 촬영 및 디자인 기획서**를 만듭니다.\n\n## 실행 순서\n\n1. job.json과 package-manifest.json의 승인 해시·파일 해시를 먼저 검증합니다.\n2. customer_facts.json의 verified=true 사실만 확정 정보로 사용합니다.\n3. missing_and_unverified.json의 항목은 추정하지 않고 시안에 '확인 필요'로 표시합니다.\n4. references.json에 연결된 Google Drive 2026(기획안)과 실제 제작물을 면밀히 분석합니다.\n5. 고객 요청·타깃·판매 채널·제품 형태·보유 사진·촬영 필요·규제 위험을 교차 분석해 최적 단일 방향을 선택합니다.\n6. first_draft_spec.md와 shot_list.csv에 맞춰 촬영 레퍼런스 이미지를 생성합니다.\n7. 생성 이미지는 모두 촬영 레퍼런스로 표시하고, 실제 제품 원본이 있으면 외형·비율·라벨 구조를 유지합니다.\n8. outputs/first-draft/index.html과 outputs/first-draft/first-draft-preview.png를 조립합니다.\n9. 작은 한글·표·법정 고지는 이미지에 굽지 않고 조판 안전 영역으로 남깁니다.\n10. 실패한 task만 다시 실행할 수 있도록 taskId별 결과를 저장합니다.\n11. result-manifest.template.json을 복사해 result-manifest.json을 작성합니다.\n12. 관리자툴 검증을 위해 jobId=${job.jobId}, projectId=${job.projectId}, approvalHash=${job.approvalHash}를 변경하지 않습니다.\n\n## 완료 기준\n\n- 고객 사실 변경 없음\n- 촬영 컷과 상세페이지 섹션이 연결됨\n- 고객 확인 메모·촬영 지시·디자인 조판 지시가 한 보드에서 구분됨\n- 최종 디자인이 아닌 1차 시안임이 명확함\n- 출처·저작권·미확인 정보·실촬영 교체 지점이 기록됨\n- result-manifest.json의 모든 파일 경로가 outputs/ 아래를 가리킴\n\n이 작업은 OpenAI API 키를 사용하지 않습니다. 현재 Codex 작업 안에서 파일 분석, 필요한 웹 검색, 이미지 생성, HTML 조립, 결과 저장을 수행합니다.\n`;
   }
 
   function crc32(bytes) {
@@ -339,12 +346,14 @@
       },
       tasks: [
         { id: "01_reference_analysis", type: "research", output: "outputs/reference-analysis.md" },
-        { id: "02_planning_qa", type: "planning", output: "outputs/planning-qa.md" },
-        { id: "03_opening_image", type: "image", output: "outputs/01_opening.png" },
-        { id: "04_story_image", type: "image", output: "outputs/02_story.png" },
-        { id: "05_decision_image", type: "image", output: "outputs/03_decision.png" },
-        { id: "06_full_preview", type: "compose", output: "outputs/full-preview.png" },
-        { id: "07_quality_report", type: "qa", output: "outputs/qa-report.md" },
+        { id: "02_first_draft_plan", type: "planning", output: "outputs/first-draft-plan.md" },
+        { id: "03_hero_reference", type: "image", output: "outputs/references/01_hero_reference.png" },
+        { id: "04_ingredient_reference", type: "image", output: "outputs/references/02_ingredient_reference.png" },
+        { id: "05_usage_reference", type: "image", output: "outputs/references/03_usage_reference.png" },
+        { id: "06_detail_reference", type: "image", output: "outputs/references/04_detail_reference.png" },
+        { id: "07_first_draft_html", type: "compose", output: "outputs/first-draft/index.html" },
+        { id: "08_first_draft_preview", type: "render", output: "outputs/first-draft/first-draft-preview.png" },
+        { id: "09_quality_report", type: "qa", output: "outputs/qa-report.md" },
       ],
     };
 
@@ -369,17 +378,20 @@
       "references.json": json(references),
       "asset_manifest.json": json({ projectId: project.id, assets }),
       "planning_brief.md": planningBrief(project, facts, references),
+      "first_draft_spec.md": firstDraftSpec(project),
       "shot_list.csv": shotList(project),
       "image_tasks.md": imageTasks(project, prompt),
       "final_page_spec.md": finalPageSpec(project),
       "result-manifest.template.json": json(resultTemplate),
       "tasks/01_reference_analysis.json": json(job.tasks[0]),
-      "tasks/02_planning_qa.json": json(job.tasks[1]),
-      "tasks/03_opening_image.json": json(job.tasks[2]),
-      "tasks/04_story_image.json": json(job.tasks[3]),
-      "tasks/05_decision_image.json": json(job.tasks[4]),
-      "tasks/06_full_preview.json": json(job.tasks[5]),
-      "tasks/07_quality_report.json": json(job.tasks[6]),
+      "tasks/02_first_draft_plan.json": json(job.tasks[1]),
+      "tasks/03_hero_reference.json": json(job.tasks[2]),
+      "tasks/04_ingredient_reference.json": json(job.tasks[3]),
+      "tasks/05_usage_reference.json": json(job.tasks[4]),
+      "tasks/06_detail_reference.json": json(job.tasks[5]),
+      "tasks/07_first_draft_html.json": json(job.tasks[6]),
+      "tasks/08_first_draft_preview.json": json(job.tasks[7]),
+      "tasks/09_quality_report.json": json(job.tasks[8]),
     };
     files["RUN_WITH_CODEX.md"] = masterInstruction(project, job);
 

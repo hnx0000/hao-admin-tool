@@ -1081,6 +1081,7 @@ function adminReviewChecks(project = activeCustomerProject()) {
     { key: "consultSummary", label: "제품 정보", ok: field("consultSummary") },
     { key: "clientRequests", label: "고객 요청", ok: field("clientRequests") },
     { key: "mustInclude", label: "필수 문구", ok: field("mustInclude") },
+    { key: "banWords", label: "금지 표현", ok: field("banWords") },
     { key: "references", label: "근거/참고", ok: field("references") },
   ];
 }
@@ -1504,13 +1505,13 @@ function genericPlanningPreviewForProject(project = {}) {
   return {
     id: `generic-first-draft-${projectId.replace(/[^a-zA-Z0-9가-힣_-]+/g, "-")}`,
     clientToken: productName,
-    title: `${productName} · 1차 촬영 및 디자인 시안`,
+    title: `${productName} · Codex 1차 시안 구성 템플릿`,
     imageUrl: "assets/planning/generic-planning-v1.svg",
     viewerUrl: `planning/project-first-draft.html?${query.toString()}`,
     dimensions: "3,000 × 18,000px 기획 보드",
     targetLength: "기본 10,000px · 프로젝트 제작 범위에 따라 조정",
-    structure: "촬영 지시 · 섹션 와이어 · 디자인 조판 영역 · 고객 피드백 기준",
-    referenceBasis: "고객 검수 정보와 Google Drive 2026 기획안 구조를 적용한 범용 1차 시안",
+    structure: "Codex 실행 전 확인용 · 촬영 지시 · 섹션 와이어 · 디자인 조판 영역",
+    referenceBasis: "승인된 고객 정보와 Google Drive 2026 기획안 구조를 Codex에 전달하기 위한 구성 템플릿",
   };
 }
 
@@ -6224,9 +6225,9 @@ async function prepareImageDraftWorkspace() {
 }
 
 async function generateDrafts() {
-  if (!ensurePlanningReviewApproved()) return;
+  if (!ensureProjectReviewApprovedForGeneration()) return;
   await prepareImageDraftWorkspace();
-  return generateImageDraftConcept();
+  return generateImageDraftConcept({ skipPlanningReview: true });
 }
 
 function imageDraftStateKey() {
@@ -6415,7 +6416,7 @@ function setImageGenerationBusy(isBusy) {
     button.classList.toggle("is-generating", isBusy);
   });
   if ($("#generateDrafts")) {
-    $("#generateDrafts").textContent = isBusy ? "작업 패키지 생성 중…" : "Codex 작업 패키지 준비";
+    $("#generateDrafts").textContent = isBusy ? "Codex 작업 패키지 생성 중…" : "Codex 1차 시안 작업 준비";
   }
   if ($("#applyDraftEdits")) {
     $("#applyDraftEdits").textContent = isBusy ? "작업 패키지 생성 중…" : "브리프 생성 + Codex 패키지";
@@ -6550,8 +6551,8 @@ async function stitchImageDraftSegments(files) {
   }
 }
 
-async function generateImageDraftConcept() {
-  if (!ensurePlanningReviewApproved()) return;
+async function generateImageDraftConcept(options = {}) {
+  if (!options.skipPlanningReview && !ensurePlanningReviewApproved()) return;
   if (!value("productName")) {
     alert("프로젝트를 먼저 불러와주세요.");
     return;
@@ -6564,7 +6565,25 @@ async function generateImageDraftConcept() {
   try {
     setImageGenerationNotice("working", "Codex 작업 패키지 생성 중", "승인된 고객 사실·레퍼런스·기획 브리프의 무결성 해시를 계산하고 있습니다.");
     if (!window.haoCodexMvp?.preparePackage) throw new Error("Codex 작업 패키지 모듈을 불러오지 못했습니다.");
-    await window.haoCodexMvp.preparePackage({ prompt });
+    const packageResult = await window.haoCodexMvp.preparePackage({ prompt });
+    const project = activeCustomerProject();
+    if (project && packageResult?.job) {
+      const updated = {
+        ...project,
+        status: "Codex 1차 시안 작업 대기",
+        workflow: {
+          ...(project.workflow || {}),
+          firstDraft: {
+            status: "package-ready",
+            at: new Date().toISOString(),
+            jobId: packageResult.job.jobId,
+            approvalHash: packageResult.job.approvalHash,
+          },
+        },
+      };
+      const stored = persistCustomerProject(updated);
+      syncCustomerProjectState(stored, "Codex 1차 시안 작업 패키지 준비 상태를 중앙 서버에 저장했습니다.");
+    }
   } catch (error) {
     const message = imageGenerationErrorMessage(error);
     saveImageDraftState({ status: readImageDraftState().fileName ? "draft" : "brief" });
@@ -6917,7 +6936,7 @@ async function loadSample() {
 }
 
 async function generateAll() {
-  prepareFirstPlanningDraft();
+  return generateDrafts();
 }
 
 async function generateAllFromTopbar() {
@@ -6930,14 +6949,14 @@ async function generateAllFromTopbar() {
     return;
   }
   if (!ensureProjectReviewApprovedForGeneration()) return;
-  const originalText = button?.textContent || "기획/시안 자동 생성";
+  const originalText = button?.textContent || "1차 시안 자동 생성";
   if (button) {
     button.disabled = true;
     button.classList.add("is-preparing");
-    button.textContent = "3페이지 이동 · 1차 시안 생성 중…";
+    button.textContent = "3페이지 이동 · Codex 작업 준비 중…";
   }
   showPanel("drafts");
-  updateAiStatus("고객 사실과 Google Drive 2026(기획안) 구조를 기준으로 1차 촬영·디자인 시안을 준비합니다.");
+  updateAiStatus("승인 고객 사실과 Google Drive 2026(기획안) 구조를 묶어 Codex 1차 시안 작업 패키지를 생성합니다.");
 
   try {
     await generateAll();
@@ -7228,7 +7247,7 @@ $("#generateAll")?.addEventListener("click", (event) => {
 });
 $("#generatePlan")?.addEventListener("click", () => generatePlan());
 $("#generateDrafts")?.addEventListener("click", async () => {
-  prepareFirstPlanningDraft();
+  await generateDrafts();
 });
 $("#toggleGuideMode")?.addEventListener("click", () => toggleGuideMode());
 $("#generateClientMail")?.addEventListener("click", () => generateClientMail());
