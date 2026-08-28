@@ -1,4 +1,4 @@
-const CACHE_NAME = "hao-detail-automation-v20260828-progress1";
+const CACHE_NAME = "hao-detail-automation-v20260828-central-receipt2";
 const APP_SHELL = [
   "./",
   "./index.html",
