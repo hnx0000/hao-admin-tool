@@ -43,7 +43,7 @@
     { id: "texture", no: "06", title: "색과 농도를 실제 액상으로 확인하세요", height: 1500, visualBase: "photo", layout: "macro-pour", asset: "SHOT-04", transition: "액체 흐름을 아래 생활 장면의 세로 동선으로 연결" },
     { id: "moment", no: "07", title: "차갑게 준비해 일상의 음용 순간으로", height: 1700, visualBase: "photo", layout: "lifestyle-sequence", asset: "SHOT-05", transition: "냉장고의 흰 면을 신뢰·라벨 정보의 흰 배경으로 유지" },
     { id: "trust", no: "08", title: "보이는 정보만 정확하게 확인하세요", height: 1600, visualBase: "design", layout: "verified-info-table", asset: "SHOT-06", transition: "얇은 정보 구분선을 보관·음용 안내에도 반복" },
-    { id: "price", no: "09", title: "원하는 블렌드를 병당 6,000원에", height: 1500, visualBase: "design", layout: "price-and-option", asset: "verified-copy", transition: "두 옵션 색을 마지막 제품 2종 히어로로 회수" },
+    { id: "focus", no: "09", title: "실제 액상·확인된 원료·음용 상황", height: 1500, visualBase: "design", layout: "verified-focus-points", asset: "verified-copy", transition: "핵심 판단 요소를 마지막 제품 장면으로 회수" },
     { id: "closing", no: "10", title: "GREEN OR BERRY, 당신의 아침 블렌드", height: 1600, visualBase: "hybrid", layout: "dual-product-closing", asset: "SHOT-01", transition: "종료" },
   ]);
 
@@ -121,7 +121,7 @@
           logo: "상단 중앙 서울우유/브랜드 공식 로고 안전영역, 그 아래 아침에주스 제품명",
           typography: "영문 Cleanse Juice는 큰 편집형 산세리프, 한글 정보는 굵은 고딕과 짧은 본문",
           placement: "상단 32% 카피, 중앙 하단 실제 제품 2병, 최하단 선택 안내",
-          mandatory: ["아침에주스", "클렌즈 그린블렌드", "클렌즈 베리블렌드", "730mL", "냉장제품", "병당 6,000원(테스트값)"]
+          mandatory: ["아침에주스", "클렌즈 그린블렌드", "클렌즈 베리블렌드", "730mL", "냉장제품"]
         },
         palette: ["#f4f0e6", "#819464", "#b88a4a", "#453242", "#24221f"],
         shots: SAENGJEUP_SHOTS,
@@ -162,8 +162,8 @@
       { id: "texture", no: "05", title: "색과 농도를 실제 액상으로 확인하세요", height: 2400, visualBase: "photo", layout: "macro-pour", asset: "SHOT-03", transition: "액체 흐름을 병의 세로 실루엣과 음용 동선으로 연결" },
       { id: "package", no: "06", title: "한 병에 담긴 730mL", height: 1500, visualBase: "hybrid", layout: "package-and-scale", asset: "SHOT-01", transition: "제품 누끼의 흰 캡을 보관 안내의 흰 배경으로 유지" },
       { id: "moment", no: "07", title: "차갑게 준비해 일상의 음용 순간으로", height: 1700, visualBase: "photo", layout: "lifestyle-sequence", asset: "SHOT-04", transition: "냉장고의 흰 면을 신뢰·라벨 정보 구간까지 유지" },
-      { id: "trust", no: "08", title: "보이는 정보만 정확하게 확인하세요", height: 1600, visualBase: "design", layout: "verified-info-table", asset: "SHOT-05", transition: "얇은 정보 구분선을 가격·구매 판단 구간에 반복" },
-      { id: "price", no: "09", title: `${variant.shortName} 병당 6,000원`, height: 1500, visualBase: "design", layout: "single-option-price", asset: "verified-copy", transition: "주조색을 마지막 단일 제품 히어로에서 다시 회수" },
+      { id: "trust", no: "08", title: "보이는 정보만 정확하게 확인하세요", height: 1600, visualBase: "design", layout: "verified-info-table", asset: "SHOT-05", transition: "얇은 정보 구분선을 핵심 판단 요소 구간에 반복" },
+      { id: "focus", no: "09", title: "실제 액상·확인된 원료·음용 상황", height: 1500, visualBase: "design", layout: "verified-focus-points", asset: "verified-copy", transition: "주조색과 핵심 판단 요소를 마지막 단일 제품 장면으로 회수" },
       { id: "closing", no: "10", title: `${variant.productName}, 오늘의 한 병`, height: 1600, visualBase: "hybrid", layout: "single-product-closing", asset: "SHOT-01", transition: "종료" }
     ];
   }
@@ -195,7 +195,7 @@
           logo: "상단 공식 회사 로고 안전영역, 그 아래 아침에주스와 정확한 제품명",
           typography: "영문 Cleanse Juice는 큰 편집형 산세리프, 한글 정보는 굵은 고딕과 짧은 본문",
           placement: "상단 34% 카피, 중앙 하단 실제 제품 1병, 하단 제품 정보",
-          mandatory: ["아침에주스", variant.productName, "730mL", "냉장제품", "병당 6,000원(테스트값)"]
+          mandatory: ["아침에주스", variant.productName, "730mL", "냉장제품"]
         },
         palette: ["#f4f0e6", variant.accent, variant.secondary, variant.dark, "#24221f"],
         shots: variantShots(variant),
