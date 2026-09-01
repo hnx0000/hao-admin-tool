@@ -2,6 +2,8 @@ window.IMPORTED_CUSTOMER_PROJECTS = [
   {
     sourceImportId: "saengjeup-lab-public-project-20260819",
     sourceImportVersion: "20260828-progress1-public",
+    receiptNo: "HAO-SAENG-260828",
+    receiptSource: "legacy-manual",
     customerInputVersion: "organized-content-v1",
     source: "고객 작성폼 1차 내용정리본 가져오기",
     status: "신규 접수",

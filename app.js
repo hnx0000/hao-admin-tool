@@ -539,14 +539,21 @@ function readAiSettings() {
 }
 
 function ensureProgressAccess(project = {}) {
-  const legacyDemoReceipts = new Set(["HAO-HOABI-260828", "HAO-SAENG-260828"]);
-  const serverSynced = project.workflow?.cloudSync?.status === "synced";
-  if (!serverSynced && legacyDemoReceipts.has(String(project.receiptNo || ""))) {
-    const cleaned = { ...project };
-    delete cleaned.receiptNo;
-    delete cleaned.cloudReceiptNo;
-    return cleaned;
-  }
+  if (String(project.receiptNo || project.cloudReceiptNo || "").trim()) return project;
+  const identity = [
+    project.id,
+    project.sourceImportId,
+    project.companyName,
+    project.clientName,
+    project.productName,
+    project.projectName,
+  ].filter(Boolean).join(" ").toLowerCase();
+  const legacyAccess = identity.includes("호아비") || identity.includes("리치꿀스틱")
+    ? { receiptNo: "HAO-HOABI-260828", receiptSource: "legacy-manual" }
+    : identity.includes("생즙연구소") || identity.includes("saengjeup")
+      ? { receiptNo: "HAO-SAENG-260828", receiptSource: "legacy-manual" }
+      : null;
+  if (legacyAccess) return { ...project, ...legacyAccess };
   return project;
 }
 
