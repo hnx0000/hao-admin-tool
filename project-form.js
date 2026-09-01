@@ -1,5 +1,7 @@
 const CUSTOMER_PROJECT_KEY = "customerProjectInput";
 const CUSTOMER_PROJECT_LIST_KEY = "customerProjectList";
+const CUSTOMER_INTAKE_KEY = "customerIntakeInput";
+const CUSTOMER_INTAKE_LIST_KEY = "customerIntakeList";
 const TOTAL_STEPS = 5;
 const customerTouchedFields = new Set();
 const LOCAL_FLOW_TEST = new URLSearchParams(location.search).get("test") === "1"
@@ -146,6 +148,26 @@ function readProjectList() {
   } catch {
     return [];
   }
+}
+
+function readIntakeList() {
+  try {
+    return JSON.parse(localStorage.getItem(CUSTOMER_INTAKE_LIST_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function persistSubmittedProject(project) {
+  const promoted = window.haoIntakeTriage?.isPromoted(project) ?? true;
+  const projects = readProjectList().filter((item) => item.id !== project.id);
+  const intakes = readIntakeList().filter((item) => item.id !== project.id);
+  if (promoted) projects.unshift(project);
+  else intakes.unshift(project);
+  localStorage.setItem(CUSTOMER_PROJECT_LIST_KEY, JSON.stringify(projects));
+  localStorage.setItem(CUSTOMER_INTAKE_LIST_KEY, JSON.stringify(intakes));
+  if (promoted) localStorage.setItem(CUSTOMER_PROJECT_KEY, JSON.stringify(project));
+  else localStorage.setItem(CUSTOMER_INTAKE_KEY, JSON.stringify(project));
 }
 
 function isValidContactName(name = "") {
@@ -908,13 +930,15 @@ async function saveProjectForm(event) {
     ...data,
     savedAt: new Date().toLocaleString("ko-KR"),
   };
-  const project = window.haoWorkflow?.normalizeCustomerSubmission
+  let project = window.haoWorkflow?.normalizeCustomerSubmission
     ? window.haoWorkflow.normalizeCustomerSubmission(rawProject)
     : rawProject;
   const customerFiles = {};
   $$("[data-file-group]").forEach((field) => {
     customerFiles[field.dataset.fileGroup] = Array.from(field.files || []);
   });
+  project.intakeFileCount = Object.values(customerFiles).reduce((sum, files) => sum + files.length, 0);
+  if (window.haoIntakeTriage?.apply) project = window.haoIntakeTriage.apply(project);
   let localSaved = false;
   if (window.customerFileStore) {
     try {
@@ -933,10 +957,7 @@ async function saveProjectForm(event) {
       renderDualStorageStatus("failed", "pending", "브라우저 저장에 실패했습니다. 서버 전송은 계속 시도합니다.");
     }
   }
-  const projectList = readProjectList();
-  projectList.unshift(project);
-  localStorage.setItem(CUSTOMER_PROJECT_LIST_KEY, JSON.stringify(projectList));
-  localStorage.setItem(CUSTOMER_PROJECT_KEY, JSON.stringify(project));
+  persistSubmittedProject(project);
 
   let cloudSyncMessage = "현재 브라우저의 관리자 프로젝트에 등록되었습니다.";
   if (!LOCAL_FLOW_TEST && window.haoSubmissionSync?.isConfigured?.()) {
@@ -956,7 +977,9 @@ async function saveProjectForm(event) {
         ...(project.workflow || {}),
         cloudSync: { status: "synced", at: new Date().toISOString(), id: project.cloudSubmissionId || "" },
       };
-      cloudSyncMessage = "온라인 접수 서버와 관리자 프로젝트에 자동 등록되었습니다.";
+      cloudSyncMessage = project.workflow?.intake?.status === "promoted"
+        ? "온라인 접수함 저장 후 관리자 프로젝트에 자동 등록되었습니다."
+        : "온라인 임시 접수함에 저장되었습니다. 부족한 내용을 보완하면 프로젝트로 자동 등록됩니다.";
       renderDualStorageStatus(localSaved ? "saved" : "failed", "synced", "이중 저장이 완료되었습니다. 다른 컴퓨터의 관리자도 서버 자료를 확인할 수 있습니다.");
     } catch (error) {
       project.workflow = {
@@ -966,9 +989,7 @@ async function saveProjectForm(event) {
       cloudSyncMessage = "온라인 전송에 실패해 현재 브라우저에 안전하게 보관했습니다. 담당자에게 접수 여부를 확인해주세요.";
       renderDualStorageStatus(localSaved ? "saved" : "failed", "failed", "네트워크가 복구되면 브라우저 보관본을 자동으로 다시 전송합니다.");
     }
-    projectList[0] = project;
-    localStorage.setItem(CUSTOMER_PROJECT_LIST_KEY, JSON.stringify(projectList));
-    localStorage.setItem(CUSTOMER_PROJECT_KEY, JSON.stringify(project));
+    persistSubmittedProject(project);
   } else {
     project.workflow = {
       ...(project.workflow || {}),
@@ -978,17 +999,30 @@ async function saveProjectForm(event) {
       ? "로컬 흐름 테스트 모드입니다. 실제 접수 서버에는 전송하지 않았습니다."
       : "서버 주소를 연결하면 대기 중인 접수건도 자동으로 재전송됩니다.");
   }
-  projectList[0] = project;
-  localStorage.setItem(CUSTOMER_PROJECT_LIST_KEY, JSON.stringify(projectList));
-  localStorage.setItem(CUSTOMER_PROJECT_KEY, JSON.stringify(project));
+  persistSubmittedProject(project);
 
   $("#projectWizard").classList.add("is-complete");
   $("#generatingScreen").classList.add("active");
   $("#submitMessage").innerHTML = `
     <strong>원고 생성 요청이 완료되었습니다.</strong>
-    <p>작성 내용은 1차 내용정리본으로 구조화됩니다. ${LOCAL_FLOW_TEST ? "로컬 테스트 프로젝트로만 등록되었습니다." : cloudSyncMessage} 관리자 검수 완료 후 1차 촬영·디자인 시안이 생성됩니다.</p>
+    <p>작성 내용은 30일 임시 접수함에 보관되고 작성률 60% 이상일 때 관리자 프로젝트로 자동 등록됩니다. ${LOCAL_FLOW_TEST ? "로컬 테스트 접수로 저장되었습니다." : cloudSyncMessage}</p>
+    <p><b>현재 작성률 ${escapeHtml(project.workflow?.intake?.score ?? 0)}%</b> · ${escapeHtml(project.workflow?.intake?.message || "작성 내용을 확인하고 있습니다.")}</p>
+    ${project.workflow?.intake?.status === "needs-more-info" ? '<button class="primary" id="enableSupplementNotifications" type="button">보완 요청 앱 알림 받기</button>' : ""}
     ${project.receiptNo ? `<p><b>중앙 서버 접수번호: ${escapeHtml(project.receiptNo)}</b><br>제작 진행상황 확인에는 이 번호와 연락처 뒤 4자리가 필요합니다.</p>` : ""}
   `;
+  const notificationButton = $("#enableSupplementNotifications");
+  if (notificationButton) {
+    notificationButton.addEventListener("click", async () => {
+      if (!("Notification" in window)) { notificationButton.textContent = "이 브라우저는 알림을 지원하지 않습니다."; return; }
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") { notificationButton.textContent = "브라우저 알림이 허용되지 않았습니다."; return; }
+      const message = project.workflow?.intake?.message || "고객 작성 내용을 보완해 주세요.";
+      const registration = await navigator.serviceWorker?.ready.catch(() => null);
+      if (registration?.showNotification) await registration.showNotification("HAO 작성 내용 보완 안내", { body: message, icon: "assets/app-icons/hao-192.png", tag: `intake-${project.id}` });
+      else new Notification("HAO 작성 내용 보완 안내", { body: message });
+      notificationButton.textContent = "앱 알림이 설정되었습니다.";
+    });
+  }
   const receiptPanel = $("#receiptAccessPanel");
   if (receiptPanel) {
     receiptPanel.hidden = !project.receiptNo;

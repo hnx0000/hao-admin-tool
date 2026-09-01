@@ -1802,7 +1802,10 @@ function ensurePlanningReviewApproved() {
 function renderCustomerProjects() {
   const list = $("#customerProjectList");
   if (!list) return;
-  const projects = readCustomerProjects();
+  const projects = readCustomerProjects().filter((project) => {
+    if (!window.haoIntakeTriage) return true;
+    return window.haoIntakeTriage.isPromoted(project);
+  });
   if (!projects.length) {
     list.textContent = "아직 접수된 고객 작성 내용이 없습니다.";
     return;
@@ -2463,14 +2466,19 @@ async function syncCustomerProjectsFromCloud({ notify = false } = {}) {
     const remoteProjects = await window.haoSubmissionSync.listProjects();
     const projects = readCustomerProjects();
     remoteProjects.forEach((remote, index) => {
-      const normalized = window.haoWorkflow?.normalizeCustomerSubmission
+      let normalized = window.haoWorkflow?.normalizeCustomerSubmission
         ? window.haoWorkflow.normalizeCustomerSubmission(remote)
         : remote;
+      if (window.haoIntakeTriage?.apply) normalized = window.haoIntakeTriage.apply(normalized);
       const remoteId = String(remote.cloudSubmissionId || remote.submissionId || remote.id || `remote-${index}`);
       const existingIndex = projects.findIndex((item) =>
         String(item.cloudSubmissionId || item.submissionId || "") === remoteId
         || (remote.sourceImportId && item.sourceImportId === remote.sourceImportId),
       );
+      if (window.haoIntakeTriage && !window.haoIntakeTriage.isPromoted(normalized)) {
+        if (existingIndex >= 0) projects.splice(existingIndex, 1);
+        return;
+      }
       const incoming = {
         ...normalized,
         id: existingIndex >= 0 ? projects[existingIndex].id : `customer-project-cloud-${remoteId}`,
@@ -2490,7 +2498,10 @@ async function syncCustomerProjectsFromCloud({ notify = false } = {}) {
     });
     writeCustomerProjects(projects);
     renderCustomerProjects();
-    if (notify) updateAiStatus(`온라인 고객 접수 ${remoteProjects.length}건을 동기화했습니다.`);
+    if (notify) {
+      const promotedCount = remoteProjects.filter((project) => !window.haoIntakeTriage || window.haoIntakeTriage.isPromoted(project)).length;
+      updateAiStatus(`온라인 접수 ${remoteProjects.length}건 중 작성률 60% 이상 ${promotedCount}건을 프로젝트에 반영했습니다.`);
+    }
     return remoteProjects;
   } catch (error) {
     if (notify && error?.status === 401 && window.haoSubmissionSync?.setAdminToken) {

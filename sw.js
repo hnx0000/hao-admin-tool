@@ -1,4 +1,4 @@
-const CACHE_NAME = "hao-detail-automation-v20260901-legacy-receipt2";
+const CACHE_NAME = "hao-detail-automation-v20260901-intake1";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -14,6 +14,8 @@ const APP_SHELL = [
   "./app.js",
   "./project-form.js",
   "./workflow-core.js",
+  "./intake-triage.js",
+  "./customer-submissions.js",
   "./submission-sync.js",
   "./customer-file-store.js",
   "./mvp-codex-package.js",
