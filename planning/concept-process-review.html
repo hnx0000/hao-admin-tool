@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>1차 분석 프로세스 · 상품군별 방향 검토</title>
+  <link rel="stylesheet" href="concept-process-review.css?v=20260901-review1">
+</head>
+<body>
+  <main class="shell">
+    <header class="top">
+      <div><span class="eyebrow">PHASE 1 · ANALYSIS PROCESS</span><h1>상품군별 1차 분석 프로세스</h1><p>입력 검증 → 상품군 분석 → 서로 다른 4개 방향 생성 → 자동 평가 → 상위 방향 선정을 수행합니다. 선택 결과는 2차 디자인·촬영 시안으로 전달됩니다.</p></div>
+      <span class="status">2단계 프로세스 적용</span>
+    </header>
+    <section class="toolbar" aria-label="상품 분류 검토">
+      <label>상품 대분류<select id="majorCategory"></select></label>
+      <label>세부분류<select id="subCategory"></select></label>
+      <button id="rerun" type="button">4개 방향 다시 분석</button>
+    </section>
+    <section class="summary" id="summary"></section>
+    <section class="analysis" id="analysis"></section>
+    <section class="directions" id="directions"></section>
+    <section class="recommend" id="recommend"></section>
+    <section class="gate" id="gate"></section>
+    <p class="notice">이 화면은 1차 분석 단계입니다. 제품 사실을 확정하거나 새 효능을 만드는 단계가 아니며, 선택한 방향만 2차 디자인 시안으로 전달합니다.</p>
+  </main>
+  <script src="../concept-process.js?v=20260901-review2"></script>
+  <script>
+    (()=>{
+      const $=(s)=>document.querySelector(s);const esc=(v)=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+      const demo={clientName:"생즙연구소",brandName:"아침에주스",productName:"클렌즈 주스 2종",category:"음식 / 음료",majorCategory:"음식",subCategory:"음료",productImages:["assets/saengjeup/cleanse-green-original.png","assets/saengjeup/cleanse-berry-original.png"],oneLine:"두 가지 과일·채소 블렌드를 일상에서 간편하게 즐기는 730mL 냉장 주스",features:["클렌즈 그린블렌드","클렌즈 베리블렌드","730mL 병 제품","냉장 보관 제품"],targetCustomer:"과일·채소 음료를 일상에서 간편하게 마시려는 고객",priceRange:"병당 6,000원 (사용자 지정 테스트값)",desiredMood:["신선함","정돈된 식품 신뢰감","실물 제품 중심"],mustInclude:["클렌즈 그린블렌드","클렌즈 베리블렌드","병당 6,000원","730mL","냉장제품"],evidence:["두 제품 원본 라벨 이미지","가격은 사용자 지정 테스트값"],references:["Google Drive 2026(기획안) 아침에주스 클렌즈 2종","서울우유 식품 기획안의 촬영·조판 리듬","호아비 기획안의 근거 제시 방식"],exclusions:["질병 치료·디톡스 효능처럼 보이는 표현","실물 라벨·병 형태·비율 변경","검증되지 않은 원료 함량과 영양 수치"]};
+      const read=()=>{try{const params=new URLSearchParams(location.search);if(params.get("demo")==="saengjeup")return demo;const list=JSON.parse(localStorage.getItem("customerProjectList")||"[]");const active=JSON.parse(localStorage.getItem("customerProjectInput")||"{}");const id=params.get("projectId");return list.find(p=>String(p.id||"")===id)||((active.productName||active.clientName)?active:demo)}catch{return demo}};
+      let source=read();let review;
+      function fillTaxonomy(){const major=$("#majorCategory");major.innerHTML=Object.keys(HAO_CONCEPT_PROCESS.TAXONOMY).map(v=>`<option>${esc(v)}</option>`).join("");major.value=source.majorCategory||HAO_CONCEPT_PROCESS.inferClassification(source).major||"기타제품";fillSubs()}
+      function fillSubs(){const major=$("#majorCategory").value;const sub=$("#subCategory");sub.innerHTML=`<option value="">선택 필요</option>`+HAO_CONCEPT_PROCESS.TAXONOMY[major].map(v=>`<option>${esc(v)}</option>`).join("");const inferred=source.subCategory||HAO_CONCEPT_PROCESS.inferClassification({...source,majorCategory:major}).sub;sub.value=HAO_CONCEPT_PROCESS.TAXONOMY[major].includes(inferred)?inferred:""}
+      function render(){source={...source,majorCategory:$("#majorCategory").value,subCategory:$("#subCategory").value};review=HAO_CONCEPT_PROCESS.buildReview(source);const i=review.input,v=review.validation,a=review.categoryAnalysis;
+        $("#summary").innerHTML=`<div class="summary-grid">${[["상품",i.productName],["브랜드",i.brandName],["분류",`${i.majorCategory} · ${i.subCategory}`],["입력 완성도",`${v.completionRate}%`]].map(([k,val])=>`<div class="summary-item"><span>${esc(k)}</span><strong>${esc(val||"확인 필요")}</strong></div>`).join("")}</div><div class="missing">${v.missing.length?v.missing.map(x=>`<span class="chip warn">${esc(x.label)} · 확인 필요</span>`).join(""):`<span class="chip">필수 정보 확인 완료</span>`}</div>`;
+        $("#analysis").innerHTML=`<div><h2>${esc(i.majorCategory)} 분석 기준</h2><div class="criteria">${a.criteria.map(x=>`<span class="chip">${esc(x)}</span>`).join("")}</div></div><div class="rule"><b>${esc(i.subCategory||"세부분류 확인 필요")}</b><br>${esc(a.detailRule)}<br><small>${esc(a.risk)}</small></div>`;
+        $("#directions").innerHTML=review.directions.map((d,idx)=>`<article class="direction"><header class="direction-head"><div><span class="eyebrow">DIRECTION ${idx+1} · ${esc(d.informationDensity)}</span><h2>${esc(d.conceptName)}</h2><p>${esc(d.coreMessage)}</p></div><div class="score">${d.score}</div></header><div class="moodboard">${d.colors.slice(0,3).map(c=>`<i style="--swatch:${esc(c)}"></i>`).join("")}</div><div class="direction-body"><div class="metrics"><div class="metric"><span>타깃</span>${esc(d.targetCustomer)}</div><div class="metric"><span>분위기</span>${esc(d.overallMood)}</div><div class="metric"><span>기대 효과</span>${esc(d.expectedEffect)}</div></div><dl><dt>색상 방향</dt><dd>${d.colors.map(c=>`<span class="chip" style="border-bottom:3px solid ${esc(c)}">${esc(c)}</span>`).join(" ")}</dd><dt>타이포</dt><dd>${esc(d.typography)}</dd><dt>레이아웃</dt><dd>${esc(d.layout)}</dd><dt>재질·효과</dt><dd>${esc(d.materialAndEffects)}</dd><dt>제품 연출</dt><dd>${esc(d.productDirection)}</dd><dt>추천 이미지</dt><dd>${d.recommendedImages.map(x=>`<span class="chip">${esc(x)}</span>`).join(" ")}</dd><dt>섹션 순서</dt><dd class="section-list">${d.sections.map((x,n)=>`<span class="chip">${n+1}. ${esc(x)}</span>`).join("")}</dd><dt>주의</dt><dd>${esc(d.caution)}</dd></dl></div></article>`).join("");
+        $("#recommend").innerHTML=`<h2>자동 평가 상위 2개</h2><div class="recommend-grid">${review.recommended.map(r=>{const d=review.directions.find(x=>x.id===r.id);return`<div class="recommend-card"><b>${r.rank}순위 · ${esc(d.conceptName)} · ${r.score}점</b><p>${esc(r.reason)}</p><label><input type="radio" name="finalDirection" value="${esc(r.id)}"> 최종 방향 후보로 선택</label></div>`}).join("")}</div>`;
+      const blocked=!review.productionGate.allowed;$("#gate").innerHTML=`<div><h2>${blocked?"2차 시안 전 확인 필요":"제품별 2차 디자인 시안 생성 가능"}</h2><p>${blocked?review.productionGate.blockers.map(esc).join(" · "):"제품 원본과 필수 분류가 확인되었습니다. 1차 분석과 2차 디자인·촬영 프로세스를 거쳐 Google Drive 2026(기획안) 3열 양식으로 제품별 개별 시안을 생성합니다."}</p></div><div><button id="saveReview" type="button">1차 분석 선택 저장</button> <button id="generateTestDraft" type="button">그린 개별 시안 생성</button></div>`;$("#saveReview").onclick=()=>{const selected=document.querySelector('input[name="finalDirection"]:checked');if(!selected){alert("상위 2개 중 검토할 방향을 선택해주세요.");return}localStorage.setItem(`haoConceptProcessReview:${i.productName||"project"}`,JSON.stringify({version:review.version,selected:selected.value,at:new Date().toISOString()}));alert("1차 분석 방향을 저장했습니다. 2차 시안 생성 시 이 방향을 적용합니다.")};$("#generateTestDraft").disabled=blocked;$("#generateTestDraft").onclick=()=>{const selected=document.querySelector('input[name="finalDirection"]:checked')?.value||review.recommended[0]?.id;const payload={version:review.version,generatedAt:new Date().toISOString(),project:source,review,selectedDirectionId:selected,source:"1차 상품 분석 → 2차 디자인·촬영 프로세스 → Google Drive 2026(기획안) 3열 양식"};localStorage.setItem("haoGeneratedPlanningDraft:saengjeup",JSON.stringify(payload));location.href="saengjeup-design-draft-v3.html?generated=1&variant=green"};
+      }
+      $("#majorCategory").addEventListener("change",()=>{fillSubs();render()});$("#subCategory").addEventListener("change",render);$("#rerun").addEventListener("click",render);fillTaxonomy();render();
+    })();
+  </script>
+</body>
+</html>

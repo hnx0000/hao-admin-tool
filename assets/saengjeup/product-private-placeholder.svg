@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200">
+  <rect width="900" height="1200" fill="#eeeae2"/>
+  <rect x="260" y="170" width="380" height="760" rx="150" fill="#d8d2c7"/>
+  <rect x="330" y="105" width="240" height="165" rx="46" fill="#c8c0b3"/>
+  <rect x="315" y="480" width="270" height="250" rx="20" fill="#f8f6f1"/>
+  <text x="450" y="565" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#5d574f">관리자 전용</text>
+  <text x="450" y="620" text-anchor="middle" font-family="Arial, sans-serif" font-size="27" fill="#756e65">제품 원본 연결 필요</text>
+  <text x="450" y="1040" text-anchor="middle" font-family="Arial, sans-serif" font-size="23" fill="#8a8278">공개 저장소에는 고객 원본을 포함하지 않습니다.</text>
+</svg>

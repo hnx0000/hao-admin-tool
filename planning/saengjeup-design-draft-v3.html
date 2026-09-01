@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>생즙연구소 · 2단계 상세 시안 v3</title>
+  <link rel="stylesheet" href="saengjeup-design-draft-v3.css?v=20260901-1">
+  <link rel="stylesheet" href="saengjeup-design-draft-v3-variants.css?v=20260901-2">
+</head>
+<body>
+  <header class="appbar">
+    <div><small>HAO · SYSTEM GENERATED FIRST DRAFT</small><strong id="appTitle">생즙연구소 · 제품별 촬영 및 디자인 상세 시안 v3</strong></div>
+    <nav><a href="?generated=1&variant=green">그린 시안</a><a href="?generated=1&variant=berry">베리 시안</a><a href="concept-process-review.html?demo=saengjeup">1차 분석</a><button id="printDraft" type="button">인쇄/PDF</button></nav>
+  </header>
+
+  <main class="shell">
+    <section class="process-rail" aria-label="상세 시안 생성 프로세스">
+      <article class="process-step complete"><span>1차 분석 · 프로젝트 공통</span><b>상품군·타깃·구매 이유·4방향 평가</b><p id="phase1Direction">분석 결과 불러오는 중</p></article>
+      <i aria-hidden="true">→</i>
+      <article class="process-step active"><span>2차 디자인 시안 · 제품별 분리</span><b>도입부·촬영·조판·스크롤 연결 적용</b><p id="activeVariantLabel">개별 17,500px 제작 전 기획 보드</p></article>
+      <i aria-hidden="true">→</i>
+      <article class="process-step source"><span>출력 베이스 · GOOGLE DRIVE</span><b>2026(기획안) 3열 시안 양식</b><p>좌측 촬영 지시 · 중앙 세로 흐름 · 우측 디자인 레퍼런스</p></article>
+    </section>
+
+    <section class="phase-one">
+      <div class="phase-heading"><span>PHASE 1 · COMMON ANALYSIS RESULT</span><h1>생즙연구소<br>제품별 개별 상세페이지</h1><p>1차 상품 분석은 두 제품의 공통 프로젝트 정보로 진행하지만, 2차 시안과 최종 상세페이지는 그린블렌드와 베리블렌드를 각각 별도 페이지로 생성합니다.</p></div>
+      <div class="analysis-grid">
+        <article><span>상품군</span><b>음식 · 음료</b><p>색·농도·음용 상황·냉장 보관을 우선 분석</p></article>
+        <article><span>핵심 타깃</span><b>일상 음용 고객</b><p>과일·채소 음료를 간편하게 마시려는 고객</p></article>
+        <article><span>산출물</span><b>개별 2개 · 각 730mL</b><p>두 맛을 한 상세페이지에 혼합하지 않음</p></article>
+        <article><span>검증 상태</span><b>원본 2종 연결</b><p>맛·영양·인증·배송은 확인 필요</p></article>
+      </div>
+      <div class="direction-scores" id="directionScores"></div>
+      <div class="unverified"><b>확인 전 사용 금지</b><span>정확한 맛·향</span><span>원료 함량</span><span>영양정보</span><span>제조·인증·시험</span><span>배송·할인</span></div>
+    </section>
+
+    <section class="phase-two">
+      <header class="board-head">
+        <div><span>PHASE 2 · DESIGN APPLICATION</span><h2>촬영 지시 + 실제 세로 흐름 + 디자인 레퍼런스</h2><p>Google Drive의 2026(기획안) 자료에서 반복 확인한 3열 양식을 베이스로 적용했습니다. 좌측은 촬영자, 가운데는 고객과 관리자, 우측은 디자이너가 보는 영역이며 좌우 메모는 최종 상세페이지에 노출되지 않습니다.</p></div>
+        <div class="target-height"><small>제작 목표</small><strong id="targetHeight">17,500px</strong><span>10개 섹션</span></div>
+      </header>
+
+      <section class="opening-spec">
+        <div class="opening-copy"><small>OPENING DESIGN BLUEPRINT</small><h2>도입부 디자인 명세</h2><p id="openingDescription">제품 원본을 바꾸지 않고 한 제품의 색·형태·핵심 정보를 첫 화면에서 이해시키는 프레임입니다.</p></div>
+        <dl>
+          <div><dt>틀</dt><dd id="introFrame">제품 라벨에서 추출한 단일 주조색 풀블리드 촬영 배경</dd></div>
+          <div><dt>로고</dt><dd>상단 중앙 공식 회사 로고 안전영역 → 아침에주스 → 제품명 순서</dd></div>
+          <div><dt>폰트</dt><dd>영문 제품명은 큰 편집형 산세리프, 한글 정보는 굵은 고딕과 짧은 본문</dd></div>
+          <div><dt>배치</dt><dd id="introPlacement">상단 34% 카피, 중앙 하단 실제 제품 1병, 최하단 제품 정보</dd></div>
+        </dl>
+        <div class="opening-preview">
+          <div class="hero-copy"><span>SEOUL MILK · MORNING JUICE</span><h3>Cleanse<br>Juice</h3><p id="heroSubtitle">오늘 아침, 한 병으로 시작해보세요.</p></div>
+          <figure class="single-product"><img id="heroProduct" src="../assets/saengjeup/cleanse-green-original.png" alt="아침에주스 클렌즈 제품 실제 원본"></figure>
+          <div class="safe-label">상단 34% · 편집 가능 카피 안전영역</div>
+        </div>
+      </section>
+
+      <section class="board-columns">
+        <aside class="board-column shooting">
+          <header><small>LEFT · PRODUCTION NOTES</small><h2>촬영 지시</h2><p>분위기 표현이 아니라 현장에서 실행할 수 있는 값으로 기록합니다.</p></header>
+          <div class="global-notes">
+            <b>전체 촬영 기준</b>
+            <p id="globalShotNote">선택 제품 단독 · 라벨 정면 · 병 비율 유지 · 무광 배경 · 작은 문구는 별도 조판</p>
+          </div>
+          <div id="shotList"></div>
+        </aside>
+
+        <section class="board-column page-flow">
+          <header><small>CENTER · 17,500PX PAGE FLOW</small><h2>상세페이지 세로 구성</h2><p>사진과 정보 구간을 교차하고, 각 구간의 색·형태·문장이 다음 구간으로 이어집니다.</p></header>
+          <div id="sectionFlow"></div>
+        </section>
+
+        <aside class="board-column references">
+          <header><small>RIGHT · DESIGN REFERENCE</small><h2>디자인·조판 기준</h2><p>레퍼런스는 역할만 추출하고 고유 카피·사진·그래픽을 복제하지 않습니다.</p></header>
+          <div class="palette"><i></i><i></i><i></i><i></i><i></i></div>
+          <div id="referenceList"></div>
+          <article class="continuity-card"><span>SCROLL CONTINUITY</span><h3>하단까지 자연스럽게 잇는 규칙</h3><ol id="continuityList"></ol></article>
+          <article class="reject-card"><span>AUTO REJECT</span><h3>즉시 불합격</h3><ul id="rejectRules"></ul></article>
+        </aside>
+      </section>
+    </section>
+
+    <footer class="footer"><b>현재 결과물의 성격</b><p>고객에게 바로 납품하는 완성 상세페이지가 아니라, 촬영·조판·정보 검수를 확정하기 위한 1차 상세 시안입니다. 실제 촬영물과 확정 문구가 들어온 뒤 최종 제작물로 전환합니다.</p></footer>
+  </main>
+
+  <script src="../concept-process.js?v=20260901-review2"></script>
+  <script src="../design-process.js?v=20260901-1"></script>
+  <script>
+    (() => {
+      const demo = {clientName:"생즙연구소",brandName:"아침에주스",productName:"클렌즈 주스 2종",category:"음식 / 음료",majorCategory:"음식",subCategory:"음료",productImages:["assets/saengjeup/cleanse-green-original.png","assets/saengjeup/cleanse-berry-original.png"],oneLine:"두 가지 과일·채소 블렌드를 일상에서 간편하게 즐기는 730mL 냉장 주스",features:["클렌즈 그린블렌드","클렌즈 베리블렌드","730mL 병 제품","냉장 보관 제품"],targetCustomer:"과일·채소 음료를 일상에서 간편하게 마시려는 고객",priceRange:"병당 6,000원 (사용자 지정 테스트값)",desiredMood:["신선함","정돈된 식품 신뢰감","실물 제품 중심"],mustInclude:["클렌즈 그린블렌드","클렌즈 베리블렌드","병당 6,000원","730mL","냉장제품"],evidence:["두 제품 원본 라벨 이미지","가격은 사용자 지정 테스트값"],references:["Google Drive 2026(기획안) 아침에주스 클렌즈 2종","서울우유 식품 기획안의 촬영·조판 리듬","호아비 기획안의 근거 제시 방식"],exclusions:["질병 치료·디톡스 효능처럼 보이는 표현","실물 라벨·병 형태·비율 변경","검증되지 않은 원료 함량과 영양 수치"]};
+      const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[char]));
+      let stored = {};
+      try { stored = JSON.parse(localStorage.getItem("haoGeneratedPlanningDraft:saengjeup") || "{}"); } catch {}
+      const freshReview = HAO_CONCEPT_PROCESS.buildReview(demo);
+      const review = stored.review?.version === freshReview.version ? stored.review : freshReview;
+      const params = new URLSearchParams(location.search);
+      const variantKey = params.get("variant") === "berry" ? "berry" : "green";
+      const selectedId = params.get("direction") || stored.selectedDirectionId || "usage-conversion";
+      const draft = HAO_DESIGN_PROCESS.buildVariant(review, selectedId, variantKey);
+      const variant = draft.phase2.variant;
+      const selected = draft.phase1.selectedDirection;
+      document.title = `생즙연구소 · ${variant.productName} 개별 상세 시안 v3`;
+      document.body.dataset.variant = variant.key;
+      document.getElementById("appTitle").textContent = `생즙연구소 · ${variant.productName} 촬영 및 디자인 상세 시안 v3`;
+      document.getElementById("activeVariantLabel").textContent = `${variant.productName} · 개별 17,500px 제작 전 기획 보드`;
+      document.getElementById("introFrame").textContent = draft.phase2.intro.frame;
+      document.getElementById("introPlacement").textContent = draft.phase2.intro.placement;
+      document.getElementById("heroSubtitle").textContent = `오늘 아침, ${variant.shortName}로 시작해보세요.`;
+      document.getElementById("heroProduct").src = variant.image;
+      document.getElementById("heroProduct").alt = `아침에주스 ${variant.productName} 실제 제품 원본`;
+      document.getElementById("globalShotNote").textContent = `${variant.productName} 단독 · 라벨 정면 · 병 비율 유지 · ${variant.visualNote} · 작은 문구는 별도 조판`;
+      document.querySelectorAll(".palette i").forEach((swatch, index) => { swatch.style.background = draft.phase2.palette[index] || "#ddd"; });
+      document.getElementById("phase1Direction").textContent = selected ? `${selected.conceptName} · ${selected.score}점` : "사용 상황 전환형";
+      document.getElementById("targetHeight").textContent = `${draft.phase2.targetHeight.toLocaleString("ko-KR")}px`;
+      document.getElementById("directionScores").innerHTML = review.directions.map((item) => `<div class="direction-score ${item.id === selected?.id ? "selected" : ""}"><span>${item.id === selected?.id ? "선택" : "검토"}</span><b>${esc(item.conceptName)}</b><strong>${item.score}</strong></div>`).join("");
+      document.getElementById("shotList").innerHTML = draft.phase2.shots.map((shot) => `<article class="shot-card"><div class="card-label"><b>${esc(shot.id)}</b><span>${esc(shot.section)}</span></div><h3>${esc(shot.purpose)}</h3><dl><div><dt>제품</dt><dd>${esc(shot.products)}</dd></div><div><dt>구도</dt><dd>${esc(shot.composition)}</dd></div><div><dt>카메라</dt><dd>${esc(shot.camera)}</dd></div><div><dt>조명</dt><dd>${esc(shot.light)}</dd></div><div><dt>배경·소품</dt><dd>${esc(shot.background)} · ${esc(shot.props)}</dd></div><div><dt>안전영역</dt><dd>${esc(shot.safeArea)}</dd></div><div><dt>보정·출력</dt><dd>${esc(shot.retouch)} · ${esc(shot.output)}</dd></div></dl></article>`).join("");
+      const productImage = (id) => ["hero","ingredient","package","closing"].includes(id) ? `<img src="${esc(variant.image)}" alt="${esc(variant.productName)} 원본">` : "";
+      document.getElementById("sectionFlow").innerHTML = draft.phase2.sections.map((section) => `<article class="flow-card type-${esc(section.visualBase)} id-${esc(section.id)}"><div class="flow-meta"><span>SECTION ${esc(section.no)}</span><b>${section.height.toLocaleString("ko-KR")}px</b></div><div class="flow-visual">${productImage(section.id)}<span>${esc(section.asset)}</span></div><div class="flow-copy"><small>${esc(section.visualBase.toUpperCase())} · ${esc(section.layout)}</small><h3>${esc(section.title)}</h3>${section.id === "summary" ? `<div class="fact-pills"><b>${esc(variant.shortName)}</b><b>730mL</b><b>냉장제품</b></div>` : ""}${section.id === "ingredient" ? `<p class="ingredient-copy">라벨 확인 원료: ${esc(variant.ingredients)}</p>` : ""}${section.id === "price" ? '<p class="price">1병 6,000원 <em>테스트값 · 최종 확인 필요</em></p>' : ""}<p class="transition"><b>다음 연결</b>${esc(section.transition)}</p></div></article>`).join("");
+      document.getElementById("referenceList").innerHTML = draft.phase2.references.map((ref) => `<article class="reference-card"><div class="card-label"><b>${esc(ref.id)}</b><span>${esc(ref.role)}</span></div><h3>${esc(ref.title)}</h3><p><b>추출</b>${esc(ref.extract)}</p><p><b>적용</b>${esc(ref.useFor)}</p><p class="do-not-copy"><b>복제 금지</b>${esc(ref.doNotCopy)}</p></article>`).join("");
+      document.getElementById("continuityList").innerHTML = draft.phase2.continuity.map((item) => `<li>${esc(item)}</li>`).join("");
+      document.getElementById("rejectRules").innerHTML = draft.phase2.rejectRules.map((item) => `<li>${esc(item)}</li>`).join("");
+      const privateFallback = "../assets/saengjeup/product-private-placeholder.svg";
+      document.querySelectorAll('img[src*="cleanse-"]').forEach((image) => {
+        const useFallback = () => { image.onerror = null; image.src = privateFallback; image.alt = "관리자 전용 제품 원본 연결 필요"; };
+        image.addEventListener("error", useFallback, { once: true });
+        if (image.complete && image.naturalWidth === 0) useFallback();
+      });
+      document.getElementById("printDraft").addEventListener("click", () => window.print());
+    })();
+  </script>
+</body>
+</html>
