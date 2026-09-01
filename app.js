@@ -1644,7 +1644,8 @@ function planningPhoneLast4(project = activeCustomerProject()) {
 }
 
 function planningReceipt(project = activeCustomerProject()) {
-  return String(project?.receiptNo || project?.cloudReceiptNo || "").trim();
+  const normalized = ensureProgressAccess(project || {});
+  return String(normalized.receiptNo || normalized.cloudReceiptNo || "").trim();
 }
 
 function planningCustomerReviewUrl(preview = currentPlanningPreview()) {
