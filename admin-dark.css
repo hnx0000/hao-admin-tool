@@ -2287,10 +2287,74 @@
 .admin-customer-clean .lead-item {
   grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
-  gap: 16px;
+  gap: 0;
 }
 
-.admin-customer-clean .lead-item > div:first-child {
+.admin-customer-clean .project-card-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+  padding: 3px 2px;
+  border: 0;
+  background: transparent;
+  color: #edf0f3;
+  text-align: left;
+}
+
+.admin-customer-clean .project-card-summary:hover {
+  background: transparent;
+  color: #fff;
+  transform: none;
+}
+
+.admin-customer-clean .project-card-summary strong {
+  min-width: 0;
+  margin: 0;
+  color: inherit;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.admin-customer-clean .project-card-toggle-label {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  color: #91a0b2;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.admin-customer-clean .project-card-toggle-label i {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform .18s ease;
+}
+
+.admin-customer-clean .project-card-summary[aria-expanded="true"] .project-card-toggle-label i {
+  transform: rotate(225deg) translate(-1px, -1px);
+}
+
+.admin-customer-clean .project-card-details {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #30353c;
+}
+
+.admin-customer-clean .project-card-details[hidden] {
+  display: none;
+}
+
+.admin-customer-clean .project-card-information {
   min-width: 0;
 }
 

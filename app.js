@@ -14,6 +14,7 @@ let sectionOrders = { A: [], B: [] };
 let currentDesignWorkflow = null;
 let pendingDeleteProjectId = "";
 let currentCustomerProjectPage = 1;
+const expandedCustomerProjectIds = new Set();
 const CUSTOMER_PROJECTS_PER_PAGE = 10;
 let currentCustomerAssetRecords = [];
 let customerAssetObjectUrls = [];
@@ -1829,32 +1830,45 @@ function renderCustomerProjects() {
         </span>
       `).join("")}
     </div>`;
+    const searchableName = `${project.clientName || ""} ${project.productName || ""}`;
+    const displayTitle = searchableName.includes("생즙연구소")
+      ? "생즙연구소"
+      : searchableName.includes("호아비") && searchableName.includes("리치꿀")
+        ? "호아비 리치꿀스틱"
+        : project.productName || project.clientName || "프로젝트명 미입력";
+    const detailsId = `project-details-${String(project.id || "project").replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+    const isExpanded = expandedCustomerProjectIds.has(project.id);
     return `
       <article class="lead-item ${readiness.missing.length ? "has-missing-fields" : "is-ready"}">
-        <div>
-          <strong>${escapeHtml(project.productName || "제품명 미입력")}</strong>
-          <p>${escapeHtml(project.clientName || "브랜드명 미입력")} · ${escapeHtml(project.category || "카테고리 미선택")} · ${escapeHtml(project.savedAt || "")}</p>
-          <p>상태: ${escapeHtml(project.status || "신규 접수")}</p>
-          <p class="project-progress-access">접수번호 <b>${escapeHtml(receipt || "미발급")}</b> · 연락처 뒤 4자리 <b>${escapeHtml(verify || "미등록")}</b> · <a href="${escapeHtml(progressUrl)}">관리자 진행조회</a></p>
-          <p class="project-storage-line ${escapeHtml(cloudStatus)}"><i aria-hidden="true"></i>${storageText}</p>
-          <p class="readiness-line"><b>시안 준비도 ${readiness.score}%</b> · ${readinessText}</p>
-          ${planningPreview ? `<p class="planning-available-line">✓ 제작 전 기획안 등록 · ${escapeHtml(planningPreview.dimensions)}</p>` : ""}
-          ${fieldCompletion}
-        </div>
-        <div class="lead-actions">
-          <select class="status-select customer-project-status" data-id="${escapeHtml(project.id)}">
-            ${statuses.map((status) => `<option ${status === project.status ? "selected" : ""}>${status}</option>`).join("")}
-          </select>
-          <button class="secondary small import-customer-project" data-id="${escapeHtml(project.id)}">불러오기</button>
-          <button class="secondary small open-customer-submission" data-submission-id="${escapeHtml(submissionId)}">고객 작성내용 확인</button>
-          ${planningPreview ? `<button class="secondary small open-project-planning" data-id="${escapeHtml(project.id)}">기획안 확인</button>` : ""}
-          <div class="project-manage">
-            <button class="secondary small project-manage-toggle" type="button" data-id="${escapeHtml(project.id)}" aria-expanded="false">프로젝트 관리</button>
-            <div class="project-manage-menu" hidden>
-              <button type="button" data-project-action="summary" data-id="${escapeHtml(project.id)}">↓ 1차 내용정리본 받기</button>
-              <button type="button" data-project-action="complete" data-id="${escapeHtml(project.id)}">✓ 완료 처리</button>
-              <button type="button" data-project-action="reopen" data-id="${escapeHtml(project.id)}">↺ 신규 접수로 변경</button>
-              <button class="danger" type="button" data-project-action="delete" data-id="${escapeHtml(project.id)}">접수 내용 삭제</button>
+        <button class="project-card-summary" type="button" data-project-details-toggle="${escapeHtml(project.id)}" aria-expanded="${isExpanded ? "true" : "false"}" aria-controls="${escapeHtml(detailsId)}">
+          <strong>${escapeHtml(displayTitle)}</strong>
+          <span class="project-card-toggle-label">${isExpanded ? "상세 닫기" : "상세 보기"}<i aria-hidden="true"></i></span>
+        </button>
+        <div class="project-card-details" id="${escapeHtml(detailsId)}" ${isExpanded ? "" : "hidden"}>
+          <div class="project-card-information">
+            <p>${escapeHtml(project.clientName || "브랜드명 미입력")} · ${escapeHtml(project.category || "카테고리 미선택")} · ${escapeHtml(project.savedAt || "")}</p>
+            <p>상태: ${escapeHtml(project.status || "신규 접수")}</p>
+            <p class="project-progress-access">접수번호 <b>${escapeHtml(receipt || "미발급")}</b> · 연락처 뒤 4자리 <b>${escapeHtml(verify || "미등록")}</b> · <a href="${escapeHtml(progressUrl)}">관리자 진행조회</a></p>
+            <p class="project-storage-line ${escapeHtml(cloudStatus)}"><i aria-hidden="true"></i>${storageText}</p>
+            <p class="readiness-line"><b>시안 준비도 ${readiness.score}%</b> · ${readinessText}</p>
+            ${planningPreview ? `<p class="planning-available-line">✓ 제작 전 기획안 등록 · ${escapeHtml(planningPreview.dimensions)}</p>` : ""}
+            ${fieldCompletion}
+          </div>
+          <div class="lead-actions">
+            <select class="status-select customer-project-status" data-id="${escapeHtml(project.id)}">
+              ${statuses.map((status) => `<option ${status === project.status ? "selected" : ""}>${status}</option>`).join("")}
+            </select>
+            <button class="secondary small import-customer-project" data-id="${escapeHtml(project.id)}">불러오기</button>
+            <button class="secondary small open-customer-submission" data-submission-id="${escapeHtml(submissionId)}">고객 작성내용 확인</button>
+            ${planningPreview ? `<button class="secondary small open-project-planning" data-id="${escapeHtml(project.id)}">기획안 확인</button>` : ""}
+            <div class="project-manage">
+              <button class="secondary small project-manage-toggle" type="button" data-id="${escapeHtml(project.id)}" aria-expanded="false">프로젝트 관리</button>
+              <div class="project-manage-menu" hidden>
+                <button type="button" data-project-action="summary" data-id="${escapeHtml(project.id)}">↓ 1차 내용정리본 받기</button>
+                <button type="button" data-project-action="complete" data-id="${escapeHtml(project.id)}">✓ 완료 처리</button>
+                <button type="button" data-project-action="reopen" data-id="${escapeHtml(project.id)}">↺ 신규 접수로 변경</button>
+                <button class="danger" type="button" data-project-action="delete" data-id="${escapeHtml(project.id)}">접수 내용 삭제</button>
+              </div>
             </div>
           </div>
         </div>
@@ -1872,6 +1886,21 @@ function renderCustomerProjects() {
     </nav>
   ` : "";
   list.innerHTML = projectCards + pagination;
+
+  $$('[data-project-details-toggle]').forEach((button) => {
+    button.addEventListener("click", () => {
+      const id = button.dataset.projectDetailsToggle || "";
+      const details = document.getElementById(button.getAttribute("aria-controls") || "");
+      if (!id || !details) return;
+      const willOpen = details.hidden;
+      details.hidden = !willOpen;
+      button.setAttribute("aria-expanded", willOpen ? "true" : "false");
+      const label = button.querySelector(".project-card-toggle-label");
+      if (label) label.childNodes[0].nodeValue = willOpen ? "상세 닫기" : "상세 보기";
+      if (willOpen) expandedCustomerProjectIds.add(id);
+      else expandedCustomerProjectIds.delete(id);
+    });
+  });
 
   $$(".customer-project-status").forEach((select) => {
     select.addEventListener("change", () => updateCustomerProjectStatus(select.dataset.id, select.value));
