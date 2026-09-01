@@ -41,7 +41,7 @@
     { id: "green", no: "04", title: "클렌즈 그린블렌드", height: 2400, visualBase: "photo", layout: "ingredient-editorial-left", asset: "SHOT-02", transition: "연녹색 배경을 밝은 중립색으로 낮춘 뒤 베리 퍼플로 전환" },
     { id: "berry", no: "05", title: "클렌즈 베리블렌드", height: 2400, visualBase: "photo", layout: "ingredient-editorial-right", asset: "SHOT-03", transition: "검붉은 액상 클로즈업의 곡선을 따르는 장면으로 연결" },
     { id: "texture", no: "06", title: "색과 농도를 실제 액상으로 확인하세요", height: 1500, visualBase: "photo", layout: "macro-pour", asset: "SHOT-04", transition: "액체 흐름을 아래 생활 장면의 세로 동선으로 연결" },
-    { id: "moment", no: "07", title: "차갑게 준비해 일상의 음용 순간으로", height: 1700, visualBase: "photo", layout: "lifestyle-sequence", asset: "SHOT-05", transition: "냉장고의 흰 면을 신뢰·라벨 정보의 흰 배경으로 유지" },
+    { id: "moment", no: "07", title: "제품에서 잔까지 이어지는 실제 음용 장면", height: 1700, visualBase: "photo", layout: "product-to-glass-sequence", asset: "SHOT-05", transition: "제품과 액체의 세로 동선을 신뢰·라벨 정보의 구분선으로 유지" },
     { id: "trust", no: "08", title: "보이는 정보만 정확하게 확인하세요", height: 1600, visualBase: "design", layout: "verified-info-table", asset: "SHOT-06", transition: "얇은 정보 구분선을 보관·음용 안내에도 반복" },
     { id: "focus", no: "09", title: "실제 액상·확인된 원료·음용 상황", height: 1500, visualBase: "design", layout: "verified-focus-points", asset: "verified-copy", transition: "핵심 판단 요소를 마지막 제품 장면으로 회수" },
     { id: "closing", no: "10", title: "GREEN OR BERRY, 당신의 아침 블렌드", height: 1600, visualBase: "hybrid", layout: "dual-product-closing", asset: "SHOT-01", transition: "종료" },
@@ -143,8 +143,8 @@
           "작은 한글·영양표·법정 고지를 이미지에 굽기"
         ],
         imagePolicy: {
-          cutoutUsage: "제품 누끼는 하단 정확 정보 확인 구간에서 최대 1회만 사용하며 프로젝트에 따라 0회 허용",
-          stagedVisuals: "누끼는 제품 형태·라벨·액상색 참고 자료로만 사용하고 본문은 실제 촬영 또는 촬영 레퍼런스 이미지로 구성",
+          cutoutUsage: "흰 배경 누끼 단독 노출은 최대 1회지만, 실제 제품은 원료·액상·잔과 결합한 촬영 장면에서 반복해 제품이 항상 주피사체가 되게 함",
+          stagedVisuals: "제품 없는 감성컷은 사용하지 않고 본문 사진마다 실제 제품 또는 정확한 제품 교체 위치를 포함",
           generationGuard: "생성 이미지 안에서 제품·라벨·로고·인증·문구를 재생성하지 않고 제품이 필요한 최종 컷은 실제 촬영물로 교체",
           copyRule: "서브카피는 짧은 구호가 아니라 해당 섹션의 역할을 설명하는 완결된 한 문장으로 조판",
           referenceRule: "모든 사진 구간에 촬영 ref와 디자인 ref를 분리해 구도·빛·소품·안전여백과 조판·정보위계·스크롤 연결을 각각 기록"
@@ -155,16 +155,14 @@
 
   function variantSections(variant) {
     return [
-      { id: "hero", no: "01", title: `오늘 아침, ${variant.shortName}로 시작해보세요`, height: 1900, visualBase: "photo", layout: "single-product-fullbleed", asset: "SHOT-01", transition: "병의 세로 실루엣과 원형 캡을 다음 요약 배지로 반복" },
-      { id: "summary", no: "02", title: `한눈에 먼저 확인하는 ${variant.shortName}`, height: 1200, visualBase: "design", layout: "three-summary-cards", asset: "verified-copy", transition: "원형 배지에서 원료 원형 그래픽으로 연결" },
-      { id: "context", no: "03", title: "냉장고에서 꺼내 간편하게 준비하는 한 병", height: 1700, visualBase: "photo", layout: "morning-context", asset: "SHOT-04", transition: "밝은 생활 배경을 원료 이야기의 자연광으로 유지" },
-      { id: "ingredient", no: "04", title: `${variant.shortName}에 담긴 과일·채소`, height: 2400, visualBase: "hybrid", layout: "ingredient-editorial", asset: "SHOT-02", transition: "원료 원형과 액체 곡선을 실제 색·농도 클로즈업으로 확대" },
-      { id: "texture", no: "05", title: "색과 농도를 실제 액상으로 확인하세요", height: 2400, visualBase: "photo", layout: "macro-pour", asset: "SHOT-03", transition: "액체 흐름을 병의 세로 실루엣과 음용 동선으로 연결" },
-      { id: "package", no: "06", title: "한 병에 담긴 730mL", height: 1500, visualBase: "hybrid", layout: "package-and-scale", asset: "SHOT-01", transition: "제품 누끼의 흰 캡을 보관 안내의 흰 배경으로 유지" },
-      { id: "moment", no: "07", title: "차갑게 준비해 일상의 음용 순간으로", height: 1700, visualBase: "photo", layout: "lifestyle-sequence", asset: "SHOT-04", transition: "냉장고의 흰 면을 신뢰·라벨 정보 구간까지 유지" },
-      { id: "trust", no: "08", title: "보이는 정보만 정확하게 확인하세요", height: 1600, visualBase: "design", layout: "verified-info-table", asset: "SHOT-05", transition: "얇은 정보 구분선을 핵심 판단 요소 구간에 반복" },
-      { id: "focus", no: "09", title: "실제 액상·확인된 원료·음용 상황", height: 1500, visualBase: "design", layout: "verified-focus-points", asset: "verified-copy", transition: "주조색과 핵심 판단 요소를 마지막 단일 제품 장면으로 회수" },
-      { id: "closing", no: "10", title: `${variant.productName}, 오늘의 한 병`, height: 1600, visualBase: "hybrid", layout: "single-product-closing", asset: "SHOT-01", transition: "종료" }
+      { id: "hero", no: "01", title: `여섯 가지 과일과 채소를 담은 ${variant.productName}`, height: 2300, visualBase: "photo", layout: "product-ingredient-fullbleed", asset: "SHOT-01", transition: "히어로 원료의 원형을 다음 원료 배지로 이어 제품을 화면 중심에 유지" },
+      { id: "ingredients", no: "02", title: `키위부터 파인애플까지 ${variant.shortName}를 이루는 여섯 가지`, height: 2100, visualBase: "hybrid", layout: "product-ingredient-orbit", asset: "SHOT-02", transition: "원료 곡선을 제품·원료 통합 촬영 장면의 하단 곡선으로 확대" },
+      { id: "ingredientScene", no: "03", title: "원료는 장식이 아니라 제품을 설명하는 한 장면으로", height: 2200, visualBase: "photo", layout: "product-dominant-ingredient-scene", asset: "SHOT-02", transition: "제품 라벨의 올리브 면을 액상 촬영 배경의 곡면으로 연결" },
+      { id: "liquid", no: "04", title: `보이는 색 그대로 잔에 따른 ${variant.shortName}`, height: 2300, visualBase: "photo", layout: "product-and-pour", asset: "SHOT-03", transition: "병에서 잔으로 흐르는 액체선을 패키지 디테일 구간의 세로선으로 연결" },
+      { id: "package", no: "05", title: "한 번 더 가까이, 투명한 병과 실제 액상", height: 2100, visualBase: "hybrid", layout: "package-detail-closeup", asset: "SHOT-01", transition: "흰 캡과 투명 용기 형태를 다음 제품·잔 장면의 원형과 투명 소재로 반복" },
+      { id: "serving", no: "06", title: "병에서 잔까지 제품이 중심이 되는 흐름", height: 2000, visualBase: "photo", layout: "product-to-glass-sequence", asset: "SHOT-03", transition: "밝은 석재 면을 정확 정보의 흰 배경으로 자연스럽게 전환" },
+      { id: "verified", no: "07", title: "확인된 정보만 제품 라벨 그대로", height: 2300, visualBase: "design", layout: "verified-label-table", asset: "SHOT-05", transition: "정보 구분선과 주조색을 마지막 제품 장면에서 다시 회수" },
+      { id: "closing", no: "08", title: `원료부터 액상까지 확인하고 ${variant.productName}를 선택하세요`, height: 2200, visualBase: "hybrid", layout: "product-ingredient-closing", asset: "SHOT-01", transition: "종료" }
     ];
   }
 
@@ -209,9 +207,9 @@
           "마지막 화면에서 첫 화면의 단일 제품 구도를 다시 사용해 시각적으로 회수"
         ],
         imagePolicy: {
-          cutoutUsage: "제품 누끼는 하단 정확 정보 확인 구간에서 최대 1회만 사용하며 프로젝트에 따라 0회 허용",
-          stagedVisuals: "누끼는 전반 분위기·병 형태·라벨색 참고용이며 본문은 실제 촬영 또는 생성된 촬영 레퍼런스로 구성",
-          generationGuard: "생성 이미지에서 제품 패키지를 새로 그리지 않고 실제 촬영 전에는 액상·원료·음용 상황 장면만 사용",
+          cutoutUsage: "흰 배경 누끼 단독 노출은 최대 1회지만 실제 제품은 원료·액상·잔과 결합한 장면에서 반복 노출",
+          stagedVisuals: "제품 없는 감성컷은 배제하고 각 사진 구간에 실제 제품 또는 정확한 제품 교체 위치를 포함",
+          generationGuard: "생성 장면은 촬영 레퍼런스로 표시하며 최종본에서는 라벨과 병 비율이 보존된 실제 촬영물로 교체",
           copyRule: "각 섹션 서브카피는 핵심 장면과 정보 목적을 설명하는 완결된 한 문장",
           referenceRule: "촬영 ref와 디자인 ref를 구분해 실제 촬영 지시와 조판 지시를 함께 제공"
         }
