@@ -75,7 +75,7 @@
     </header>
     <div class="review-layout">
       <div class="board" id="board">
-        <img id="draftImage" src="assets/planning/saengjeup-planning-v1.png" alt="1차 촬영 및 디자인 기획서">
+        <img id="draftImage" src="assets/planning/generic-planning-v1.svg" alt="Figma 상세페이지 제작 기획 보드">
         <canvas id="drawCanvas" aria-label="시안 브러시 코멘트 영역"></canvas>
       </div>
       <aside>
@@ -98,7 +98,7 @@
     "use strict";
     const params = new URLSearchParams(location.search);
     const projectId = params.get("projectId") || "";
-    const previewId = params.get("previewId") || "saengjeup-planning-v1";
+    const previewId = params.get("previewId") || "figma-first-project";
     const receiptParam = params.get("receipt") || "";
     const storageKey = `planningFeedback:${previewId}:${projectId || "unsaved-project"}`;
     const $ = (id) => document.getElementById(id);

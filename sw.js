@@ -1,4 +1,4 @@
-const CACHE_NAME = "hao-detail-automation-v20260901-intake1";
+const CACHE_NAME = "hao-detail-automation-v20260902-figma-gate2";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -12,6 +12,7 @@ const APP_SHELL = [
   "./admin-dark.css",
   "./customer-form-v11.css",
   "./app.js",
+  "./figma-workflow.js",
   "./project-form.js",
   "./workflow-core.js",
   "./intake-triage.js",
@@ -25,11 +26,9 @@ const APP_SHELL = [
   "./data/public-customer-projects.js",
   "./assets/app-icons/hao-192.png",
   "./assets/app-icons/hao-512.png",
-  "./planning/saengjeup-v1.html",
-  "./planning/test-connection-v1.html",
-  "./planning/project-first-draft.html",
-  "./assets/planning/generic-planning-v1.svg",
-  "./assets/planning/saengjeup-planning-v1.png"
+  "./planning/figma-workspace.html",
+  "./planning/figma-workspace.css",
+  "./assets/planning/generic-planning-v1.svg"
 ];
 
 self.addEventListener("install", (event) => {

@@ -45,30 +45,7 @@ const DESIGN_REFERENCE_POLICY = Object.freeze({
     "쿠팡·컬리·스마트스토어의 판매 흐름 분석",
   ]),
 });
-const PROJECT_PLANNING_PREVIEWS = Object.freeze([
-  Object.freeze({
-    id: "saengjeup-planning-v1",
-    clientToken: "생즙연구소",
-    title: "생즙연구소 과일주스 상세페이지 제작 전 기획안 v1",
-    imageUrl: "assets/planning/saengjeup-planning-v1.png",
-    viewerUrl: "planning/saengjeup-v1.html",
-    dimensions: "3,000 × 18,000px",
-    targetLength: "최종 상세페이지 17,000~20,000px",
-    structure: "왼쪽 촬영 지시 · 중앙 롱페이지 와이어 · 오른쪽 구성 레퍼런스",
-    referenceBasis: "Google Drive 2026(기획안) 28개 · 실제 제작 프로젝트 22개 분석",
-  }),
-  Object.freeze({
-    id: "test-connection-planning-v1",
-    clientToken: "TEST",
-    title: "TEST 이미지 업로드 연결검증 제품 · 1차 촬영 및 디자인 시안 v1",
-    imageUrl: "assets/planning/saengjeup-planning-v1.png",
-    viewerUrl: "planning/test-connection-v1.html",
-    dimensions: "3,000 × 18,000px",
-    targetLength: "1차 시안 · 실제 제작 17,000~20,000px 기준",
-    structure: "촬영 지시 · 섹션별 와이어 · 참고 구도 · 조판 안전 영역",
-    referenceBasis: "Google Drive 2026(기획안) 28개 구조 분석 · 고객 업로드 패키지 도면 연결",
-  }),
-]);
+const FIGMA_WORKFLOW_VERSION = "hao-figma-first-v2-approval-gate";
 const AI_DETAIL_PRODUCTION_POLICY = Object.freeze({
   guideFile: "AI_TOOL_GUIDELINES.md",
   sourceOrder: ["고객 원문", "1차 내용정리본", "관리자 검수 수정", "승인된 참고자료"],
@@ -1471,7 +1448,7 @@ function customerProjectReadiness(project) {
   const fields = [
     { label: "고객사명", complete: customerCompleted("clientName") || customerCompleted("companyName") },
     { label: "제품명", complete: customerCompleted("productName", project.productName) },
-    { label: "카테고리", complete: customerCompleted("category") },
+    { label: "카테고리", complete: customerCompleted("category") || (customerCompleted("majorCategory") && customerCompleted("subCategory")) || Boolean(project.category) },
     { label: "요청사항", complete: customerCompleted("heroSentence") || customerCompleted("coreStrength") },
     { label: "연락처", complete: Boolean(project.contactInfo || project.contactName || project.phone || project.email) },
     { label: "사진/자료", complete: Boolean(
@@ -1493,13 +1470,6 @@ function customerProjectReadiness(project) {
 }
 
 function planningPreviewForProject(project = {}) {
-  const identity = [project.clientName, project.companyName, project.brandName, project.productName]
-    .filter(Boolean)
-    .join(" ");
-  return PROJECT_PLANNING_PREVIEWS.find((item) => identity.includes(item.clientToken)) || null;
-}
-
-function genericPlanningPreviewForProject(project = {}) {
   const productName = String(project.productName || project.projectName || "").trim();
   const clientName = String(project.clientName || project.companyName || project.brandName || "브랜드").trim();
   if (!productName) return null;
@@ -1511,15 +1481,15 @@ function genericPlanningPreviewForProject(project = {}) {
     category: String(project.category || "").trim(),
   });
   return {
-    id: `generic-first-draft-${projectId.replace(/[^a-zA-Z0-9가-힣_-]+/g, "-")}`,
+    id: `figma-first-${projectId.replace(/[^a-zA-Z0-9가-힣_-]+/g, "-")}`,
     clientToken: productName,
-    title: `${productName} · Codex 1차 시안 구성 템플릿`,
+    title: `${productName} · Figma 상세페이지 제작 작업공간`,
     imageUrl: "assets/planning/generic-planning-v1.svg",
-    viewerUrl: `planning/project-first-draft.html?${query.toString()}`,
-    dimensions: "3,000 × 18,000px 기획 보드",
-    targetLength: "기본 10,000px · 프로젝트 제작 범위에 따라 조정",
-    structure: "Codex 실행 전 확인용 · 촬영 지시 · 섹션 와이어 · 디자인 조판 영역",
-    referenceBasis: "승인된 고객 정보와 Google Drive 2026 기획안 구조를 Codex에 전달하기 위한 구성 템플릿",
+    viewerUrl: `planning/figma-workspace.html?${query.toString()}`,
+    dimensions: "검증형 텍스트 기획 · 3열 Figma 보드 · 구간별 디자인",
+    targetLength: "상품별 섹션 수와 실제 제작 범위에 따라 결정",
+    structure: "입력·증빙 잠금 · 텍스트 기획 · 3열 보드 · 고유 이미지 · Figma 조립 · QA",
+    referenceBasis: "Google Drive 승인 시안의 구조를 유지하고 제품별 Figma 파일에서 실제 디자인",
   };
 }
 
@@ -1535,7 +1505,7 @@ function currentPlanningProject() {
 
 function currentPlanningPreview() {
   const project = currentPlanningProject();
-  return planningPreviewForProject(project) || genericPlanningPreviewForProject(project);
+  return planningPreviewForProject(project);
 }
 
 function planningReviewStorageKey(preview = currentPlanningPreview()) {
@@ -1818,7 +1788,7 @@ function renderCustomerProjects() {
   const statuses = ["신규 접수", "확인 중", "검수 완료", "기획 생성", "시안 제작", "고객 회신 대기", "실제 제작", "내부 검수", "최종 납품"];
   const projectCards = visibleProjects.map((project) => {
     const readiness = customerProjectReadiness(project);
-    const planningPreview = planningPreviewForProject(project) || genericPlanningPreviewForProject(project);
+    const planningPreview = planningPreviewForProject(project);
     const receipt = planningReceipt(project);
     const verify = planningPhoneLast4(project);
     const progressUrl = "track.html";
@@ -6464,7 +6434,7 @@ function setImageGenerationBusy(isBusy) {
     button.classList.toggle("is-generating", isBusy);
   });
   if ($("#generateDrafts")) {
-    $("#generateDrafts").textContent = isBusy ? "Codex 작업 패키지 생성 중…" : "Codex 1차 시안 작업 준비";
+    $("#generateDrafts").textContent = isBusy ? "Figma 작업공간 준비 중…" : "Figma 시안 작업 시작";
   }
   if ($("#applyDraftEdits")) {
     $("#applyDraftEdits").textContent = isBusy ? "작업 패키지 생성 중…" : "브리프 생성 + Codex 패키지";
@@ -6987,7 +6957,7 @@ async function generateAll() {
   return generateDrafts();
 }
 
-async function generateAllFromTopbar() {
+function openFigmaWorkflowWorkspace() {
   const button = $("#generateAll");
   const hasLoadedProject = Boolean(value("clientName") && value("productName") && value("category"));
   if (!hasLoadedProject) {
@@ -6997,41 +6967,23 @@ async function generateAllFromTopbar() {
     return;
   }
   if (!ensureProjectReviewApprovedForGeneration()) return;
-  const projectIdentity = `${value("clientName")} ${value("productName")}`;
-  const isSaengjeupCleanse = /클렌즈|그린블렌드|베리블렌드/i.test(projectIdentity);
-  if (isSaengjeupCleanse) {
-    const variantKey = projectIdentity.includes("베리블렌드") ? "berry" : "green";
-    localStorage.setItem("haoAppGenerationRequest:saengjeup", JSON.stringify({
-      requestedAt: new Date().toISOString(),
-      source: "관리자툴 1차 시안 자동 생성 버튼",
-      variantKey,
-      project: activeCustomerProject(),
-      isolationRule: "선택한 단일 맛만 생성하고 다른 맛은 절대 혼입하지 않음",
-    }));
-    location.href = `planning/concept-process-review.html?demo=saengjeup&variant=${variantKey}&source=admin-app`;
-    return;
-  }
-  const originalText = button?.textContent || "1차 시안 자동 생성";
-  if (button) {
-    button.disabled = true;
-    button.classList.add("is-preparing");
-    button.textContent = "3페이지 이동 · Codex 작업 준비 중…";
-  }
-  showPanel("drafts");
-  updateAiStatus("승인 고객 사실과 Google Drive 2026(기획안) 구조를 묶어 Codex 1차 시안 작업 패키지를 생성합니다.");
+  const project = {
+    ...(activeCustomerProject() || {}),
+    ...currentPlanningProject(),
+    workflowVersion: FIGMA_WORKFLOW_VERSION,
+    requestedAt: new Date().toISOString(),
+    source: "관리자툴 → Figma 상세페이지 제작 작업공간",
+  };
+  localStorage.setItem("haoFigmaWorkflowInput", JSON.stringify(project));
+  const preview = planningPreviewForProject(project);
+  if (!preview) return;
+  if (button) button.textContent = "Figma 작업공간 여는 중…";
+  updateAiStatus("검증형 텍스트 기획 → 3열 Figma 보드 → 구간별 고유 이미지 → Figma 조립 → QA 순서로 이동합니다.");
+  location.href = preview.viewerUrl;
+}
 
-  try {
-    await generateAll();
-  } catch (error) {
-    const message = error?.message || "기획/시안 자동 생성 중 오류가 발생했습니다.";
-    updateAiStatus(message);
-  } finally {
-    if (button) {
-      button.disabled = false;
-      button.classList.remove("is-preparing");
-      button.textContent = originalText;
-    }
-  }
+async function generateAllFromTopbar() {
+  openFigmaWorkflowWorkspace();
 }
 
 async function runHoabiFlowTest() {
@@ -7308,9 +7260,7 @@ $("#generateAll")?.addEventListener("click", (event) => {
   generateAllFromTopbar();
 });
 $("#generatePlan")?.addEventListener("click", () => generatePlan());
-$("#generateDrafts")?.addEventListener("click", async () => {
-  await generateDrafts();
-});
+$("#generateDrafts")?.addEventListener("click", () => openFigmaWorkflowWorkspace());
 $("#toggleGuideMode")?.addEventListener("click", () => toggleGuideMode());
 $("#generateClientMail")?.addEventListener("click", () => generateClientMail());
 $("#runClientPreflight")?.addEventListener("click", () => renderClientPreflight());
