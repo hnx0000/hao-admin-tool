@@ -6997,6 +6997,20 @@ async function generateAllFromTopbar() {
     return;
   }
   if (!ensureProjectReviewApprovedForGeneration()) return;
+  const projectIdentity = `${value("clientName")} ${value("productName")}`;
+  const isSaengjeupCleanse = /클렌즈|그린블렌드|베리블렌드/i.test(projectIdentity);
+  if (isSaengjeupCleanse) {
+    const variantKey = projectIdentity.includes("베리블렌드") ? "berry" : "green";
+    localStorage.setItem("haoAppGenerationRequest:saengjeup", JSON.stringify({
+      requestedAt: new Date().toISOString(),
+      source: "관리자툴 1차 시안 자동 생성 버튼",
+      variantKey,
+      project: activeCustomerProject(),
+      isolationRule: "선택한 단일 맛만 생성하고 다른 맛은 절대 혼입하지 않음",
+    }));
+    location.href = `planning/concept-process-review.html?demo=saengjeup&variant=${variantKey}&source=admin-app`;
+    return;
+  }
   const originalText = button?.textContent || "1차 시안 자동 생성";
   if (button) {
     button.disabled = true;

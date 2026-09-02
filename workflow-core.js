@@ -1,6 +1,6 @@
 (() => {
-  const SUMMARY_VERSION = "hao-content-summary-v1";
-  const WORKFLOW_VERSION = "hao-detail-workflow-v1";
+  const SUMMARY_VERSION = "hao-content-summary-v2-semantic";
+  const WORKFLOW_VERSION = "hao-detail-workflow-v2-semantic";
 
   const text = (value) => String(value ?? "").trim();
   const list = (value) => Array.isArray(value) ? value.map(text).filter(Boolean) : text(value) ? [text(value)] : [];
@@ -16,9 +16,11 @@
     const touched = new Set(list(project.customerTouchedFields));
     const fields = [
       "contactName", "contactInfo", "phone", "email", "companyName", "clientName",
-      "productName", "category", "channel", "targetCustomer", "heroSentence",
-      "coreStrength", "productionTrust", "purchaseBenefit", "reviewKeywords",
-      "referenceUrls", "additionalNotes",
+      "productName", "majorCategory", "subCategory", "category", "channel", "targetCustomer",
+      "buyerConcern", "primaryPurchaseReason", "messagePriority", "emphasis", "deEmphasis",
+      "coreStrength", "evidenceBoundary", "productionTrust", "mustInclude", "banWords",
+      "visualIdentity", "productImageUsage", "shootingConstraints",
+      "referenceUrls", "referenceLikes", "referenceDislikes", "variantRule", "additionalNotes",
     ];
     return fields.filter((key) => text(project[key]) && (touched.size === 0 || touched.has(key)));
   }
@@ -38,43 +40,46 @@
       referenceFiles.length ? `참고 이미지/자료: ${referenceFiles.join(", ")}` : "",
     ].filter(Boolean);
 
-    const features = text(project.features) || [
-      project.coreStrength,
-      list(project.strengthTags).join(", "),
-      project.productionTrust,
-      project.purchaseBenefit,
-      project.reviewKeywords,
-    ].map(text).filter(Boolean).join("\n");
+    const features = text(project.features) || [project.coreStrength, list(project.strengthTags).join(", ")]
+      .map(text).filter(Boolean).join("\n");
 
     return {
       clientName: text(project.clientName || project.companyName),
       productName: text(project.productName),
-      category: text(project.category),
+      category: text(project.category || [project.majorCategory, project.subCategory].filter(Boolean).join(" / ")),
       channel: text(project.channel),
       dueDate: text(project.dueDate),
-      oneLine: text(project.oneLine || project.heroSentence || project.coreStrength || project.productName),
+      oneLine: text(project.oneLine || project.primaryPurchaseReason || project.coreStrength || project.productName),
       consultSummary: [
         project.language ? `상세페이지 언어: ${text(project.language)}` : "",
         project.contactName ? `담당자명: ${text(project.contactName)}` : "",
         project.contactInfo ? `연락처: ${text(project.contactInfo)}` : "",
         project.email ? `이메일: ${text(project.email)}` : "",
         project.targetCustomer ? `주요 고객: ${text(project.targetCustomer)}` : "",
+        project.buyerConcern ? `구매 망설임: ${text(project.buyerConcern)}` : "",
+        project.primaryPurchaseReason ? `첫 구매 이유: ${text(project.primaryPurchaseReason)}` : "",
+        project.messagePriority ? `메시지 우선순위:\n${text(project.messagePriority)}` : "",
         features ? `제품 특징:\n${features}` : "",
+        project.evidenceBoundary ? `사용 가능한 증빙:\n${text(project.evidenceBoundary)}` : "",
+        project.visualIdentity ? `제품 시각 정체성:\n${text(project.visualIdentity)}` : "",
         uploaded.length ? `고객 업로드 자료:\n${uploaded.join("\n")}` : "",
         project.additionalNotes ? `고객 추가 요청:\n${text(project.additionalNotes)}` : "",
       ].filter(Boolean).join("\n\n"),
       clientRequests: [
         project.clientRequests,
+        project.deEmphasis ? `힘을 뺄 내용: ${text(project.deEmphasis)}` : "",
+        project.referenceLikes ? `레퍼런스 선호: ${text(project.referenceLikes)}` : "",
+        project.referenceDislikes ? `레퍼런스 비선호: ${text(project.referenceDislikes)}` : "",
         mood.length ? `전체 분위기: ${mood.join(", ")}` : "",
         structure.length ? `구성 방식: ${structure.join(", ")}` : "",
         colorTone.length ? `색감 방향: ${colorTone.join(", ")}` : "",
         imageStyle.length ? `이미지 활용: ${imageStyle.join(", ")}` : "",
       ].map(text).filter(Boolean).join("\n"),
-      emphasis: text(project.emphasis || project.coreStrength || project.heroSentence),
+      emphasis: text(project.emphasis || project.primaryPurchaseReason),
       banWords: [project.banWords, avoidStyle.length ? `피하고 싶은 느낌: ${avoidStyle.join(", ")}` : ""]
         .map(text).filter(Boolean).join("\n"),
-      mustInclude: text(project.mustInclude || [project.productName, project.seoKeyword].map(text).filter(Boolean).join(", ")),
-      references: text(project.references || [project.seoKeyword, project.referenceUrls].map(text).filter(Boolean).join("\n")),
+      mustInclude: text(project.mustInclude || project.productName),
+      references: text(project.references || project.referenceUrls),
     };
   }
 
@@ -106,7 +111,9 @@
         companyName: text(project.companyName || project.clientName),
         clientName: text(project.clientName || project.companyName),
         productName: text(project.productName),
-        category: text(project.category),
+        majorCategory: text(project.majorCategory),
+        subCategory: text(project.subCategory),
+        category: text(project.category || [project.majorCategory, project.subCategory].filter(Boolean).join(" / ")),
         channel: text(project.channel),
         contactName: text(project.contactName),
         contactInfo: text(project.contactInfo || project.phone),
@@ -114,14 +121,44 @@
         dueDate: text(project.dueDate),
       },
       core: {
-        heroSentence: text(project.heroSentence),
+        heroSentence: text(project.primaryPurchaseReason || project.heroSentence),
         oneLine: adminFields.oneLine,
-        coreStrength: text(project.coreStrength || project.emphasis),
+        coreStrength: text(project.coreStrength),
         strengthTags: list(project.strengthTags),
         productionTrust: text(project.productionTrust),
         purchaseBenefit: text(project.purchaseBenefit),
         reviewKeywords: text(project.reviewKeywords),
         targetCustomer: text(project.targetCustomer),
+      },
+      intakeAnalysis: {
+        buyer: {
+          targetCustomer: text(project.targetCustomer),
+          concern: text(project.buyerConcern),
+          primaryPurchaseReason: text(project.primaryPurchaseReason),
+          messagePriority: lineList(project.messagePriority),
+        },
+        communication: {
+          emphasis: text(project.emphasis),
+          deEmphasis: text(project.deEmphasis),
+        },
+        productTruth: {
+          differentiators: text(project.coreStrength),
+          allowedEvidence: text(project.evidenceBoundary),
+          productionTrust: text(project.productionTrust),
+          unverifiedPolicy: "자료에 없는 효능·수치·인증·후기·비교 우위는 확인 필요",
+        },
+        visualEvidence: {
+          identity: text(project.visualIdentity),
+          usagePriority: text(project.productImageUsage) || "시각 방향 분석 우선",
+          shootingConstraints: text(project.shootingConstraints),
+          pixelAnalysisStatus: text(project.visualAnalysisStatus) || "시각 분석 미실행",
+        },
+        referenceIntent: {
+          urls: lineList(project.referenceUrls),
+          likes: text(project.referenceLikes),
+          dislikes: text(project.referenceDislikes),
+        },
+        variantRule: text(project.variantRule) || "확인 필요",
       },
       direction: {
         styleTone: text(project.styleTone),
@@ -222,17 +259,13 @@ ${summary.customerNotes || "미기입"}
     const project = { ...raw };
     project.companyName = text(project.companyName || project.clientName);
     project.clientName = text(project.clientName || project.companyName);
-    project.oneLine = text(project.oneLine || project.heroSentence || project.coreStrength || project.productName);
-    project.features = text(project.features) || [
-      project.coreStrength,
-      list(project.strengthTags).join(", "),
-      project.productionTrust,
-      project.purchaseBenefit,
-      project.reviewKeywords,
-    ].map(text).filter(Boolean).join("\n");
-    project.emphasis = text(project.emphasis || project.coreStrength || project.heroSentence);
-    project.mustInclude = text(project.mustInclude || [project.productName, project.seoKeyword].map(text).filter(Boolean).join(", "));
-    project.references = text(project.references || [project.seoKeyword, project.referenceUrls].map(text).filter(Boolean).join("\n"));
+    project.category = text(project.category || [project.majorCategory, project.subCategory].filter(Boolean).join(" / "));
+    project.oneLine = text(project.oneLine || project.primaryPurchaseReason || project.coreStrength || project.productName);
+    project.features = text(project.features) || [project.coreStrength, list(project.strengthTags).join(", ")]
+      .map(text).filter(Boolean).join("\n");
+    project.emphasis = text(project.emphasis || project.primaryPurchaseReason);
+    project.mustInclude = text(project.mustInclude || project.productName);
+    project.references = text(project.references || project.referenceUrls);
     project.customerCompletedFields = meaningfulCompletedFields(project);
     project.contentSummary = buildContentSummary(project);
     project.contentSummaryText = buildContentSummaryText(project);

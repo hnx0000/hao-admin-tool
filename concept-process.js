@@ -1,11 +1,15 @@
 (function (root, factory) {
-  const api = factory();
+  let referenceDataset = root?.COMPANY_REFERENCE_DATASET;
+  if (!referenceDataset && typeof module === "object" && module.exports) {
+    try { referenceDataset = require("./data/company-reference-dataset.js"); } catch { referenceDataset = null; }
+  }
+  const api = factory(referenceDataset);
   if (typeof module === "object" && module.exports) module.exports = api;
   if (root) root.HAO_CONCEPT_PROCESS = Object.freeze(api);
-})(typeof window !== "undefined" ? window : globalThis, function () {
+})(typeof window !== "undefined" ? window : globalThis, function (referenceDataset) {
   "use strict";
 
-  const VERSION = "hao-concept-process-review-v2";
+  const VERSION = "hao-concept-process-review-v3-drive28";
   const CONFIRM_NEEDED = "확인 필요";
 
   const TAXONOMY = Object.freeze({
@@ -25,11 +29,17 @@
     ["coreBenefit", "핵심 기능 또는 효익"],
     ["features", "주요 특징과 차별점"],
     ["targetCustomer", "주요 타깃 고객"],
+    ["buyerConcern", "구매 직전 망설임"],
+    ["primaryPurchaseReason", "첫 화면의 한 가지 구매 이유"],
+    ["messagePriority", "강조 순서"],
     ["priceRange", "가격대"],
     ["desiredMood", "원하는 분위기"],
+    ["visualIdentity", "제품 시각 정체성"],
+    ["shootingConstraints", "촬영 수량·상태·제약"],
     ["mustInclude", "반드시 포함할 문구와 정보"],
     ["evidence", "인증·수치·후기·시험자료"],
     ["references", "참고 이미지 또는 상세페이지"],
+    ["referenceIntent", "레퍼런스 선호·비선호"],
     ["exclusions", "제외해야 할 표현과 디자인"],
   ]);
 
@@ -134,6 +144,14 @@
     },
   ]);
 
+  const CATEGORY_DIRECTION_NAMES = Object.freeze({
+    "음식": { "brand-editorial": "원재료 에디토리얼", "evidence-trust": "라벨·원재료 검증형", "usage-conversion": "섭취 순간 설득형", "product-system": "제품·내용물 디테일형" },
+    "화장품": { "brand-editorial": "브랜드·제형 에디토리얼", "evidence-trust": "성분·시험 검증형", "usage-conversion": "사용 고민 해결형", "product-system": "용기·제형 디테일형" },
+    "기기": { "brand-editorial": "제품 경험 에디토리얼", "evidence-trust": "성능·안전 검증형", "usage-conversion": "사용 문제 해결형", "product-system": "기능·구조 디테일형" },
+    "건강기능식품": { "brand-editorial": "섭취 루틴 에디토리얼", "evidence-trust": "기능성 원료 검증형", "usage-conversion": "섭취 대상 설득형", "product-system": "제형·구성 디테일형" },
+    "기타제품": { "brand-editorial": "사용 가치 에디토리얼", "evidence-trust": "소재·정보 검증형", "usage-conversion": "사용 상황 해결형", "product-system": "제품 구조 디테일형" },
+  });
+
   const text = (value) => String(value ?? "").trim();
   const array = (value) => Array.isArray(value) ? value.filter(Boolean) : text(value) ? [text(value)] : [];
   const unique = (items) => [...new Set(items.filter(Boolean))];
@@ -173,15 +191,17 @@
       ...array(raw.features),
       ...array(raw.strengthTags),
       text(raw.coreStrength),
-      text(raw.purchaseBenefit),
     ]);
     const evidence = unique([
       ...array(raw.evidence),
+      text(raw.evidenceBoundary),
       text(raw.productionTrust),
       text(raw.certifications),
       text(raw.testResults),
-      text(raw.reviewKeywords),
     ]);
+    const desiredMood = unique([...array(raw.desiredMood), ...array(raw.mood), text(raw.styleTone)])
+      .filter((item) => item !== "자동 분석");
+    const references = unique([...array(raw.references), ...array(raw.referenceUrls), ...array(raw.referenceFiles)]);
     return {
       source: raw,
       productName: text(raw.productName),
@@ -190,14 +210,38 @@
       subCategory: classification.sub,
       classificationSource: classification.source,
       productImages: [...array(raw.productImages)],
-      coreBenefit: firstValue(raw.coreBenefit, raw.oneLine, raw.heroSentence, raw.coreStrength),
+      coreBenefit: firstValue(raw.primaryPurchaseReason, raw.coreBenefit, raw.oneLine, raw.heroSentence, raw.coreStrength),
+      primaryPurchaseReason: text(raw.primaryPurchaseReason),
+      messagePriority: unique(array(raw.messagePriority)),
+      buyerConcern: text(raw.buyerConcern),
       features,
       targetCustomer: text(raw.targetCustomer),
       priceRange: firstValue(raw.priceRange, raw.price, raw.sales?.options?.[0]?.price),
-      desiredMood: unique([...array(raw.desiredMood), ...array(raw.mood), text(raw.styleTone)]),
+      desiredMood,
+      emphasis: text(raw.emphasis),
+      deEmphasis: text(raw.deEmphasis),
+      visualIdentity: text(raw.visualIdentity || raw.imageMemo),
+      visualPalette: unique(array(raw.visualPalette)),
+      productImageUsage: text(raw.productImageUsage) || "시각 방향 분석 우선",
+      shootingConstraints: text(raw.shootingConstraints),
       mustInclude: unique(array(raw.mustInclude)),
       evidence,
-      references: unique([...array(raw.references), ...array(raw.referenceUrls), ...array(raw.referenceFiles)]),
+      references,
+      referenceIntent: {
+        likes: text(raw.referenceLikes),
+        dislikes: text(raw.referenceDislikes),
+      },
+      variantRule: text(raw.variantRule) || CONFIRM_NEEDED,
+      visualAnalysis: {
+        status: text(raw.visualAnalysisStatus) || "시각 분석 미실행",
+        observedIdentity: text(raw.visualIdentity || raw.imageMemo),
+        rule: "제품 원본의 색·형태·라벨·재질·브랜드 인상을 먼저 분석하고 촬영 예시 생성은 두 번째로 수행",
+      },
+      salesConditions: {
+        purchaseBenefit: text(raw.purchaseBenefit),
+        reviewKeywords: text(raw.reviewKeywords),
+        seoKeyword: text(raw.seoKeyword),
+      },
       exclusions: unique([...array(raw.exclusions), ...array(raw.banWords), ...array(raw.avoidStyle), ...array(raw.avoid)]),
     };
   }
@@ -206,7 +250,10 @@
     const missing = [];
     FIELD_DEFINITIONS.forEach(([key, label]) => {
       const value = input[key];
-      if (Array.isArray(value) ? value.length === 0 : !text(value)) missing.push({ key, label, status: CONFIRM_NEEDED });
+      const empty = key === "referenceIntent"
+        ? !text(value?.likes) && !text(value?.dislikes)
+        : Array.isArray(value) ? value.length === 0 : !text(value);
+      if (empty) missing.push({ key, label, status: CONFIRM_NEEDED });
     });
     if (input.majorCategory && !TAXONOMY[input.majorCategory]) missing.push({ key: "majorCategory", label: "지원되는 대분류", status: CONFIRM_NEEDED });
     if (input.majorCategory && input.subCategory && !TAXONOMY[input.majorCategory]?.includes(input.subCategory)) missing.push({ key: "subCategory", label: "대분류에 맞는 세부분류", status: CONFIRM_NEEDED });
@@ -224,6 +271,9 @@
 
   function categoryAnalysis(input) {
     const spec = CATEGORY_SPECS[input.majorCategory] || CATEGORY_SPECS["기타제품"];
+    const drivePattern = referenceDataset?.categoryPatterns?.[input.majorCategory]
+      || referenceDataset?.categoryPatterns?.["기타제품"]
+      || null;
     const details = [];
     if (input.majorCategory === "화장품") details.push(`${input.subCategory || CONFIRM_NEEDED} 표기는 성별 고정관념이 아니라 실제 타깃·브랜드·제품 특성 확인에만 사용`);
     if (input.majorCategory === "음식") {
@@ -238,10 +288,22 @@
       const subRules = { "굿즈": "소장 가치·팬 경험·한정성·패키지", "의류": "핏·소재·착용감·사이즈·코디", "도구류": "사용 목적·방법·내구성·안전성", "일반제품": "사용 상황과 실제 구매 결정 요소" };
       details.push(subRules[input.subCategory] || "세부 제품 유형 확인 필요");
     }
-    return { ...spec, detailRule: details.join(" · ") || "상품 특성과 고객 자료를 기준으로 분석" };
+    return {
+      ...spec,
+      detailRule: details.join(" · ") || "상품 특성과 고객 자료를 기준으로 분석",
+      drivePattern,
+      driveReferenceVersion: referenceDataset?.version || "레퍼런스 DB 미연결",
+      planningTemplate: referenceDataset?.planningTemplate || null,
+    };
   }
 
   function selectSections(spec, blueprint) {
+    if (Array.isArray(spec.drivePattern?.sequence) && spec.drivePattern.sequence.length) {
+      const sequence = spec.drivePattern.sequence.slice();
+      const bias = blueprint.sectionBias || [];
+      if (blueprint.id === "evidence-trust") return sequence.slice().sort((a, b) => bias.some((key) => b.includes(key)) - bias.some((key) => a.includes(key)));
+      return sequence;
+    }
     const ranked = spec.sectionPool.map((section, index) => ({
       section,
       score: (spec.sectionPool.length - index) + blueprint.sectionBias.reduce((sum, keyword) => sum + (section.includes(keyword) ? 7 : 0), 0),
@@ -249,9 +311,61 @@
     return ranked.sort((a, b) => b.score - a.score).slice(0, 9).sort((a, b) => spec.sectionPool.indexOf(a.section) - spec.sectionPool.indexOf(b.section)).map((item) => item.section);
   }
 
-  function paletteFor(spec, index) {
+  function paletteFor(spec, index, input = {}) {
+    if (Array.isArray(input.visualPalette) && input.visualPalette.length >= 3) {
+      return unique([...input.visualPalette, "#17191d"]).slice(0, 5);
+    }
     const accents = ["#d76372", "#2d6f78", "#e08a2e", "#5d5ce2"];
     return [spec.baseColors[2], spec.baseColors[0], index === 0 ? spec.baseColors[1] : accents[index], "#17191d"];
+  }
+
+  function buildPlanningColumns(input, analysis, blueprint, sections) {
+    const pattern = analysis.drivePattern || {};
+    const minimumShots = Number(pattern.minimumShots || 4);
+    const shotRoles = Array.isArray(pattern.shotRoles) ? pattern.shotRoles : blueprint.imageKinds;
+    const templateColumns = analysis.planningTemplate?.columns || [];
+    return {
+      template: analysis.planningTemplate?.documentType || "3열 촬영·디자인 상세페이지 기획안",
+      similarityTarget: analysis.planningTemplate?.requiredSimilarity || 0.9,
+      left: {
+        id: "production",
+        label: templateColumns.find((item) => item.id === "production")?.label || "촬영·제작 지시",
+        productCountAndCondition: input.shootingConstraints || CONFIRM_NEEDED,
+        minimumShots,
+        shots: shotRoles.map((role, index) => ({
+          id: `SHOT-${String(index + 1).padStart(2, "0")}`,
+          role,
+          reuse: false,
+          productRequired: true,
+          visualAnchor: input.visualIdentity || CONFIRM_NEEDED,
+        })),
+        requiredNotes: templateColumns.find((item) => item.id === "production")?.required || [],
+      },
+      center: {
+        id: "pageFlow",
+        label: templateColumns.find((item) => item.id === "pageFlow")?.label || "상세페이지 세로 구성",
+        opening: pattern.opening || "제품 실물과 핵심 구매 이유",
+        sections: sections.map((section, index) => ({
+          number: String(index + 1).padStart(2, "0"),
+          section,
+          headlineRule: "구체적 제품 가치 중심 2줄 이내",
+          subcopyRule: "제목을 설명하는 한 문장",
+          transitionRule: index < sections.length - 1 ? `이 구간의 결론을 다음 '${sections[index + 1]}'의 이유로 연결` : "제품 정보·주의·FAQ로 마감",
+        })),
+      },
+      right: {
+        id: "designReference",
+        label: templateColumns.find((item) => item.id === "designReference")?.label || "디자인·조판 레퍼런스",
+        source: referenceDataset?.source?.name || "레퍼런스 DB 미연결",
+        extractedElements: [
+          `3열 기획안 구조와 중앙 장축 흐름`,
+          `상품군 패턴: ${pattern.opening || CONFIRM_NEEDED}`,
+          `선호 요소: ${input.referenceIntent.likes || CONFIRM_NEEDED}`,
+        ],
+        doNotCopy: [input.referenceIntent.dislikes || CONFIRM_NEEDED, ...(input.exclusions || [])],
+        application: `사진·카피·그래픽을 별도 박스로 분리하지 않고 ${blueprint.layout} 원칙으로 한 구간 안에서 결합`,
+      },
+    };
   }
 
   function scoreDirection(input, validation, blueprint, index, sections) {
@@ -261,18 +375,20 @@
     const moodMatch = blueprint.mood.split(/[,· ]/).filter((token) => token.length > 1 && moodText.includes(token)).length;
     const imageScore = input.productImages.length ? 15 : 8;
     const evidenceBoost = blueprint.id === "evidence-trust" ? Math.min(6, evidenceCount * 2) : Math.min(3, evidenceCount);
-    const usageBoost = blueprint.id === "usage-conversion" && input.targetCustomer ? 4 : 1;
+    const usageBoost = blueprint.id === "usage-conversion" && input.targetCustomer
+      ? 4 + (input.buyerConcern ? 2 : 0) + (input.messagePriority.length ? 2 : 0)
+      : 1;
     const detailBoost = blueprint.id === "product-system" ? Math.min(5, featureCount + input.productImages.length) : Math.min(3, featureCount);
     const brandBoost = blueprint.id === "brand-editorial" && input.brandName ? 4 : 2;
     const components = {
       productFit: Math.min(20, 14 + Math.min(6, featureCount + (input.majorCategory ? 2 : 0))),
-      brandFit: Math.min(15, 8 + (input.brandName ? 3 : 0) + Math.min(2, moodMatch) + brandBoost / 2),
-      messageClarity: Math.min(15, 8 + (input.coreBenefit ? 4 : 0) + Math.min(3, featureCount)),
+      brandFit: Math.min(15, 8 + (input.brandName ? 2 : 0) + (input.visualIdentity ? 2 : 0) + Math.min(2, moodMatch) + brandBoost / 2),
+      messageClarity: Math.min(15, 7 + (input.primaryPurchaseReason ? 4 : 0) + (input.messagePriority.length ? 2 : 0) + Math.min(2, featureCount)),
       visualQuality: imageScore,
       informationStructure: Math.min(15, 9 + Math.min(6, sections.length - 3)),
       conversion: Math.min(10, 4 + (input.targetCustomer ? 2 : 0) + (input.priceRange ? 1 : 0) + usageBoost / 2),
       differentiation: 5,
-      latestDesign: Math.min(5, 3 + (input.references.length ? 1 : 0) + (index === 3 ? 1 : 0)),
+      latestDesign: Math.min(5, 2 + (input.references.length ? 1 : 0) + (input.referenceIntent.likes ? 1 : 0) + (input.referenceIntent.dislikes ? 1 : 0)),
     };
     const categoryFit = {
       "화장품": { "brand-editorial": 4, "evidence-trust": 2, "usage-conversion": 2, "product-system": 1 },
@@ -282,7 +398,7 @@
       "기타제품": { "brand-editorial": 2, "evidence-trust": 1, "usage-conversion": 2, "product-system": 3 },
     }[input.majorCategory]?.[blueprint.id] || 0;
     const directionModifier = (blueprint.id === "brand-editorial"
-      ? (input.desiredMood.length ? 3 : 0) + (input.references.length ? 1 : 0) - (input.productImages.length ? 0 : 2)
+      ? (input.desiredMood.length ? 3 : 0) + (input.references.length ? 1 : 0) - (input.productImages.length ? 0 : 2) - (/감성|추상/.test(input.deEmphasis) ? 4 : 0)
       : blueprint.id === "evidence-trust"
         ? (input.evidence.length ? Math.min(5, input.evidence.length * 2) : -5)
         : blueprint.id === "usage-conversion"
@@ -304,27 +420,38 @@
     return { score, components };
   }
 
+  function directionMessage(input, blueprint) {
+    if (blueprint.id === "evidence-trust") return `핵심 구매 이유: ${input.primaryPurchaseReason || input.coreBenefit || blueprint.message}. 확인된 자료와 1:1로 연결`;
+    if (blueprint.id === "usage-conversion") return `구매 망설임: ${input.buyerConcern || "확인 필요"} → 설득 근거: ${input.primaryPurchaseReason || input.coreBenefit || "확인 필요"}`;
+    if (blueprint.id === "product-system") return `제품 시각 기준: ${input.visualIdentity || "확인 필요"}. 이를 훼손하지 않고 제품·구성·내용물을 정확히 설명`;
+    return `핵심 구매 이유: ${input.primaryPurchaseReason || input.coreBenefit || blueprint.message}. 제품과 원재료 중심의 편집 흐름으로 전달`;
+  }
+
   function createDirections(input, validation, analysis) {
     return DIRECTION_BLUEPRINTS.map((blueprint, index) => {
       const sections = selectSections(analysis, blueprint);
       const scoring = scoreDirection(input, validation, blueprint, index, sections);
+      const planningColumns = buildPlanningColumns(input, analysis, blueprint, sections);
+      const shotRoles = analysis.drivePattern?.shotRoles || blueprint.imageKinds;
       return {
         id: blueprint.id,
-        conceptName: blueprint.conceptName,
-        coreMessage: input.coreBenefit || blueprint.message,
+        conceptName: CATEGORY_DIRECTION_NAMES[input.majorCategory]?.[blueprint.id] || blueprint.conceptName,
+        coreMessage: directionMessage(input, blueprint),
         targetCustomer: input.targetCustomer || CONFIRM_NEEDED,
         overallMood: blueprint.mood,
-        colors: paletteFor(analysis, index),
+        colors: paletteFor(analysis, index, input),
         typography: blueprint.typography,
         layout: blueprint.layout,
         materialAndEffects: blueprint.material,
         informationDensity: blueprint.density,
-        productDirection: blueprint.productDirection,
-        recommendedImages: blueprint.imageKinds,
+        productDirection: `${blueprint.productDirection} · 제품 시각 기준: ${input.visualIdentity || CONFIRM_NEEDED}`,
+        recommendedImages: shotRoles,
         sections,
         expectedEffect: blueprint.effect,
         caution: `${blueprint.caution} · ${analysis.risk}`,
-        shotFocus: analysis.shotFocus,
+        shotFocus: `${analysis.shotFocus} · 최소 ${analysis.drivePattern?.minimumShots || 4}컷, 사진 재사용 금지`,
+        planningColumns,
+        referenceDbVersion: analysis.driveReferenceVersion,
         score: scoring.score,
         scoreBreakdown: scoring.components,
         disqualified: false,
@@ -345,11 +472,32 @@
       score: direction.score,
       reason: `${direction.conceptName}은(는) ${input.majorCategory || "상품군"}의 ${analysis.criteria.slice(0, 2).join("·")}을 ${direction.informationDensity} 정보 밀도로 전달하는 데 적합합니다.`,
     }));
+    const inputAudit = {
+      confirmedFacts: unique([input.productName, input.brandName, ...input.features, ...input.evidence, ...input.mustInclude]),
+      customerPreferences: unique([input.primaryPurchaseReason, ...input.messagePriority, input.emphasis, input.deEmphasis, ...input.desiredMood]),
+      visualEvidence: {
+        productImages: input.productImages,
+        identity: input.visualIdentity || CONFIRM_NEEDED,
+        status: input.visualAnalysis.status,
+        usagePriority: input.productImageUsage,
+        note: input.visualAnalysis.rule,
+      },
+      references: {
+        items: input.references,
+        likes: input.referenceIntent.likes || CONFIRM_NEEDED,
+        dislikes: input.referenceIntent.dislikes || CONFIRM_NEEDED,
+        database: analysis.driveReferenceVersion,
+      },
+      separatedSalesConditions: input.salesConditions,
+      unresolved: validation.missing.map((item) => item.label),
+      policy: "확정 사실·고객 희망·판매 조건·분석 가설을 서로 대체하지 않음",
+    };
     return {
       version: VERSION,
       generatedAt: new Date().toISOString(),
       status: "REVIEW_ONLY_NOT_DEFAULT",
       input,
+      inputAudit,
       validation,
       categoryAnalysis: analysis,
       directions,
@@ -358,6 +506,11 @@
         allowed: validation.blockers.length === 0,
         blockers: validation.blockers,
         hardFailRules: ["제품 원본 훼손", "허위 정보", "심각한 가독성 문제", "글자 깨짐", "검증되지 않은 수치·효능·후기"],
+      },
+      referenceProtocol: {
+        sourceCount: referenceDataset?.source?.totalFiles || 0,
+        template: referenceDataset?.planningTemplate || null,
+        rule: "선택 방향은 좌측 촬영 지시·중앙 장축 구성·우측 디자인 레퍼런스의 3열 기획안으로만 확장",
       },
     };
   }
@@ -374,6 +527,7 @@
     validateInput,
     categoryAnalysis,
     createDirections,
+    buildPlanningColumns,
     buildReview,
   };
 });

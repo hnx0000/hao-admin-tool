@@ -3,6 +3,13 @@ const CUSTOMER_PROJECT_LIST_KEY = "customerProjectList";
 const CUSTOMER_INTAKE_KEY = "customerIntakeInput";
 const CUSTOMER_INTAKE_LIST_KEY = "customerIntakeList";
 const TOTAL_STEPS = 5;
+const CATEGORY_TAXONOMY = Object.freeze({
+  "화장품": ["여성용", "남성용", "공용"],
+  "음식": ["밀키트", "음료", "완성제품"],
+  "기기": ["소형가전", "중형가전", "대형가전"],
+  "건강기능식품": ["건강기능식품"],
+  "기타제품": ["굿즈", "의류", "도구류", "일반제품"],
+});
 const customerTouchedFields = new Set();
 const LOCAL_FLOW_TEST = new URLSearchParams(location.search).get("test") === "1"
   && ["localhost", "127.0.0.1"].includes(location.hostname);
@@ -43,7 +50,18 @@ function checkedValues(group) {
 }
 
 function selectedStyleTone() {
-  return document.querySelector('input[name="styleTone"]:checked')?.value || "핵심정리형";
+  return document.querySelector('input[name="styleTone"]:checked')?.value || "자동 분석";
+}
+
+function syncSubCategoryOptions(preferredValue = "") {
+  const major = fieldValue("majorCategory");
+  const subSelect = $("#subCategorySelect");
+  if (!subSelect) return;
+  const options = CATEGORY_TAXONOMY[major] || [];
+  subSelect.innerHTML = options.length
+    ? `<option value="" disabled${preferredValue ? "" : " selected"}>세부분류를 선택해 주세요</option>${options.map((option) => `<option${option === preferredValue ? " selected" : ""}>${option}</option>`).join("")}`
+    : '<option value="" selected>대분류를 먼저 선택해 주세요</option>';
+  subSelect.disabled = options.length === 0;
 }
 
 function optionRows() {
@@ -79,30 +97,39 @@ function collectProjectForm() {
 
   data.styleTone = selectedStyleTone();
   data.options = optionRows();
-  data.oneLine = data.heroSentence || data.coreStrength || data.productName || "";
+  data.category = [data.majorCategory, data.subCategory].filter(Boolean).join(" / ");
+  data.heroSentence = data.primaryPurchaseReason || "";
+  data.oneLine = data.primaryPurchaseReason || data.coreStrength || data.productName || "";
   data.features = [
     data.coreStrength,
     checkedValues("strengthTags").join(", "),
-    data.productionTrust,
-    data.purchaseBenefit,
-    data.reviewKeywords,
   ].filter(Boolean).join("\n");
-  data.emphasis = data.coreStrength || data.heroSentence || "";
-  data.mustInclude = [data.productName, data.seoKeyword].filter(Boolean).join(", ");
+  data.emphasis = data.emphasis || data.primaryPurchaseReason || "";
+  data.mustInclude = data.mustInclude || data.productName || "";
+  data.evidence = [data.evidenceBoundary, data.productionTrust].filter(Boolean).join("\n");
   data.clientRequests = [
-    data.heroSentence,
-    data.coreStrength,
-    data.productionTrust,
+    data.primaryPurchaseReason,
+    data.messagePriority,
+    data.emphasis,
+    data.deEmphasis,
+    data.referenceLikes,
+    data.referenceDislikes,
     data.purchaseBenefit,
-    data.reviewKeywords,
     data.additionalNotes,
   ].filter(Boolean).join("\n\n");
-  data.references = [data.seoKeyword, data.referenceUrls].filter(Boolean).join("\n");
+  data.references = data.referenceUrls || "";
   data.sourceApplicationText = data.additionalNotes || "";
-  data.imageMemo = data.styleTone;
+  data.imageMemo = data.visualIdentity || "";
+  data.analysisIntent = {
+    buyer: { concern: data.buyerConcern || "", primaryReason: data.primaryPurchaseReason || "", priority: data.messagePriority || "" },
+    communication: { emphasis: data.emphasis || "", deEmphasis: data.deEmphasis || "" },
+    visual: { identity: data.visualIdentity || "", usage: data.productImageUsage || "", shootingConstraints: data.shootingConstraints || "" },
+    reference: { urls: data.referenceUrls || "", likes: data.referenceLikes || "", dislikes: data.referenceDislikes || "" },
+    claims: { allowedEvidence: data.evidenceBoundary || "", productionTrust: data.productionTrust || "" },
+  };
   data.source = "AI 상세페이지 5단계 원고 생성폼";
-  data.customerInputVersion = "wizard-intake-v1";
-  data.status = "원고 생성 완료";
+  data.customerInputVersion = "wizard-intake-v2-message-first";
+  data.status = "시안 분석 요청 완료";
   return data;
 }
 
@@ -197,13 +224,18 @@ function validateStep(step = currentStep) {
     if (!fieldValue("email")) return "이메일을 입력해주세요.";
     if (!isValidEmail(fieldValue("email"))) return "이메일 형식에 맞게 입력해주세요. 예: sample@email.com";
     if (!fieldValue("productName")) return "제품명을 입력해주세요.";
+    if (!fieldValue("majorCategory")) return "상품 대분류를 선택해주세요.";
+    if (!fieldValue("subCategory")) return "상품 세부분류를 선택해주세요.";
   }
-  if (step === 2 && !fieldValue("heroSentence")) return "고객을 사로잡는 첫 문장을 입력해주세요.";
+  if (step === 2) {
+    if (!fieldValue("primaryPurchaseReason")) return "첫 화면에서 구매자가 이해해야 할 한 가지를 입력해주세요.";
+    if (!fieldValue("messagePriority")) return "그다음 강조할 내용의 순서를 입력해주세요.";
+  }
   if (step === 3) {
     if (!fieldValue("coreStrength")) return "핵심 경쟁력을 입력해주세요.";
     if (!checkedValues("strengthTags").length) return "제품 주요 강점을 하나 이상 선택해주세요.";
   }
-  if (step === 4 && !fieldValue("productionTrust")) return "생산 및 인증 과정 내용을 입력해주세요.";
+  if (step === 4 && !fieldValue("visualIdentity")) return "제품 사진에서 반드시 유지해야 할 시각 특징을 입력해주세요.";
   return "";
 }
 
@@ -1090,6 +1122,7 @@ $("#addOption")?.addEventListener("click", addOptionRow);
 $("#optionBuilder")?.addEventListener("click", handleOptionRemove);
 $("#projectWizard")?.addEventListener("submit", saveProjectForm);
 $("#toggleSubmittedContent")?.addEventListener("click", toggleSubmittedContentReview);
+$("#categorySelect")?.addEventListener("change", () => syncSubCategoryOptions());
 $$("[data-field], [data-group], [data-file-group]").forEach((field) => {
   const rememberTouch = () => {
     const key = field.dataset.field || field.dataset.group || field.dataset.fileGroup;
@@ -1103,6 +1136,7 @@ $$("[data-file-group]").forEach((field) => {
   field.addEventListener("change", () => updateFileStatus(field));
 });
 
+syncSubCategoryOptions();
 updateProgress();
 window.haoSubmissionSync?.retryPendingProjects?.().catch((error) => {
   console.warn("대기 중인 고객 접수 재전송을 시작하지 못했습니다.", error);

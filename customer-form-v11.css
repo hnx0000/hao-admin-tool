@@ -10,6 +10,29 @@
   --gold: #bd8b37;
 }
 
+.secondary-choice {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 16px;
+  background: rgba(255,255,255,.035);
+}
+
+.secondary-choice summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.style-choice-grid.compact {
+  margin-top: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 720px) {
+  .style-choice-grid.compact { grid-template-columns: 1fr; }
+  .secondary-choice { padding: 14px; }
+}
+
 * {
   box-sizing: border-box;
 }
