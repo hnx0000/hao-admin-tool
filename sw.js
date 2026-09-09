@@ -1,4 +1,4 @@
-const CACHE_NAME = "hao-detail-automation-v20260902-figma-gate2";
+const CACHE_NAME = "hao-detail-automation-v20260909-stable1";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -13,6 +13,9 @@ const APP_SHELL = [
   "./customer-form-v11.css",
   "./app.js",
   "./figma-workflow.js",
+  "./concept-process.js",
+  "./data/company-reference-dataset.js",
+  "./planning/figma-workspace.js",
   "./project-form.js",
   "./workflow-core.js",
   "./intake-triage.js",
@@ -45,13 +48,16 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET" || new URL(event.request.url).origin !== self.location.origin) return;
+  const url = new URL(event.request.url);
+  if (event.request.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/") || event.request.headers.has("Authorization")) return;
   const isDocument = event.request.mode === "navigate";
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        if (response.ok) {
+          const copy = response.clone();
+          event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)).catch(() => {}));
+        }
         return response;
       })
       .catch(async () => {

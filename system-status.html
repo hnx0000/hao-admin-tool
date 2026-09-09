@@ -939,7 +939,7 @@
 
     <section class="section" id="flow">
       <div class="section-head">
-        <div><p class="eyebrow">Workflow Map</p><h2>전체 작업 흐름</h2></div>
+        <div><p class="eyebrow">Workflow Map</p><h2>전체 작업 흐름</h2><p>2026-09-09 안정화 점검 · 아래 연결 수는 코드상 구현 현황이며 실시간 장애 검사나 생성 품질 보증이 아닙니다.</p></div>
         <div class="legend"><span class="ok"><i></i>연결 완료</span><span class="some"><i></i>부분 연결</span><span class="off"><i></i>미연결</span></div>
       </div>
       <div class="process-map-shell">
@@ -1001,16 +1001,16 @@
           <article class="process-node summary" data-state="partial"><strong>고객 내용 정리본</strong><small>로컬 원문 정규화·입력 출처 구분, 서버 버전 대기</small><span class="process-state">부분 연결</span></article>
           <article class="process-node admin" data-state="connected"><strong>관리자 프로젝트 목록</strong><small>중앙 접수 서버 프로젝트 조회와 현재 브라우저 안전본 사용</small><span class="process-state">연결 완료</span></article>
           <article class="process-node review is-decision" data-state="partial"><strong>관리자 내용 검수</strong><small>브라우저 승인 잠금 작동, 서버 강제 검증 대기</small><span class="process-state">부분 연결</span></article>
-          <article class="process-node ab" data-state="partial"><strong>최적 단일 추천 방향</strong><small>로컬 추천 작동, Codex 심층 분석은 작업 실행 필요</small><span class="process-state">부분 연결</span></article>
+          <article class="process-node ab" data-state="partial"><strong>상품군 분석·4방향·상위2개</strong><small>기존 분석 엔진 재연결, 선택 방향을 회색 구조에 반영</small><span class="process-state">검증·실행 필요</span></article>
           <article class="process-node lock" data-state="partial"><strong>기획·시안 생성 잠금</strong><small>로컬 차단 작동, 서버 권한 이중 검증 대기</small><span class="process-state">부분 연결</span></article>
           <article class="process-node idbref" data-state="connected"><strong>고객 업로드 자료</strong><small>제품·로고·참고 이미지 원본 사용</small><span class="process-state">연결 완료</span></article>
-          <article class="process-node figma" data-state="connected"><strong>Google Drive 기획안</strong><small>2026(기획안) 폴더 28개 시안을 구조·사진 리듬 참고로 사용</small><span class="process-state">연결 완료</span></article>
-          <article class="process-node mybox" data-state="connected"><strong>Google Drive 실제 제작물</strong><small>2026 폴더 실제 제작 프로젝트 22개를 승인 레퍼런스로 사용</small><span class="process-state">연결 완료</span></article>
-          <article class="process-node localref" data-state="connected"><strong>로컬 레퍼런스 DB</strong><small>분석 완료 자료를 프롬프트에 반영</small><span class="process-state">연결 완료</span></article>
-          <article class="process-node prompt" data-state="connected"><strong>이미지 생성 브리프·프롬프트</strong><small>검수 정보와 사용 가능한 자료를 결합</small><span class="process-state">연결 완료</span></article>
-          <article class="process-node openai" data-state="connected"><strong>Codex 작업 패키지</strong><small>승인 DB·해시·RUN_WITH_CODEX·결과 manifest</small><span class="process-state">반자동 연결</span></article>
-          <article class="process-node combine" data-state="connected"><strong>1차 촬영·디자인 시안</strong><small>Drive 기획안 형식의 촬영 지시·섹션 와이어·조판 계획서 생성</small><span class="process-state">연결 완료</span></article>
-          <article class="process-node draftdb" data-state="connected"><strong>IndexedDB 시안 저장</strong><small>현재 브라우저에 생성 결과 보관</small><span class="process-state">연결 완료</span></article>
+          <article class="process-node figma" data-state="partial"><strong>Google Drive 제작 전 기획안</strong><small>기존 28개 자료 인덱스·상품군 패턴 사용</small><span class="process-state">검증·실행 필요</span></article>
+          <article class="process-node mybox" data-state="partial"><strong>Google Drive 실제 제작물</strong><small>기존 레퍼런스 목록 유지</small><span class="process-state">검증·실행 필요</span></article>
+          <article class="process-node localref" data-state="partial"><strong>로컬 레퍼런스 DB</strong><small>분류·구성 패턴을 구조 시안으로 연결</small><span class="process-state">검증·실행 필요</span></article>
+          <article class="process-node prompt" data-state="connected"><strong>회색 구조 시안 패키지</strong><small>앱에서 좌 촬영·중앙 구조·우 조판 지시 준비</small><span class="process-state">구현 연결</span></article>
+          <article class="process-node openai" data-state="partial"><strong>Figma·이미지 도구 실행</strong><small>구조 JSON/기획 Markdown 인계 제공</small><span class="process-state">검증·실행 필요</span></article>
+          <article class="process-node combine" data-state="partial"><strong>실제 Figma 구조 검토·승인</strong><small>노드/리비전·검토 항목·입력 fingerprint 변경 잠금</small><span class="process-state">검증·실행 필요</span></article>
+          <article class="process-node draftdb" data-state="partial"><strong>기획·승인 상태 저장</strong><small>프로젝트별 브라우저 저장·인증된 workflow PATCH</small><span class="process-state">검증·실행 필요</span></article>
           <article class="process-node folder" data-state="partial"><strong>고객관리 폴더 저장</strong><small>사용자가 허용한 로컬 폴더에 저장</small><span class="process-state">부분 연결</span></article>
           <article class="process-node portal" data-state="connected"><strong>고객 진행현황 페이지</strong><small>중앙 서버 발급 접수번호·연락처 뒤 4자리 인증 조회 작동</small><span class="process-state">연결 완료</span></article>
           <article class="process-node feedback" data-state="partial"><strong>고객 브러시·코멘트</strong><small>시안 위 표시·코멘트·관리자 표시 토글 작동, 다른 PC 동기화 API 필요</small><span class="process-state">부분 연결</span></article>
@@ -1030,20 +1030,20 @@
         <div class="matrix-row header-row"><span>핵심 공정</span><span>상태</span><span>현재 동작</span><span>남은 연결</span></div>
         <div class="matrix-row" data-status="connected"><strong>1. 고객 작성폼</strong><span class="status-pill connected">연결 완료</span><p>5단계 텍스트·제품·로고·참고자료 접수</p><p>현재 기능 유지</p></div>
         <div class="matrix-row" data-status="connected"><strong>2. 브라우저 IndexedDB</strong><span class="status-pill connected">연결 완료</span><p>고객 원문과 파일 선저장·재전송 대기</p><p>보관기간 정책 추가</p></div>
-        <div class="matrix-row" data-status="connected"><strong>3. 중앙 접수·진행 서버</strong><span class="status-pill connected">연결 완료</span><p>접수·파일·관리자 조회·접수번호 발급·진행조회 API 응답 확인</p><p>실접수·첨부파일 회귀 테스트 유지</p></div>
+        <div class="matrix-row" data-status="connected"><strong>3. 중앙 접수·진행 서버</strong><span class="status-pill connected">연결 완료</span><p>이번 점검: 고객 조회 화면 200·관리자 목록 무인증 401</p><p>운영 실접수·인증 목록·원본 조회는 재검증 필요</p></div>
         <div class="matrix-row" data-status="partial"><strong>4. 고객 내용 정리본</strong><span class="status-pill partial">로컬 작동</span><p>입력값 정규화·출처와 미기입 구분</p><p>서버 원문/정규화본 버전 저장 추가</p></div>
-        <div class="matrix-row" data-status="connected"><strong>5. 관리자 프로젝트·고객 작성내용</strong><span class="status-pill connected">서버 연결</span><p>중앙 접수 9건의 전체 작성값·첨부자료 조회와 진행상태 관리 작동</p><p>역할별 로그인 권한 고도화</p></div>
+        <div class="matrix-row" data-status="connected"><strong>5. 관리자 프로젝트·고객 작성내용</strong><span class="status-pill connected">서버 연결</span><p>인증된 API로 목록·첨부 조회 (이번 점검: 무인증 401 확인)</p><p>역할별 로그인 권한 고도화</p></div>
         <div class="matrix-row" data-status="partial"><strong>6. 관리자 내용 검수</strong><span class="status-pill partial">로컬 승인</span><p>필수값 확인·내용 수정·승인 처리</p><p>서버 감사·승인 스냅샷 강제 검증 추가</p></div>
-        <div class="matrix-row" data-status="partial"><strong>7. 최적 단일 추천 방향</strong><span class="status-pill partial">1차 연결</span><p>한 방향만 패키지에 포함, 로컬 추천 사용</p><p>Codex 웹 검색·레퍼런스 심층 분석으로 보강</p></div>
+        <div class="matrix-row" data-status="partial"><strong>7. 상품군 분석·4방향·상위2개</strong><span class="status-pill partial">부분 연결</span><p>기존 분석 엔진 재연결, 선택 방향을 회색 구조에 반영</p><p>사전 기획 점수와 실제 이미지 품질을 구분</p></div>
         <div class="matrix-row" data-status="partial"><strong>8. 기획·시안 생성 잠금</strong><span class="status-pill partial">로컬 차단</span><p>검수 미승인 프로젝트 패키지 생성 차단</p><p>서버 권한과 승인 해시 이중 검증 추가</p></div>
         <div class="matrix-row" data-status="connected"><strong>9. 고객 업로드 자료</strong><span class="status-pill connected">연결 완료</span><p>제품·로고·참고 이미지 원본을 생성에 사용</p><p>클라우드 원본 다운로드는 서버 배포 필요</p></div>
-        <div class="matrix-row" data-status="connected"><strong>10. Google Drive 제작 전 기획안</strong><span class="status-pill connected">연결 완료</span><p>2026(기획안) 폴더의 이미지 레퍼런스 28개 확인</p><p>권한 있는 Google 계정·Codex 커넥터에서 원본 분석</p></div>
-        <div class="matrix-row" data-status="connected"><strong>11. Google Drive 실제 제작 레퍼런스</strong><span class="status-pill connected">연결 완료</span><p>2026 폴더의 실제 제작 프로젝트 22개 확인</p><p>PSD 등 원본은 공개 복제 없이 구조 참고에만 사용</p></div>
-        <div class="matrix-row" data-status="connected"><strong>12. 로컬 레퍼런스 DB</strong><span class="status-pill connected">연결 완료</span><p>분석된 상세페이지 자료를 구조 참고에 사용</p><p>출처·승인·카테고리 메타데이터 강화</p></div>
-        <div class="matrix-row" data-status="connected"><strong>13. 이미지 생성 브리프</strong><span class="status-pill connected">연결 완료</span><p>검수 정보·최적 단일 방향·사용 자료를 결합</p><p>Drive 기획안·실제 제작물 출처와 사용 경계 자동 첨부</p></div>
-        <div class="matrix-row" data-status="connected"><strong>14. Codex 작업 패키지</strong><span class="status-pill connected">반자동 연결</span><p>ZIP·승인 해시·작업별 JSON·RUN_WITH_CODEX 생성</p><p>Codex 실행 후 result-manifest를 관리자툴로 재반영</p></div>
-        <div class="matrix-row" data-status="connected"><strong>15. 1차 촬영·디자인 시안</strong><span class="status-pill connected">연결 완료</span><p>Drive 기획안 구조의 긴 촬영·구성·조판 기획서 확인</p><p>프로젝트별 자동 템플릿 확장</p></div>
-        <div class="matrix-row" data-status="connected"><strong>16. IndexedDB 시안 저장</strong><span class="status-pill connected">연결 완료</span><p>생성 이미지와 검토 상태를 현재 브라우저에 저장</p><p>서버 시안 버전 저장 추가</p></div>
+        <div class="matrix-row" data-status="partial"><strong>10. Google Drive 제작 전 기획안</strong><span class="status-pill partial">부분 연결</span><p>기존 28개 자료 인덱스·상품군 패턴 사용</p><p>파일별 원본·페이지·디자인 근거 정밀 검증 필요</p></div>
+        <div class="matrix-row" data-status="partial"><strong>11. Google Drive 실제 제작물</strong><span class="status-pill partial">부분 연결</span><p>기존 레퍼런스 목록 유지</p><p>실시간 원본 재분석·승인 확인은 별도 작업</p></div>
+        <div class="matrix-row" data-status="partial"><strong>12. 로컬 레퍼런스 DB</strong><span class="status-pill partial">부분 연결</span><p>분류·구성 패턴을 구조 시안으로 연결</p><p>세부 폰트·스케일·페이지별 출처 보강 필요</p></div>
+        <div class="matrix-row" data-status="connected"><strong>13. 회색 구조 시안 패키지</strong><span class="status-pill connected">구현 연결</span><p>앱에서 좌 촬영·중앙 구조·우 조판 지시 준비</p><p>실제 Figma 보드 생성과 동일하지 않음</p></div>
+        <div class="matrix-row" data-status="partial"><strong>14. Figma·이미지 도구 실행</strong><span class="status-pill partial">부분 연결</span><p>구조 JSON/기획 Markdown 인계 제공</p><p>Figma 및 이미지 생성 도구 자동 실행 미연결</p></div>
+        <div class="matrix-row" data-status="partial"><strong>15. 실제 Figma 구조 검토·승인</strong><span class="status-pill partial">부분 연결</span><p>노드/리비전·검토 항목·입력 fingerprint 변경 잠금</p><p>실제 파일 열람은 검토자가 확인, 서버 승인 강제 검증 필요</p></div>
+        <div class="matrix-row" data-status="partial"><strong>16. 기획·승인 상태 저장</strong><span class="status-pill partial">부분 연결</span><p>프로젝트별 브라우저 저장·인증된 workflow PATCH</p><p>중앙 서버 쓰기·다른 PC 동기화는 이번 검수에서 미실행</p></div>
         <div class="matrix-row" data-status="partial"><strong>17. 고객관리 폴더 저장</strong><span class="status-pill partial">사용자 권한 필요</span><p>허용한 로컬 폴더에 정리본·프롬프트·이미지 저장</p><p>재연결 안내와 중앙 백업</p></div>
         <div class="matrix-row" data-status="connected"><strong>18. 관리자·고객 진행조회 분리</strong><span class="status-pill connected">연결 완료</span><p>관리자는 다크 점검 화면, 고객은 중앙 서버 화면에서 접수번호·연락처 뒤 4자리로 조회</p><p>1차 시안 링크와 컨펌 상태 자동 연결 확대</p></div>
         <div class="matrix-row" data-status="partial"><strong>19. 고객 브러시·코멘트</strong><span class="status-pill partial">브라우저 작동</span><p>시안 위 브러시 표시·텍스트 코멘트·관리자 토글 작동</p><p>다른 PC 동기화를 위한 중앙 피드백 API 추가</p></div>
@@ -1090,7 +1090,7 @@
       document.getElementById("disconnectedCount").textContent = counts.disconnected || 0;
       document.getElementById("healthScore").textContent = `${score}점`;
       document.getElementById("healthBar").style.width = `${score}%`;
-      document.querySelector(".health-label").textContent = score >= 80 ? "운영 안정화" : score >= 65 ? "핵심 흐름 가동" : "보완 필요";
+      document.querySelector(".health-label").textContent = "구현 연결 현황 · 실운영 통과율 아님";
       document.getElementById("healthNote").textContent = `${total}개 핵심 공정 기준 · 완료 ${counts.connected || 0} · 부분 ${counts.partial || 0} · 미연결 ${counts.disconnected || 0}`;
       document.getElementById("criticalCount").textContent = document.querySelectorAll(".priority-card.p0 li").length;
       const matrixCounts = rows.reduce((result, row) => {

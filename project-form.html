@@ -7,7 +7,7 @@
   <title>AI 상세페이지 원고 생성</title>
   <link rel="manifest" href="app.webmanifest">
   <link rel="icon" href="assets/app-icons/hao-192.png" type="image/png">
-  <link rel="stylesheet" href="customer-form-v11.css?v=20260902-message-first">
+  <link rel="stylesheet" href="customer-form-v11.css?v=20260909-stable1">
 </head>
 <body class="public-page wizard-page">
   <main class="ai-wizard-shell">
@@ -258,27 +258,24 @@
 
         <aside class="dual-storage-status" id="dualStorageStatus" hidden aria-live="polite"></aside>
 
-        <div class="hidden-field-flags">
-          <label><input type="checkbox" data-group="imageAssets" value="제품 이미지 있음" checked>제품 이미지 있음</label>
-        </div>
       </section>
 
       <div class="wizard-error" id="formError"></div>
       <footer class="wizard-actions">
         <button class="wizard-prev" id="prevStep" type="button">이전으로</button>
         <button class="wizard-next" id="nextStep" type="button">다음으로 넘어가기 <span>→</span></button>
-        <button class="wizard-submit" id="submitProjectForm" type="submit">상세페이지 원고 생성하기</button>
+        <button class="wizard-submit" id="submitProjectForm" type="submit">고객 정보 제출하기</button>
       </footer>
     </form>
 
     <section class="ai-generating" id="generatingScreen" aria-live="polite">
       <div class="generating-icon">▣</div>
-      <h1>당신만의 브랜드 이야기가<br>가장 매력적인 페이지로 탄생하는 중입니다.</h1>
+      <h1>작성한 고객 정보의<br>저장 상태를 확인합니다.</h1>
       <ul>
-        <li class="done"><span>✓</span> 제품 정보 구조화 중...</li>
-        <li class="done"><span>✓</span> 맞춤 견적 산출 중...</li>
-        <li><span>✓</span> 브랜드 페르소나 및 핵심 가치 도출 중...</li>
-        <li><span>✓</span> 상세페이지 원고와 섹션 구성 생성 중...</li>
+        <li>입력 원문과 첨부 원본 보관</li>
+        <li>중앙 서버 접수번호 확인</li>
+        <li>관리자 검수 후 상품군 분석 진행</li>
+        <li>회색 구조 시안 승인 후 제작 가이드 진행</li>
       </ul>
       <div class="submit-message" id="submitMessage"></div>
       <a class="wizard-home-link" href="index.html">관리자 화면에서 접수 내용 확인하기</a>
@@ -286,10 +283,12 @@
 
     <section class="ai-result-page" id="resultScreen" aria-live="polite">
       <header class="result-hero">
-        <p>AI 상세페이지 기획안</p>
+        <p>고객 입력 요약 · 관리자 분석·검토 대기</p>
         <h1 id="resultProductName">제품명</h1>
         <span id="resultMeta">브랜드 상세페이지 원고 초안</span>
       </header>
+
+      <p id="resultSubmissionStatus" role="status" aria-live="polite"></p>
 
       <section class="result-card result-summary-card" id="receiptAccessPanel" hidden>
         <div>
@@ -371,7 +370,7 @@
       <section class="result-card">
         <div>
           <span>04</span>
-          <h2>AI가 다듬은 상세 문구</h2>
+          <h2>입력 기반 임시 문구 · AI 작성 전</h2>
         </div>
         <div class="result-developed-copy" id="resultDevelopedCopy"></div>
       </section>
@@ -418,8 +417,8 @@
       </section>
 
       <footer class="result-actions">
-        <a href="project-form.html">셀프 기획안 수정</a>
-        <a href="상세페이지 제작물/자동생성_기획안/index.html">디자인 의뢰하기</a>
+        <a href="project-form.html">새로운 접수 작성</a>
+        <a href="https://hao-admin.vigo.co.kr/track.html" rel="noopener" target="_blank">중앙 서버 진행조회</a>
       </footer>
     </section>
   </main>
@@ -427,9 +426,9 @@
   <script src="hao-config.js?v=20260819-4"></script>
   <script src="workflow-core.js?v=20260902-semantic"></script>
   <script src="intake-triage.js?v=20260901-intake1"></script>
-  <script src="submission-sync.js?v=20260819-4"></script>
-  <script src="customer-file-store.js?v=20260819-4"></script>
-  <script src="project-form.js?v=20260902-message-first"></script>
+  <script src="submission-sync.js?v=20260909-stable1"></script>
+  <script src="customer-file-store.js?v=20260909-stable1"></script>
+  <script src="project-form.js?v=20260909-stable1"></script>
   <script src="pwa-install.js?v=20260820-3"></script>
 </body>
 </html>

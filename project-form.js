@@ -127,7 +127,7 @@ function collectProjectForm() {
     reference: { urls: data.referenceUrls || "", likes: data.referenceLikes || "", dislikes: data.referenceDislikes || "" },
     claims: { allowedEvidence: data.evidenceBoundary || "", productionTrust: data.productionTrust || "" },
   };
-  data.source = "AI 상세페이지 5단계 원고 생성폼";
+  data.source = "고객 정보 5단계 접수폼";
   data.customerInputVersion = "wizard-intake-v2-message-first";
   data.status = "시안 분석 요청 완료";
   return data;
@@ -261,65 +261,6 @@ function shortText(text = "", fallback = "") {
   return (String(text).trim() || fallback).replace(/\s+/g, " ");
 }
 
-function resultSectionsFor(data) {
-  const productName = shortText(data.productName, "제품");
-  const strengthTags = Array.isArray(data.strengthTags) ? data.strengthTags : [];
-  const primaryStrength = strengthTags[0] || "핵심 베네핏";
-  return [
-    {
-      title: "첫 화면 메인 비주얼",
-      copy: `${productName}의 핵심 가치를 한눈에 보여주고, 고객이 바로 이해할 수 있는 메인 카피를 배치합니다.`,
-    },
-    {
-      title: "고객 고민 공감",
-      copy: `${shortText(data.targetCustomer, "타깃 고객")}이 겪는 불편함을 먼저 짚어 구매 이유를 만듭니다.`,
-    },
-    {
-      title: "핵심 경쟁력 강조",
-      copy: shortText(data.coreStrength, `${primaryStrength} 중심으로 제품 차별점을 정리합니다.`),
-    },
-    {
-      title: "성분/기능/사용감 설명",
-      copy: `${strengthTags.join(", ") || "제품 주요 강점"}을 카드형 정보로 나누어 신뢰감 있게 설명합니다.`,
-    },
-    {
-      title: "품질과 인증 신뢰 구간",
-      copy: shortText(data.productionTrust, "제조 과정, 품질 관리, 인증 정보를 정리해 구매 불안을 줄입니다."),
-    },
-    {
-      title: "구매 옵션과 리뷰 설득",
-      copy: "옵션 구성, 가격, 리뷰 키워드, 구매 혜택을 마지막 전환 구간에 배치합니다.",
-    },
-  ];
-}
-
-function optionSummary(options = []) {
-  if (!options.length) return "입력된 옵션 정보를 바탕으로 구성/용량/가격을 정리합니다.";
-  return options.map((item) => [item.name, item.volume, item.price].filter(Boolean).join(" · ")).join("\n");
-}
-
-function renderResultPlan(data) {
-  $("#resultProductName").textContent = shortText(data.productName, "상세페이지 기획안");
-  $("#resultMeta").textContent = `${shortText(data.clientName || data.companyName, "브랜드")} · ${shortText(data.category, "카테고리")} · ${shortText(data.styleTone, "스타일")}`;
-  $("#resultHeroSentence").textContent = shortText(data.heroSentence, "고객을 사로잡는 첫 문장을 중심으로 상세페이지 흐름을 구성합니다.");
-  $("#resultTarget").textContent = shortText(data.targetCustomer, "제품 구매 가능성이 높은 고객을 중심으로 설득 흐름을 설계합니다.");
-  $("#resultTone").textContent = shortText(data.styleTone, "정보형과 세일즈형을 균형 있게 반영합니다.");
-  $("#resultHeadline").textContent = shortText(data.heroSentence, `${shortText(data.productName, "제품")}의 가치를 가장 먼저 보여주는 메인 카피를 제안합니다.`);
-  $("#resultStrength").textContent = shortText(data.coreStrength, "제품의 차별점과 구매 이유를 상세페이지 중반부에서 명확히 설명합니다.");
-  $("#resultTrust").textContent = shortText(data.productionTrust, "제조 과정과 품질 관리 기준을 근거로 신뢰 구간을 구성합니다.");
-  $("#resultBenefit").textContent = shortText(data.purchaseBenefit, "구매를 유도할 수 있는 혜택을 CTA 전 구간에 배치합니다.");
-  $("#resultReview").textContent = shortText(data.reviewKeywords, "만족도 높은 리뷰 키워드를 후기 섹션 카피에 반영합니다.");
-  $("#resultOptions").textContent = optionSummary(data.options);
-  $("#resultSections").innerHTML = resultSectionsFor(data).map((section, index) => `
-    <li>
-      <span>${String(index + 1).padStart(2, "0")}</span>
-      <div>
-        <strong>${escapeHtml(section.title)}</strong>
-        <p>${escapeHtml(section.copy)}</p>
-      </div>
-    </li>
-  `).join("");
-}
 
 function submittedContentReviewText(project = {}) {
   const files = (group) => Array.isArray(project[group]) && project[group].length
@@ -354,6 +295,21 @@ function submittedContentReviewText(project = {}) {
     `반드시 포함할 내용: ${project.mustInclude || "미기입"}`,
     `추가 요청사항: ${project.additionalNotes || project.clientRequests || "미기입"}`,
     `참고 링크: ${project.referenceUrls || project.references || "자료없음"}`,
+    ``,
+    `[메시지·시각·근거 원문]`,
+    `구매 전 망설임: ${project.buyerConcern || "확인 필요"}`,
+    `첫 구매 이유: ${project.primaryPurchaseReason || "확인 필요"}`,
+    `메시지 순서: ${project.messagePriority || "확인 필요"}`,
+    `강조: ${project.emphasis || "확인 필요"}`,
+    `비강조: ${project.deEmphasis || "확인 필요"}`,
+    `증빙 사용 범위: ${project.evidenceBoundary || "확인 필요"}`,
+    `금지 표현: ${project.banWords || "확인 필요"}`,
+    `제품 시각 정체성: ${project.visualIdentity || "확인 필요"}`,
+    `원본 사용 우선순위: ${project.productImageUsage || "확인 필요"}`,
+    `촬영 제약: ${project.shootingConstraints || "확인 필요"}`,
+    `레퍼런스 선호: ${project.referenceLikes || "확인 필요"}`,
+    `레퍼런스 비선호: ${project.referenceDislikes || "확인 필요"}`,
+    `맛·옵션 분리: ${project.variantRule || "확인 필요"}`,
     ``,
     `[첨부 파일]`,
     `제품 이미지: ${files("productImages")}`,
@@ -549,8 +505,8 @@ function developedCopyPlan(data) {
   const target = plan.target;
   const strength = plan.strength;
   const trust = shortText(data.productionTrust, plan.categoryProfile.proof);
-  const benefit = shortText(data.purchaseBenefit, "구매 전 망설임을 줄이는 구성과 혜택");
-  const review = shortText(data.reviewKeywords, "편안함, 만족감, 재구매 의향");
+  const benefit = String(data.purchaseBenefit || "").trim();
+  const review = String(data.reviewKeywords || "").trim();
   const toneGuide = styleManuscriptGuide(plan.styleProfile);
   return [
     {
@@ -567,7 +523,9 @@ function developedCopyPlan(data) {
     },
     {
       label: "전환 마감 문구",
-      copy: `${benefit}을 마지막 CTA 앞에 배치하고, 리뷰 키워드 “${review}”를 ${toneGuide.closing} 톤으로 섞어 마감 문구로 구성합니다.`,
+      copy: benefit || review
+        ? [benefit ? `${benefit}을 판매 조건으로 분리해 CTA 직전에 배치합니다.` : "", review ? `제공된 실제 리뷰 “${review}”만 ${toneGuide.closing} 톤으로 정리합니다.` : ""].filter(Boolean).join(" ")
+        : "확정된 구매 혜택과 실제 후기 자료가 없으므로 시안에서 임의 문구를 만들지 않습니다.",
     },
   ];
 }
@@ -590,7 +548,7 @@ function visualGuideItems(data) {
     {
       title: "상세 연출 컷",
       copy: `${visualBase}을 중심으로 사용 장면, 구성품, 디테일 컷을 나눠 배치합니다. 고객이 제품을 실제로 쓰는 상황을 상상할 수 있게 만드는 구간입니다.`,
-      note: "섹션별로 이미지 역할을 나눠 반복 노출",
+      note: "섹션별로 이미지 역할을 분리하고 같은 사진은 재사용하지 않음",
     },
     {
       title: "정보 디자인",
@@ -817,8 +775,10 @@ function resultSectionsFor(data) {
 
   return [
     {
-      title: "브랜드 스토리",
-      copy: `${brandName}가 ${productName}을 만들게 된 이유와 고객에게 전하고 싶은 가치를 ${toneGuide.story} 방식으로 정리합니다. 제품 소개보다 먼저 브랜드의 태도와 약속이 느껴지게 구성합니다.`,
+      title: "브랜드·제품 도입",
+      copy: data.additionalNotes && /브랜드|철학|이유|스토리/.test(data.additionalNotes)
+        ? `${brandName}가 제공한 브랜드 원문 범위에서 ${productName}의 도입부를 ${toneGuide.story} 방식으로 정리합니다.`
+        : `브랜드 스토리 근거는 확인 필요입니다. ${productName}의 실제 제품명과 확인된 구매 이유를 먼저 보여주고 임의의 브랜드 철학은 만들지 않습니다.`,
       suggestion: linkedSuggestion("story", data, plan, toneGuide),
     },
     {
@@ -827,7 +787,7 @@ function resultSectionsFor(data) {
       suggestion: linkedSuggestion("empathy", data, plan, toneGuide),
     },
     {
-      title: "핵심 특장점 5",
+      title: "확인된 핵심 특장점",
       copy: "고객이 선택한 강점을 상세페이지용 핵심 카피로 자연스럽게 확장합니다.",
       points: keyPoints,
     },
@@ -842,13 +802,13 @@ function resultSectionsFor(data) {
       suggestion: linkedSuggestion("trust", data, plan, toneGuide),
     },
     {
-      title: "구매 포인트와 리뷰 가이드",
-      copy: `구매 포인트: ${shortText(data.purchaseBenefit, "구성, 혜택, 사용 편의성, 선물성, 가격 만족도를 CTA 앞에 배치합니다.")}\n리뷰 가이드: ${shortText(data.reviewKeywords, "만족감, 재구매 이유, 사용감, 배송 만족도, 선물 반응을 리뷰 키워드로 수집합니다.")}\n마감 톤: ${toneGuide.closing} 흐름으로 정리합니다.`,
+      title: "구매 조건과 실제 후기",
+      copy: `구매 조건: ${shortText(data.purchaseBenefit, "확인 필요 · 확정 전 시안에서 강조하지 않음")}\n실제 후기: ${shortText(data.reviewKeywords, "확인 필요 · 실제 후기 자료가 없으므로 문구 생성 금지")}\n마감 톤: 확인된 구매 이유만 ${toneGuide.closing} 흐름으로 다시 정리합니다.`,
       suggestion: linkedSuggestion("purchase", data, plan, toneGuide),
     },
     {
-      title: "가격표",
-      copy: priceGuide,
+      title: "구성·용량·가격",
+      copy: `${priceGuide}\n${data.options.some((item) => item.price) ? "" : "판매 가격은 확인 필요이며 핵심 메시지로 강조하지 않습니다."}`.trim(),
       suggestion: linkedSuggestion("price", data, plan, toneGuide),
     },
     {
@@ -858,7 +818,7 @@ function resultSectionsFor(data) {
     },
     {
       title: "FAQ",
-      copy: `Q1. 어떤 고객에게 추천하나요?\n${target}에게 추천합니다.\n\nQ2. 구성과 가격은 어떻게 되나요?\n${priceGuide}\n\nQ3. 참고한 레퍼런스가 있나요?\n${referenceUrls.length ? referenceUrls.join("\n") : "입력된 타사 레퍼런스 URL이 있으면 톤과 흐름만 참고합니다."}`,
+      copy: `Q1. 어떤 고객에게 추천하나요?\n${target}에게 추천합니다.\n\nQ2. 확인된 구성과 용량은 무엇인가요?\n${priceGuide}\n${data.options.some((item) => item.price) ? "" : "가격은 확인 필요입니다."}\n\nQ3. 참고한 레퍼런스가 있나요?\n${referenceUrls.length ? referenceUrls.join("\n") : "입력된 타사 레퍼런스 URL이 있으면 톤과 흐름만 참고합니다."}`,
       suggestion: linkedSuggestion("faq", data, plan, toneGuide),
     },
   ];
@@ -947,8 +907,40 @@ function renderResultPlan(data) {
   `).join("");
 }
 
+let submissionInFlight = false;
+let submissionAttemptId = "";
+let displayedSubmissionId = "";
+function renderReceiptAccess(project) {
+  const panel = $("#receiptAccessPanel");
+  if (!panel) return;
+  panel.hidden = !project.receiptNo;
+  if (!project.receiptNo) return;
+  $("#issuedReceiptNo").textContent = project.receiptNo;
+  const verify = String(project.phone || project.contactInfo || "").replace(/\D/g, "").slice(-4);
+  const url = new URL("https://hao-admin.vigo.co.kr/track.html");
+  url.searchParams.set("receipt", project.receiptNo);
+  if (verify) url.searchParams.set("verify", verify);
+  $("#customerTrackLink").href = url.toString();
+}
+window.addEventListener("hao:submission-synced", (event) => {
+  const project = event.detail?.project;
+  if (!project || project.id !== displayedSubmissionId) return;
+  renderReceiptAccess(project);
+  $("#resultSubmissionStatus").textContent = `서버 재전송 완료 · ${project.receiptNo ? `접수번호: ${project.receiptNo}` : "접수번호 발급 확인 필요"} · 아래는 입력 요약이며 시안 생성 결과가 아닙니다.`;
+  renderDualStorageStatus("saved", "synced", "보관 중인 접수의 서버 재전송이 완료되었습니다.");
+});
 async function saveProjectForm(event) {
   event?.preventDefault();
+  if (submissionInFlight) return;
+  submissionInFlight = true;
+  const button = $("#submitProjectForm");
+  if (button) button.disabled = true;
+  try { await saveProjectFormOnce(); }
+  catch (error) { setError(`접수를 마치지 못했습니다. 입력과 첨부를 유지합니다. ${error.message || "저장 오류"}`); }
+  finally { submissionInFlight = false; if (button) button.disabled = false; }
+}
+
+async function saveProjectFormOnce() {
   const data = collectProjectForm();
   const validation = validateProject(data);
 
@@ -958,8 +950,9 @@ async function saveProjectForm(event) {
   }
 
   const rawProject = {
-    id: `customer-project-${Date.now()}`,
+    id: submissionAttemptId || (submissionAttemptId = `customer-project-${crypto.randomUUID()}`),
     ...data,
+    ...(LOCAL_FLOW_TEST ? { localTestOnly: true } : {}),
     savedAt: new Date().toLocaleString("ko-KR"),
   };
   let project = window.haoWorkflow?.normalizeCustomerSubmission
@@ -1005,20 +998,19 @@ async function saveProjectForm(event) {
       project.cloudFiles = Array.isArray(remoteProject.files)
         ? remoteProject.files
         : Array.isArray(syncResult.files) ? syncResult.files : [];
-      project.workflow = {
-        ...(project.workflow || {}),
-        cloudSync: { status: "synced", at: new Date().toISOString(), id: project.cloudSubmissionId || "" },
-      };
+      project = window.haoSubmissionSync.applyServerReceipt(project, syncResult);
       cloudSyncMessage = project.workflow?.intake?.status === "promoted"
         ? "온라인 접수함 저장 후 관리자 프로젝트에 자동 등록되었습니다."
         : "온라인 임시 접수함에 저장되었습니다. 부족한 내용을 보완하면 프로젝트로 자동 등록됩니다.";
-      renderDualStorageStatus(localSaved ? "saved" : "failed", "synced", "이중 저장이 완료되었습니다. 다른 컴퓨터의 관리자도 서버 자료를 확인할 수 있습니다.");
+      renderDualStorageStatus(localSaved ? "saved" : "failed", "synced", localSaved ? "브라우저와 서버에 저장되었습니다." : "서버에는 저장되었으나 브라우저 첨부 보관은 실패했습니다.");
     } catch (error) {
       project.workflow = {
         ...(project.workflow || {}),
         cloudSync: { status: "failed", at: new Date().toISOString(), message: error?.message || "동기화 실패" },
       };
-      cloudSyncMessage = "온라인 전송에 실패해 현재 브라우저에 안전하게 보관했습니다. 담당자에게 접수 여부를 확인해주세요.";
+      cloudSyncMessage = localSaved
+        ? "온라인 전송에 실패했습니다. 첨부 원본은 이 브라우저에 보관되며 같은 접수 ID로 재전송합니다."
+        : "온라인 전송과 첨부 원본 보관에 모두 실패했습니다. 이 화면을 닫지 말고 다시 제출해 주세요.";
       renderDualStorageStatus(localSaved ? "saved" : "failed", "failed", "네트워크가 복구되면 브라우저 보관본을 자동으로 다시 전송합니다.");
     }
     persistSubmittedProject(project);
@@ -1033,15 +1025,19 @@ async function saveProjectForm(event) {
   }
   persistSubmittedProject(project);
 
+  displayedSubmissionId = project.id;
   $("#projectWizard").classList.add("is-complete");
   $("#generatingScreen").classList.add("active");
   $("#submitMessage").innerHTML = `
-    <strong>원고 생성 요청이 완료되었습니다.</strong>
+    <strong>${project.workflow?.cloudSync?.status === "synced" ? "고객 정보가 서버에 접수되었습니다." : "서버 접수 미완료 · 저장 상태를 확인해 주세요."}</strong>
     <p>작성 내용은 30일 임시 접수함에 보관되고 작성률 60% 이상일 때 관리자 프로젝트로 자동 등록됩니다. ${LOCAL_FLOW_TEST ? "로컬 테스트 접수로 저장되었습니다." : cloudSyncMessage}</p>
     <p><b>현재 작성률 ${escapeHtml(project.workflow?.intake?.score ?? 0)}%</b> · ${escapeHtml(project.workflow?.intake?.message || "작성 내용을 확인하고 있습니다.")}</p>
     ${project.workflow?.intake?.status === "needs-more-info" ? '<button class="primary" id="enableSupplementNotifications" type="button">보완 요청 앱 알림 받기</button>' : ""}
     ${project.receiptNo ? `<p><b>중앙 서버 접수번호: ${escapeHtml(project.receiptNo)}</b><br>제작 진행상황 확인에는 이 번호와 연락처 뒤 4자리가 필요합니다.</p>` : ""}
   `;
+  $("#resultSubmissionStatus").textContent = LOCAL_FLOW_TEST
+    ? "격리 로컬 테스트 저장 완료 · 실제 서버로 전송하지 않았습니다. 아래는 입력 요약이며 시안 생성 결과가 아닙니다."
+    : `${cloudSyncMessage} ${project.receiptNo ? `접수번호: ${project.receiptNo}` : "중앙 서버 접수번호 미발급 · 전송 상태 확인 필요"} · 아래는 입력 요약이며 시안 생성 결과가 아닙니다.`;
   const notificationButton = $("#enableSupplementNotifications");
   if (notificationButton) {
     notificationButton.addEventListener("click", async () => {
@@ -1055,18 +1051,7 @@ async function saveProjectForm(event) {
       notificationButton.textContent = "앱 알림이 설정되었습니다.";
     });
   }
-  const receiptPanel = $("#receiptAccessPanel");
-  if (receiptPanel) {
-    receiptPanel.hidden = !project.receiptNo;
-    if (project.receiptNo) {
-      $("#issuedReceiptNo").textContent = project.receiptNo;
-      const verify = String(project.phone || project.contactInfo || "").replace(/\D/g, "").slice(-4);
-      const trackUrl = new URL("https://hao-admin.vigo.co.kr/track.html");
-      trackUrl.searchParams.set("receipt", project.receiptNo);
-      if (verify) trackUrl.searchParams.set("verify", verify);
-      $("#customerTrackLink").href = trackUrl.toString();
-    }
-  }
+  renderReceiptAccess(project);
   renderSubmittedContentReview(project);
   renderResultPlan(data);
   window.setTimeout(() => {
@@ -1138,6 +1123,6 @@ $$("[data-file-group]").forEach((field) => {
 
 syncSubCategoryOptions();
 updateProgress();
-window.haoSubmissionSync?.retryPendingProjects?.().catch((error) => {
+if (!LOCAL_FLOW_TEST) window.haoSubmissionSync?.retryPendingProjects?.().catch((error) => {
   console.warn("대기 중인 고객 접수 재전송을 시작하지 못했습니다.", error);
 });

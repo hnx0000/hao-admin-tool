@@ -301,7 +301,8 @@
     if (Array.isArray(spec.drivePattern?.sequence) && spec.drivePattern.sequence.length) {
       const sequence = spec.drivePattern.sequence.slice();
       const bias = blueprint.sectionBias || [];
-      if (blueprint.id === "evidence-trust") return sequence.slice().sort((a, b) => bias.some((key) => b.includes(key)) - bias.some((key) => a.includes(key)));
+      // 방향별 강조는 본문에서만 바꾼다. 도입/마무리까지 재정렬하면 페이지 흐름이 끊긴다.
+      if (blueprint.id === "evidence-trust" && sequence.length > 2) return [sequence[0], ...sequence.slice(1, -1).sort((a, b) => bias.some((key) => b.includes(key)) - bias.some((key) => a.includes(key))), sequence.at(-1)];
       return sequence;
     }
     const ranked = spec.sectionPool.map((section, index) => ({
@@ -390,33 +391,16 @@
       differentiation: 5,
       latestDesign: Math.min(5, 2 + (input.references.length ? 1 : 0) + (input.referenceIntent.likes ? 1 : 0) + (input.referenceIntent.dislikes ? 1 : 0)),
     };
-    const categoryFit = {
-      "화장품": { "brand-editorial": 4, "evidence-trust": 2, "usage-conversion": 2, "product-system": 1 },
-      "음식": { "brand-editorial": 2, "evidence-trust": 1, "usage-conversion": 3, "product-system": 0 },
-      "기기": { "brand-editorial": 0, "evidence-trust": 3, "usage-conversion": 2, "product-system": 5 },
-      "건강기능식품": { "brand-editorial": 1, "evidence-trust": 5, "usage-conversion": 2, "product-system": 1 },
-      "기타제품": { "brand-editorial": 2, "evidence-trust": 1, "usage-conversion": 2, "product-system": 3 },
-    }[input.majorCategory]?.[blueprint.id] || 0;
-    const directionModifier = (blueprint.id === "brand-editorial"
-      ? (input.desiredMood.length ? 3 : 0) + (input.references.length ? 1 : 0) - (input.productImages.length ? 0 : 2) - (/감성|추상/.test(input.deEmphasis) ? 4 : 0)
-      : blueprint.id === "evidence-trust"
-        ? (input.evidence.length ? Math.min(5, input.evidence.length * 2) : -5)
-        : blueprint.id === "usage-conversion"
-          ? (input.targetCustomer ? 4 : -3)
-          : (input.productImages.length ? Math.min(5, input.productImages.length * 2) : -6) + Math.min(2, featureCount)) + categoryFit;
-    let score = Object.values(components).reduce((sum, value) => sum + value, 0) + evidenceBoost / 2 + detailBoost / 2 + directionModifier;
-    score = (score * 0.94) - Math.min(12, validation.missing.length * 1.5);
-    score = Math.max(0, Math.min(validation.complete ? 96 : 94, Math.round(score)));
-    // 입력이 충실한 프로젝트에서 모든 방향이 상한점으로 뭉치는 현상을 막는다.
-    // 감성·증빙·제품 정보 보유량에 따라 각 방향의 실제 활용 한계를 반영한다.
-    const saturationAdjustment = blueprint.id === "brand-editorial"
-      ? (input.desiredMood.length ? -1 : -5)
-      : blueprint.id === "evidence-trust"
-        ? (evidenceCount >= 4 ? 0 : -Math.max(2, 6 - evidenceCount))
-        : blueprint.id === "usage-conversion"
-          ? 0
-          : (featureCount >= 5 ? -1 : -Math.max(2, 6 - featureCount));
-    score = Math.max(0, score + saturationAdjustment);
+    // These are deterministic planning estimates, not a rendered-image QA score.
+    components.visualQuality = input.productImages.length ? 9 : 0;
+    components.differentiation = input.referenceIntent.dislikes ? 3 : 1;
+    components.latestDesign = input.references.length ? 3 : 0;
+    components.productFit = Math.min(20, components.productFit + detailBoost / 2);
+    components.brandFit = Math.min(15, components.brandFit + (blueprint.id === "brand-editorial" && input.desiredMood.length ? 1 : 0));
+    components.messageClarity = Math.max(0, components.messageClarity - Math.min(5, validation.missing.length / 3));
+    components.informationStructure = Math.min(15, components.informationStructure + evidenceBoost / 2);
+    Object.keys(components).forEach(key => { components[key] = Math.round(components[key] * 2) / 2; });
+    const score = Object.values(components).reduce((sum, value) => sum + value, 0);
     return { score, components };
   }
 

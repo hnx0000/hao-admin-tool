@@ -56,8 +56,7 @@
     await transactionDone(transaction);
   }
 
-  async function putFileRecords(database, projectId, fileGroups) {
-    const transaction = database.transaction(FILE_STORE, "readwrite");
+  function putFileRecords(transaction, projectId, fileGroups) {
     const store = transaction.objectStore(FILE_STORE);
     Object.entries(fileGroups || {}).forEach(([group, files]) => {
       Array.from(files || []).forEach((file, indexNumber) => {
@@ -74,14 +73,34 @@
         });
       });
     });
-    await transactionDone(transaction);
+  }
+
+  // Delete + replacement + submission metadata commit together. A quota error rolls
+  // back the entire transaction instead of destroying the previous attachments.
+  async function replaceRecords(database, projectId, fileGroups, submission, group = "") {
+    const stores = submission ? [FILE_STORE, SUBMISSION_STORE] : [FILE_STORE];
+    const transaction = database.transaction(stores, "readwrite");
+    const done = transactionDone(transaction);
+    const cursorRequest = transaction.objectStore(FILE_STORE).index("projectId").openCursor(IDBKeyRange.only(projectId));
+    cursorRequest.onsuccess = () => {
+      const cursor = cursorRequest.result;
+      if (cursor) {
+        if (!group || cursor.value.group === group) cursor.delete();
+        cursor.continue();
+        return;
+      }
+      try {
+        putFileRecords(transaction, projectId, fileGroups);
+        if (submission) transaction.objectStore(SUBMISSION_STORE).put(submission);
+      } catch { transaction.abort(); }
+    };
+    await done;
   }
 
   async function saveProjectFiles(projectId, fileGroups) {
     const database = await openDatabase();
     try {
-      await deleteFileRecords(database, projectId);
-      await putFileRecords(database, projectId, fileGroups);
+      await replaceRecords(database, projectId, fileGroups);
     } finally {
       database.close();
     }
@@ -90,8 +109,7 @@
   async function saveProjectFileGroup(projectId, group, files) {
     const database = await openDatabase();
     try {
-      await deleteFileRecords(database, projectId, group);
-      await putFileRecords(database, projectId, { [group]: files });
+      await replaceRecords(database, projectId, { [group]: files }, null, group);
     } finally {
       database.close();
     }
@@ -122,11 +140,9 @@
   }
 
   async function saveLocalSubmission(project, fileGroups) {
-    await saveProjectFiles(project.id, fileGroups);
     const database = await openDatabase();
     try {
-      const transaction = database.transaction(SUBMISSION_STORE, "readwrite");
-      transaction.objectStore(SUBMISSION_STORE).put({
+      await replaceRecords(database, project.id, fileGroups, {
         projectId: project.id,
         project,
         syncStatus: "pending",
@@ -136,7 +152,6 @@
         lastError: "",
         remoteSubmissionId: "",
       });
-      await transactionDone(transaction);
     } finally {
       database.close();
     }

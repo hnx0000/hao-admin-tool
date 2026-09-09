@@ -45,7 +45,7 @@ const DESIGN_REFERENCE_POLICY = Object.freeze({
     "쿠팡·컬리·스마트스토어의 판매 흐름 분석",
   ]),
 });
-const FIGMA_WORKFLOW_VERSION = "hao-figma-first-v2-approval-gate";
+const FIGMA_WORKFLOW_VERSION = "hao-figma-stable-v3";
 const AI_DETAIL_PRODUCTION_POLICY = Object.freeze({
   guideFile: "AI_TOOL_GUIDELINES.md",
   sourceOrder: ["고객 원문", "1차 내용정리본", "관리자 검수 수정", "승인된 참고자료"],
@@ -1170,10 +1170,9 @@ function ensureProjectReviewApprovedForGeneration() {
     return false;
   }
 
-  // 관리자가 상단 생성 버튼을 누르는 행위 자체를 최종 검수 확정으로 봅니다.
-  // 필수 항목이 모두 채워진 경우에만 승인하므로, 빈 프로젝트가 자동 승인되지는 않습니다.
-  approveCurrentProjectReview();
-  return projectManagerReviewApproved();
+  focusProjectReviewGate("필수 입력은 준비됐습니다. 고객 원문과 첨부자료를 확인한 뒤 '검수 완료'를 명시적으로 눌러주세요.");
+  updateAiStatus("생성 버튼으로 검수 승인을 대신하지 않습니다. 관리자 검수 완료 후 진행하세요.");
+  return false;
 }
 
 function projectFromAdminFields(project = activeCustomerProject()) {
@@ -1182,12 +1181,17 @@ function projectFromAdminFields(project = activeCustomerProject()) {
     ...project,
     companyName: value("clientName"),
     clientName: value("clientName"),
+    brandName: project.brandName || value("clientName"),
     productName: value("productName"),
     category: value("category"),
+    majorCategory: value("category").split(/\s*[\/·>]\s*/)[0],
+    subCategory: value("category").split(/\s*[\/·>]\s*/)[1] || project.subCategory || "",
     channel: value("channel"),
     dueDate: value("dueDate"),
     oneLine: value("oneLine"),
-    features: value("consultSummary"),
+    primaryPurchaseReason: value("oneLine"),
+    coreBenefit: value("oneLine"),
+    reviewedNotes: value("consultSummary"),
     clientRequests: value("clientRequests"),
     emphasis: value("emphasis"),
     banWords: value("banWords"),
@@ -1226,6 +1230,11 @@ function projectWithCustomerProgress(project = {}, status = project.status || "�
       customerProgress: customerProgressForStatus(status),
     },
   };
+}
+
+function reviewedInputSnapshot(project) {
+  const keys = ["clientName","companyName","brandName","productName","category","majorCategory","subCategory","channel","dueDate","oneLine","primaryPurchaseReason","coreBenefit","reviewedNotes","clientRequests","emphasis","banWords","mustInclude","references"];
+  return Object.fromEntries(keys.map(key => [key, project[key] ?? ""]));
 }
 
 async function syncCustomerProjectState(project, successMessage = "프로젝트 진행 상태를 중앙 서버에 저장했습니다.") {
@@ -1273,7 +1282,7 @@ function approveCurrentProjectReview() {
   const driveReady = projectDriveReferenceReady(reviewed);
   reviewed.workflow = {
     ...(reviewed.workflow || {}),
-    managerReview: { status: "approved", at: new Date().toISOString() },
+    managerReview: { status: "approved", at: new Date().toISOString(), inputSnapshot: reviewedInputSnapshot(reviewed) },
     prompt: { status: driveReady ? "ready" : "blocked", at: "" },
     imageDraft: { status: driveReady ? "ready" : "blocked", at: "" },
   };
@@ -1292,7 +1301,7 @@ function invalidateCurrentProjectReview() {
   changed.status = "확인 중";
   changed.workflow = {
     ...(changed.workflow || {}),
-    managerReview: { status: "pending", at: "", reason: "관리자 필드 수정" },
+    managerReview: { status: "pending", at: new Date().toISOString(), reason: "관리자 필드 수정", inputSnapshot: reviewedInputSnapshot(changed) },
     prompt: { status: "blocked", at: "" },
     imageDraft: { status: "blocked", at: "" },
   };
@@ -1495,12 +1504,7 @@ function planningPreviewForProject(project = {}) {
 
 function currentPlanningProject() {
   const active = activeCustomerProject() || {};
-  return {
-    ...active,
-    clientName: value("clientName") || active.clientName || active.companyName || "",
-    productName: value("productName") || active.productName || active.projectName || "",
-    category: value("category") || active.category || "",
-  };
+  return projectFromAdminFields(active);
 }
 
 function currentPlanningPreview() {
@@ -1714,21 +1718,7 @@ function createPlanningRevisionJob() {
 }
 
 function prepareFirstPlanningDraft() {
-  if (!ensureProjectReviewApprovedForGeneration()) return;
-  const preview = currentPlanningPreview();
-  if (!preview) {
-    alert("이 프로젝트의 1차 촬영·디자인 시안 템플릿이 아직 등록되지 않았습니다.");
-    return;
-  }
-  const project = activeCustomerProject();
-  if (project) {
-    const updated = { ...project, status: "1차 시안 완료", workflow: { ...(project.workflow || {}), firstDraft: { status: "generated", at: new Date().toISOString(), previewId: preview.id } } };
-    const stored = persistCustomerProject(updated);
-    syncCustomerProjectState(stored, "1차 시안 완료 상태를 중앙 서버에 저장했습니다.");
-  }
-  renderPlanningReviewCard();
-  window.open(preview.viewerUrl, "_blank", "noopener,noreferrer");
-  updateAiStatus("1차 시안은 촬영·구성·디자인 기획서로 생성했습니다. 실제 촬영 결과를 반영한 완성 상세페이지는 다음 단계에서 제작합니다.");
+  return openFigmaWorkflowWorkspace();
 }
 
 function savePlanningRevision() {
@@ -2459,11 +2449,9 @@ async function syncCustomerProjectsFromCloud({ notify = false } = {}) {
       };
       if (existingIndex >= 0) {
         const local = projects[existingIndex];
-        projects[existingIndex] = projectManagerReviewApproved(local)
-          ? { ...incoming, status: local.status, workflow: local.workflow, contentSummary: local.contentSummary, contentSummaryText: local.contentSummaryText }
-          : incoming;
+        projects[existingIndex] = window.HAO_FIGMA_WORKFLOW.mergeReviewedProject(incoming, local);
       } else {
-        projects.unshift(incoming);
+        projects.unshift(window.HAO_FIGMA_WORKFLOW.mergeReviewedProject(incoming));
       }
     });
     writeCustomerProjects(projects);
@@ -6243,9 +6231,7 @@ async function prepareImageDraftWorkspace() {
 }
 
 async function generateDrafts() {
-  if (!ensureProjectReviewApprovedForGeneration()) return;
-  await prepareImageDraftWorkspace();
-  return generateImageDraftConcept({ skipPlanningReview: true });
+  return openFigmaWorkflowWorkspace();
 }
 
 function imageDraftStateKey() {
@@ -6974,11 +6960,13 @@ function openFigmaWorkflowWorkspace() {
     requestedAt: new Date().toISOString(),
     source: "관리자툴 → Figma 상세페이지 제작 작업공간",
   };
+  project.workflow = { ...project.workflow, managerReview: { ...project.workflow?.managerReview, inputSnapshot: reviewedInputSnapshot(project) } };
+  persistCustomerProject(project);
   localStorage.setItem("haoFigmaWorkflowInput", JSON.stringify(project));
   const preview = planningPreviewForProject(project);
   if (!preview) return;
   if (button) button.textContent = "Figma 작업공간 여는 중…";
-  updateAiStatus("검증형 텍스트 기획 → 3열 Figma 보드 → 구간별 고유 이미지 → Figma 조립 → QA 순서로 이동합니다.");
+  updateAiStatus("상품군 분석 → 회색 구조 시안 → 실제 Figma 보드 검토·승인 → 이미지·촬영·디자인 가이드 순서로 이동합니다. 이 버튼만으로 이미지가 생성되지는 않습니다.");
   location.href = preview.viewerUrl;
 }
 
@@ -7178,27 +7166,7 @@ renderSectionEditor();
 
 async function runBeforePanel(action) {
   if (action === "plan") await prepareInternalAiPlanning();
-  if (action === "drafts") {
-    setImageGenerationNotice(
-      "working",
-      "최적 단일 방향 준비 중",
-      "화면은 먼저 열렸습니다. 고객 작성 내용과 기획안을 바탕으로 이미지 생성 브리프를 정리하고 있습니다.",
-    );
-    await prepareImageDraftWorkspace();
-    if (readImageDraftState().status === "draft") {
-      setImageGenerationNotice(
-        "success",
-        "기존 이미지 시안 불러오기 완료",
-        "등록된 시안을 바로 검토하거나 생성 조건을 바꿔 새 시안을 만들 수 있습니다.",
-      );
-    } else {
-      setImageGenerationNotice(
-        "ready",
-        "이미지 시안 생성 준비 완료",
-        "기획안을 검수한 뒤 작업 패키지를 만들어 Codex에서 이미지 시안을 생성하세요.",
-      );
-    }
-  }
+  if (action === "drafts") updateAiStatus("회색 구조 시안 작업공간에서 분석·구조 검토를 진행하세요. 승인 전 이미지 생성은 잠겨 있습니다.");
   if (action === "clientMail") await generateClientMail();
   if (action === "revision") await generateRevision();
   if (action === "handoff") await generateHandoff();
@@ -7270,7 +7238,7 @@ $("#applyDraftEdits")?.addEventListener("click", async (event) => {
   event.preventDefault();
   if (!ensurePlanningReviewApproved()) return;
   if (!productionRootDirectoryHandle && "showDirectoryPicker" in window) await connectProductionFolder({ quietCancel: true });
-  generateImageDraftConcept();
+  openFigmaWorkflowWorkspace();
 });
 $("#savePlanningRevision")?.addEventListener("click", savePlanningRevision);
 $("#approvePlanningReview")?.addEventListener("click", approvePlanningReview);

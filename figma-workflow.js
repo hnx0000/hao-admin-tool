@@ -1,11 +1,12 @@
 (function (root, factory) {
-  const api = factory();
+  const concept = root?.HAO_CONCEPT_PROCESS || (typeof module === "object" && module.exports ? require("./concept-process.js") : null);
+  const api = factory(concept);
   if (typeof module === "object" && module.exports) module.exports = api;
   if (root) root.HAO_FIGMA_WORKFLOW = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+})(typeof globalThis !== "undefined" ? globalThis : this, function (concept) {
   "use strict";
 
-  const VERSION = "hao-figma-first-v2-approval-gate";
+  const VERSION = "hao-figma-stable-v3";
   const UNKNOWN = "확인 필요";
   const STAGES = Object.freeze([
     Object.freeze({ id: "facts", number: "01", title: "입력·증빙 잠금", output: "확정 사실 / 확인 필요 분리", owner: "Codex" }),
@@ -29,7 +30,7 @@
     ["productName", "상품명", ["productName", "projectName"]],
     ["brandName", "브랜드명", ["brandName", "clientName", "companyName"]],
     ["classification", "대분류·세부분류", ["majorCategory", "category"]],
-    ["productImage", "제품 원본 이미지", ["productImages", "imageFiles", "uploadedFiles", "referenceFiles"]],
+    ["productImage", "제품 원본 이미지", ["productImages"]],
     ["benefit", "핵심 기능 또는 효익", ["coreBenefit", "oneLine", "primaryPurchaseReason"]],
     ["features", "특징과 차별점", ["features", "coreStrength", "emphasis"]],
     ["target", "주요 타깃", ["targetCustomer", "target"]],
@@ -39,6 +40,14 @@
     ["evidence", "인증·수치·후기·시험자료", ["evidence", "evidenceBoundary", "certifications"]],
     ["references", "참고 이미지·상세페이지", ["references", "referenceFiles", "referenceLikes"]],
     ["exclusions", "제외 표현·디자인", ["exclusions", "avoid", "banWords", "referenceDislikes"]],
+    ["reviewedNotes", "관리자 검수 원문·보완", ["reviewedNotes"]],
+    ["requests", "고객 추가 요청", ["clientRequests", "additionalNotes"]],
+    ["buyerConcern", "구매 전 망설임", ["buyerConcern"]],
+    ["priority", "메시지 우선순위", ["messagePriority", "emphasis"]],
+    ["deEmphasis", "힘을 뺄 내용", ["deEmphasis"]],
+    ["visualIdentity", "제품 시각 정체성", ["visualIdentity", "imageMemo"]],
+    ["shootingConstraints", "촬영 수량·상태·제약", ["shootingConstraints"]],
+    ["referenceIntent", "레퍼런스 선호·비선호", ["referenceLikes", "referenceDislikes"]],
   ]);
 
   function firstValue(source, keys) {
@@ -51,32 +60,33 @@
   }
 
   function asText(value) {
-    if (Array.isArray(value)) return value.filter(Boolean).join(" · ");
-    if (value && typeof value === "object") return Object.values(value).filter(Boolean).join(" · ");
+    if (Array.isArray(value)) return value.map(asText).filter(Boolean).join(" · ");
+    if (value && typeof value === "object") return value.name || value.url || "";
     return String(value || "").trim();
   }
 
-  function inferMajor(project) {
-    const explicit = asText(project.majorCategory).split(/[\/·>]/)[0].trim();
-    if (CATEGORY_SECTIONS[explicit]) return explicit;
-    const category = asText(project.category);
-    if (/화장|스킨|세럼|크림/.test(category)) return "화장품";
-    if (/건강기능|건기식|영양제/.test(category)) return "건강기능식품";
-    if (/가전|기기|장비/.test(category)) return "기기";
-    if (/식품|음식|음료|주스|밀키트/.test(category)) return "음식";
-    return "기타제품";
+  function meaningful(value) {
+    return Boolean(asText(value)) && !/^(확인\s*필요|미기입|미입력|미정|없음|미제공|자동 분석|-)$/.test(asText(value));
   }
 
   function normalizeProject(project) {
     const raw = project && typeof project === "object" ? project : {};
-    const majorCategory = inferMajor(raw);
-    const categoryParts = asText(raw.category).split(/[\/·>]/).map((item) => item.trim()).filter(Boolean);
+    const parts = asText(raw.category).split(/[\/·>]/).map(v => v.trim());
+    const explicitMajor = raw.majorCategory || (concept.TAXONOMY[parts[0]] ? parts[0] : "");
+    const explicitSub = raw.subCategory || (concept.TAXONOMY[explicitMajor]?.includes(parts[1]) ? parts[1] : "");
+    const images = Array.isArray(raw.productImages) ? raw.productImages : [];
+    const remoteImages = (raw.cloudFiles || []).filter(f => f.group === "productImages");
     return {
       ...raw,
       productName: asText(firstValue(raw, ["productName", "projectName"])),
       brandName: asText(firstValue(raw, ["brandName", "clientName", "companyName"])),
-      majorCategory,
-      subCategory: asText(raw.subCategory || categoryParts[1] || categoryParts[0]),
+      majorCategory: concept.TAXONOMY[explicitMajor] ? explicitMajor : "",
+      subCategory: concept.TAXONOMY[explicitMajor]?.includes(explicitSub) ? explicitSub : "",
+      productImages: images.length ? images : remoteImages,
+      coreBenefit: firstValue(raw, ["primaryPurchaseReason", "coreBenefit", "oneLine"]),
+      targetCustomer: firstValue(raw, ["targetCustomer", "target"]),
+      desiredMood: firstValue(raw, ["desiredMood", "mood", "styleTone", "direction"]),
+      exclusions: firstValue(raw, ["exclusions", "banWords", "referenceDislikes"]),
     };
   }
 
@@ -84,16 +94,17 @@
     const input = normalizeProject(project);
     const fields = FIELD_RULES.map(([id, label, keys]) => {
       const raw = id === "classification" ? `${input.majorCategory}${input.subCategory ? ` · ${input.subCategory}` : ""}` : firstValue(input, keys);
-      const text = asText(raw);
-      return { id, label, value: text || UNKNOWN, confirmed: Boolean(text) };
+      const provided = id === "classification" ? Boolean(input.majorCategory && input.subCategory) : meaningful(raw);
+      return { id, label, value: provided ? asText(raw) : UNKNOWN, provided, confirmed: false, status: provided ? "입력됨 · 원문/증빙 대조 필요" : UNKNOWN };
     });
-    const confirmed = fields.filter((field) => field.confirmed).length;
+    const confirmed = fields.filter((field) => field.provided).length;
     return {
       fields,
-      confirmed,
+      confirmed: 0,
+      provided: confirmed,
       total: fields.length,
       completionRate: Math.round((confirmed / fields.length) * 100),
-      missing: fields.filter((field) => !field.confirmed).map((field) => field.label),
+      missing: fields.filter((field) => !field.provided).map((field) => field.label),
     };
   }
 
@@ -107,42 +118,48 @@
       ["사진 위 정보 오버랩", "사진 여백 안에 근거 패널을 겹쳐 사진과 디자인이 따로 놀지 않게 구성"],
       ["근거·비교 모듈", "표·아이콘·증빙 자료가 필요한 정보 구역을 사진과 분리하되 색·선으로 연결"],
     ];
-    const [zoneType, zoneGuide] = zoneTypes[index % zoneTypes.length];
+    const informationOnly = /FAQ|주의|보관|사용·보관|구성·제품 정보|옵션|사양|인증|시험|비교|상세 정보/.test(title);
+    const zoneIndex = index === 0 ? 0 : informationOnly ? (/인증|시험|사양|비교/.test(title) ? 4 : 2) : /상황|장면|사용|동작/.test(title) ? 1 : 3;
+    const [zoneType, zoneGuide] = zoneTypes[zoneIndex];
+    const photoRequired = !informationOnly;
     return {
       id: `section-${String(index + 1).padStart(2, "0")}`,
       number: String(index + 1).padStart(2, "0"),
       title,
       zoneType,
       zoneGuide,
+      photoRequired,
       purpose: `${title}에서 ${product}의 확인된 구매 정보를 한 가지 우선순위로 전달`,
-      shooting: `${title} 전용 고유 촬영 레퍼런스 1컷. 제품 원본의 형태·라벨·비율을 유지하고 앞뒤 구간과 조명·색온도를 연결`,
+      shooting: photoRequired ? `${title} 전용 고유 촬영 레퍼런스 1컷. 제품 원본의 형태·라벨·비율 유지. ${input.shootingConstraints || UNKNOWN}` : "추가 연출 촬영 없음 · 편집 가능한 텍스트/표/실제 증빙 자료로 구성",
       design: `${visual}을 기준으로 사진 안의 여백·곡선·색면을 다음 구간까지 이어서 조판`,
       transition: index === 0 ? "히어로의 핵심 형태를 다음 근거 구간의 그래픽 모티프로 반복" : "이전 구간의 색·선·여백 중 하나를 이어받아 다음 메시지로 전환",
-      imagePrompt: `세로형 상세페이지의 ${title} 구간에 사용할 광고 촬영 레퍼런스 이미지를 생성한다. ${product}의 원본 제품을 주인공으로 두고 ${zoneGuide}. ${visual}의 색감과 재질을 유지한다. 앞뒤 섹션과 같은 카메라 세계관·광원·색온도를 사용하되 구도와 소품은 이 구간만의 역할에 맞게 새로 만든다. 이미지 안에는 제목, 설명, 숫자, 로고, 인증마크, 가짜 라벨을 생성하지 않는다. 제품 원본의 형태·비율·라벨을 바꾸지 않으며 합성 안전 여백을 남긴다. 같은 사진의 확대·크롭 재사용은 금지한다.`,
+      headline: index === 0 ? asText(input.primaryPurchaseReason || input.coreBenefit) || UNKNOWN : `${title} · 카피 검토 필요`,
+      subcopy: UNKNOWN,
+      imagePrompt: "",
       reuse: false,
     };
   }
 
-  function makeDirections(input) {
-    const product = input.productName || UNKNOWN;
-    return [
-      { id: "evidence-led", name: "근거 중심 에디토리얼", message: `${product}의 확인 가능한 사실을 큰 조판과 실제 제품으로 증명`, layout: "대형 사진과 근거 패널을 교차하는 비대칭 장축", density: "중간", image: "제품 중심 촬영 60% · 정보 조판 40%" },
-      { id: "scene-led", name: "사용 장면 내러티브", message: "구매자가 제품을 만나는 순간부터 사용까지 시간 순서로 설득", layout: "장면이 다음 장면으로 이어지는 풀블리드 스크롤", density: "낮음→중간", image: "라이프스타일 촬영 70% · 정보 조판 30%" },
-      { id: "material-led", name: "원물·재질 몰입형", message: "원재료·제형·소재의 질감을 확대해 제품 특성을 감각적으로 전달", layout: "매크로 이미지와 큰 타이포가 맞물리는 레이어형", density: "낮음", image: "매크로·원물 촬영 75% · 정보 조판 25%" },
-      { id: "system-led", name: "기준 비교 시스템형", message: "구매 전에 확인할 기준을 먼저 제시하고 제품이 답하는 구조", layout: "기준 카드·비교·실물 증거가 정렬된 모듈형", density: "높음", image: "제품·증빙 45% · 정보 조판 55%" },
-    ];
-  }
-
-  function buildWorkflow(project) {
+  function buildWorkflow(project, selectedDirectionId = "", edits = {}) {
+    if (!concept) throw new Error("상품군 분석 엔진이 로드되지 않았습니다. 새로고침해 주세요.");
     const input = normalizeProject(project);
     const audit = auditFacts(input);
-    const names = CATEGORY_SECTIONS[input.majorCategory] || CATEGORY_SECTIONS["기타제품"];
-    const sections = names.map((title, index) => sectionInstruction(title, index, input));
-    const directions = makeDirections(input);
+    const safeInput = Object.fromEntries(Object.entries(input).map(([key, value]) => [key, typeof value === "string" && !meaningful(value) ? "" : value]));
+    const review = concept.buildReview(safeInput);
+    const directions = review.directions.map(d => ({ ...d, name: d.conceptName, message: d.coreMessage, density: d.informationDensity, image: d.recommendedImages.join(" · ") }));
+    const selected = directions.find(d => d.id === selectedDirectionId) || directions.find(d => d.id === review.recommended[0]?.id) || directions[0];
+    const sections = selected.sections.map((title, index) => {
+      const section = sectionInstruction(title, index, input);
+      const edit = edits[section.id] || {};
+      for (const key of ["headline", "subcopy", "shooting", "design", "transition"]) if (typeof edit[key] === "string") section[key] = edit[key];
+      section.design = edit.design ?? `${selected.typography} / ${selected.layout} / ${section.design}`;
+      section.transition = edit.transition ?? (index < selected.sections.length - 1 ? `${title}의 결론에서 다음 '${selected.sections[index + 1]}'의 구매 판단 정보로 연결. 동일 배경·선·여백을 이어받음.` : "사용·주의·구매 판단 정보를 확인하고 마감");
+      return section;
+    });
     const blockers = [];
-    for (const required of ["상품명", "브랜드명", "제품 원본 이미지", "핵심 기능 또는 효익", "주요 타깃"]) {
+    for (const required of ["상품명", "브랜드명", "대분류·세부분류", "제품 원본 이미지", "핵심 기능 또는 효익", "주요 타깃"]) {
       const field = audit.fields.find((item) => item.label === required);
-      if (!field?.confirmed) blockers.push(`${required} 확인 필요`);
+      if (!field?.provided) blockers.push(`${required} 확인 필요`);
     }
     return {
       version: VERSION,
@@ -150,7 +167,13 @@
       audit,
       stages: STAGES,
       directions,
-      recommendedDirectionIds: [directions[0].id, directions[1].id],
+      analysis: review.categoryAnalysis,
+      recommended: review.recommended,
+      recommendedDirectionIds: review.recommended.map(d => d.id),
+      selectedDirectionId: selected.id,
+      referenceProtocol: review.referenceProtocol,
+      referenceCandidates: selected.planningColumns,
+      execution: { status: "structure-prepared", figmaCreated: false, imagesGenerated: false, note: "앱은 구조 시안/도구 인계 패키지를 준비합니다. Figma 또는 이미지 도구 실행 완료를 의미하지 않습니다." },
       sections,
       productionGate: { allowed: blockers.length === 0, blockers },
       structureGate: { required: true, status: "pending", nextStage: "sectionGuides" },
@@ -187,13 +210,63 @@
     }
   }
 
-  function buildHandoffMarkdown(workflow) {
+  function buildHandoffMarkdown(workflow, state = {}, phase = "structure") {
     const data = workflow?.version ? workflow : buildWorkflow(workflow);
+    if (phase === "production" && !isApproved(data, state)) throw new Error("현재 구조 리비전의 관리자 승인이 필요합니다.");
     const facts = data.audit.fields.map((field) => `- ${field.label}: ${field.value}`).join("\n");
     const directions = data.directions.map((item, index) => `${index + 1}. ${item.name} — ${item.message} / ${item.layout} / ${item.image}`).join("\n");
-    const sections = data.sections.map((item) => `### ${item.number}. ${item.title}\n- 회색 구조 구역: ${item.zoneType}\n- 구역 설계: ${item.zoneGuide}\n- 목적: ${item.purpose}\n- 촬영 레퍼런스: ${item.shooting}\n- 디자인 흐름: ${item.design}\n- 앞뒤 연결: ${item.transition}\n- ChatGPT 이미지 생성 지시: ${item.imagePrompt}`).join("\n\n");
-    return `# ${data.input.productName || "상품"} · Figma 상세페이지 작업 패키지\n\n- 프로세스: ${VERSION}\n- 상품군: ${data.input.majorCategory} · ${data.input.subCategory || UNKNOWN}\n- 입력 완성도: ${data.audit.completionRate}%\n- 입력 게이트: ${data.productionGate.allowed ? "통과" : data.productionGate.blockers.join(" · ")}\n- 구조 시안 게이트: 관리자 승인 전 섹션 이미지 생성 금지\n- Codex 완료 지점: 승인된 구조 시안과 섹션별 이미지·촬영·디자인 가이드 인계\n\n## 1. 사실 잠금\n\n${facts}\n\n## 2. 디자인 방향 4개\n\n${directions}\n\n## 3. 회색 3열 구조 시안 고정 규칙\n\n${data.rules.map((rule) => `- ${rule}`).join("\n")}\n\n## 4. 관리자 승인 게이트\n\n- [ ] 회색 3열 구조 시안 검토 통과\n- [ ] 사진·디자인·텍스트 구역 검토\n- [ ] 단일 페이지와 사진 연결 구간 검토\n- [ ] 승인 전 이미지 생성 미진행 확인\n\n## 5. 승인 후 섹션별 제작 가이드\n\n${sections}\n\n## 6. Codex 인계 전 QA\n\n${data.qa.map((item) => `- [ ] ${item}`).join("\n")}\n\n## 7. 후속 담당자 업무\n\n- 실제 제품 촬영\n- 승인된 디자인 틀 조판\n- 생성 이미지와 실제 촬영물 연결\n- 최종 상세페이지 마무리와 납품 검수\n`;
+    const sections = data.sections.map((item) => `### ${item.number}. ${item.title}\n- 회색 구조 구역: ${item.zoneType}\n- 구역 설계: ${item.zoneGuide}\n- 제목: ${item.headline}\n- 한 문장 설명: ${item.subcopy}\n- 목적: ${item.purpose}\n- 촬영 레퍼런스: ${item.shooting}\n- 디자인 흐름: ${item.design}\n- 앞뒤 연결: ${item.transition}${phase === "production" ? `\n- 이미지 생성 지시: ${productionPrompt(item, data)}` : ""}`).join("\n\n");
+    return `# ${data.input.productName || "상품"} · Figma 상세페이지 작업 패키지\n\n- 프로세스: ${VERSION}\n- 상품군: ${data.input.majorCategory} · ${data.input.subCategory || UNKNOWN}\n- 입력 완성도: ${data.audit.completionRate}%\n- 입력 게이트: ${data.productionGate.allowed ? "통과" : data.productionGate.blockers.join(" · ")}\n- 구조 시안 게이트: 관리자 승인 전 섹션 이미지 생성 금지\n- Codex 완료 지점: 승인된 구조 시안과 섹션별 이미지·촬영·디자인 가이드 인계\n\n## 1. 사실 잠금\n\n${facts}\n\n## 2. 디자인 방향 4개\n\n${directions}\n\n## 3. 회색 3열 구조 시안 고정 규칙\n\n${data.rules.map((rule) => `- ${rule}`).join("\n")}\n\n## 4. 관리자 승인 게이트\n\n- [ ] 회색 3열 구조 시안 검토 통과\n- [ ] 사진·디자인·텍스트 구역 검토\n- [ ] 단일 페이지와 사진 연결 구간 검토\n- [ ] 승인 전 이미지 생성 미진행 확인\n\n## 5. ${phase === "production" ? "승인 후 섹션별 제작 가이드" : "이미지 생성 전 회색 구조 설계"}\n\n${sections}\n\n## 6. Codex 인계 전 QA\n\n${data.qa.map((item) => `- [ ] ${item}`).join("\n")}\n\n## 7. 후속 담당자 업무\n\n- 실제 제품 촬영\n- 승인된 디자인 틀 조판\n- 생성 이미지와 실제 촬영물 연결\n- 최종 상세페이지 마무리와 납품 검수\n`;
   }
 
-  return Object.freeze({ VERSION, UNKNOWN, STAGES, CATEGORY_SECTIONS, normalizeProject, auditFacts, buildWorkflow, buildHandoffMarkdown, validateFigmaUrl });
+  const REVIEW_CHECKS = Object.freeze(["원본·사실·금지표현을 대조함", "회색 3열 구조와 사진/텍스트 구역을 실제 Figma에서 확인함", "섹션 메시지·연결·카피를 검토함", "선택 방향·촬영 수량과 리비전을 확인함"]);
+  function projectIds(p = {}) { return [p.id, p.cloudSubmissionId, p.submissionId].filter(Boolean).map(String); }
+  function sameProject(a, b) { return projectIds(a).some(id => projectIds(b).includes(id)); }
+  function mergeReviewedProject(incoming, local = {}) {
+    if (projectIds(local).length && !sameProject(incoming, local)) return incoming;
+    const remoteReview = incoming.workflow?.managerReview || {};
+    const localReview = local.workflow?.managerReview || {};
+    const useLocal = (localReview.at || "") > (remoteReview.at || "");
+    const review = useLocal ? localReview : remoteReview;
+    const localPlan = local.workflow?.figmaPlanning || {};
+    const remotePlan = incoming.workflow?.figmaPlanning || {};
+    const plan = (localPlan.updatedAt || "") > (remotePlan.updatedAt || "") ? localPlan : remotePlan;
+    return { ...incoming, ...(review.inputSnapshot || {}),
+      workflow: { ...incoming.workflow, managerReview: review, ...(Object.keys(plan).length ? {figmaPlanning:plan} : {}) },
+      ...(useLocal ? { status: local.status, contentSummary: local.contentSummary, contentSummaryText: local.contentSummaryText } : {}) };
+  }
+  function resolveProject({ requestedId = "", projects = [], active = {}, handoff = {} } = {}) {
+    const id = String(requestedId || "");
+    if (id) {
+      // Persisted project is authoritative; a legacy global handoff is only a fallback.
+      const result = projects.find(p => projectIds(p).includes(id)) || (projectIds(active).includes(id) ? active : null) || (projectIds(handoff).includes(id) ? handoff : null);
+      return result || { id, resolutionError: "이 프로젝트의 저장된 입력을 찾지 못했습니다. 관리자툴에서 해당 프로젝트를 불러와 주세요." };
+    }
+    return projectIds(active).length ? active : projectIds(handoff).length ? handoff : { resolutionError: "고객 프로젝트를 먼저 선택해 주세요." };
+  }
+  function stable(value) {
+    if (Array.isArray(value)) return value.map(stable);
+    if (value && typeof value === "object") return Object.fromEntries(Object.keys(value).sort().map(k => [k, stable(value[k])]));
+    return value;
+  }
+  function signature(data) {
+    const { workflow, savedAt, requestedAt, contentSummary, contentSummaryText, ...input } = data.input;
+    return JSON.stringify(stable({ version: VERSION, input, direction: data.selectedDirectionId, sections: data.sections, references: data.referenceProtocol }));
+  }
+  function isApproved(data, state = {}) {
+    return data.productionGate.allowed && state.approval?.status === "approved" && state.approval.signature === signature(data)
+      && state.approval.figmaUrl === state.figmaUrl && state.approval.revision === state.revision
+      && validateFigmaUrl(state.figmaUrl) && Boolean(asText(state.revision)) && REVIEW_CHECKS.every((_, i) => state.approval.checks?.[i] === true);
+  }
+  function approve(data, state, checks) {
+    if (!data.productionGate.allowed) throw new Error(data.productionGate.blockers.join(" · "));
+    if (!validateFigmaUrl(state.figmaUrl) || !asText(state.revision)) throw new Error("실제 Figma 구조 시안 주소와 검토 리비전을 입력해 주세요.");
+    if (!REVIEW_CHECKS.every((_, i) => checks?.[i] === true)) throw new Error("모든 구조 검토 항목을 직접 확인해 주세요.");
+    return { status: "approved", signature: signature(data), figmaUrl: state.figmaUrl, revision: state.revision, checks, reviewedAt: new Date().toISOString(), authority: "browser-admin-review" };
+  }
+  function productionPrompt(section, data) {
+    if (!section.photoRequired) return "이미지 생성 없음 · 실제 증빙과 편집 가능한 텍스트/도표 사용";
+    return `${data.input.productName}: ${section.title} 전용 독립 촬영 구성. ${section.shooting}. 시각 정체성: ${data.input.visualIdentity || UNKNOWN}. ${section.design}. ${section.transition}. 제품 원본 별도 레이어 합성. 로고·라벨·비율 불변. 배경·소품·조명만 생성하며 글자를 굽지 않음. 다른 컷 크롭/반전 재사용 금지. 확인되지 않은 원료·효능·수치·인증 표현 금지.`;
+  }
+  return Object.freeze({ VERSION, UNKNOWN, STAGES, CATEGORY_SECTIONS, REVIEW_CHECKS, normalizeProject, auditFacts, buildWorkflow, buildHandoffMarkdown, validateFigmaUrl, meaningful, sameProject, mergeReviewedProject, resolveProject, signature, isApproved, approve, productionPrompt });
 });
